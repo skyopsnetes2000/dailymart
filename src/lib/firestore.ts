@@ -91,14 +91,15 @@ export async function addOrder(order: Omit<Order, 'id'>): Promise<string> {
 }
 
 export async function getOrders(userId?: string): Promise<Order[]> {
-    let ordersQuery;
-    if (userId) {
-        ordersQuery = query(collection(db, 'orders'), where('userId', '==', userId), orderBy('date', 'desc'));
-    } else {
-        ordersQuery = query(collection(db, 'orders'), orderBy('date', 'desc'));
-    }
+    const ordersQuery = query(collection(db, 'orders'), orderBy('date', 'desc'));
     const orderSnapshot = await getDocs(ordersQuery);
-    return orderSnapshot.docs.map(doc => ({ ...doc.data() as Order, id: doc.id }));
+    const allOrders = orderSnapshot.docs.map(doc => ({ ...doc.data() as Order, id: doc.id }));
+    
+    if (userId) {
+        return allOrders.filter(order => order.userId === userId);
+    }
+    
+    return allOrders;
 }
 
 export async function updateOrderStatus(orderId: string, status: Order['status'], trackingHistory: Order['trackingHistory']): Promise<void> {
