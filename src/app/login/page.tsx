@@ -5,12 +5,16 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { Input } from '@/components/ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Eye, EyeOff } from 'lucide-react';
+import { Eye, EyeOff, Loader2 } from 'lucide-react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
+import { auth } from '@/lib/firebase';
+import { createUserWithEmailAndPassword, signInWithEmailAndPassword } from 'firebase/auth';
+import { useToast } from '@/hooks/use-toast';
+import { useRouter } from 'next/navigation';
 
 const loginSchema = z.object({
   email: z.string().email('Invalid email address.'),
@@ -32,9 +36,13 @@ const signupSchema = z
 
 export default function LoginPage() {
   const searchParams = useSearchParams();
+  const router = useRouter();
+  const { toast } = useToast();
   const defaultTab = searchParams.get('tab') || 'login';
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [isLoginLoading, setIsLoginLoading] = useState(false);
+  const [isSignupLoading, setIsSignupLoading] = useState(false);
 
   const loginForm = useForm<z.infer<typeof loginSchema>>({
     resolver: zodResolver(loginSchema),
@@ -46,14 +54,41 @@ export default function LoginPage() {
     defaultValues: { name: '', email: '', password: '', confirmPassword: '' },
   });
 
-  function onLoginSubmit(data: z.infer<typeof loginSchema>) {
-    console.log('Login:', data);
-    // Handle login logic
+  async function onLoginSubmit(data: z.infer<typeof loginSchema>) {
+    setIsLoginLoading(true);
+    try {
+      await signInWithEmailAndPassword(auth, data.email, data.password);
+      toast({ title: "Success", description: "Logged in successfully!" });
+      router.push('/profile');
+    } catch (error: any) {
+      console.error("Login Error:", error);
+      toast({
+        title: "Login Failed",
+        description: error.message || "An unexpected error occurred.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoginLoading(false);
+    }
   }
   
-  function onSignupSubmit(data: z.infer<typeof signupSchema>) {
-    console.log('Signup:', data);
-    // Handle signup logic
+  async function onSignupSubmit(data: z.infer<typeof signupSchema>) {
+    setIsSignupLoading(true);
+    try {
+      await createUserWithEmailAndPassword(auth, data.email, data.password);
+      toast({ title: "Success", description: "Account created successfully! Please log in." });
+      // This will automatically switch to the login tab.
+      router.push('/login'); 
+    } catch (error: any) {
+      console.error("Signup Error:", error);
+      toast({
+        title: "Signup Failed",
+        description: error.message || "An unexpected error occurred.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSignupLoading(false);
+    }
   }
 
   return (
@@ -111,7 +146,10 @@ export default function LoginPage() {
                   />
                 </CardContent>
                 <CardFooter className='flex-col gap-4'>
-                  <Button type="submit" className="w-full">Login</Button>
+                  <Button type="submit" className="w-full" disabled={isLoginLoading}>
+                    {isLoginLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                    Login
+                  </Button>
                   <Button variant="link" size="sm" asChild>
                     <Link href="#">Forgot Password?</Link>
                   </Button>
@@ -205,7 +243,10 @@ export default function LoginPage() {
                   />
                 </CardContent>
                 <CardFooter>
-                  <Button type="submit" className="w-full">Create Account</Button>
+                  <Button type="submit" className="w-full" disabled={isSignupLoading}>
+                    {isSignupLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                    Create Account
+                  </Button>
                 </CardFooter>
               </form>
             </Form>
