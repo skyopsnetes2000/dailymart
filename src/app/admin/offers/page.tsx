@@ -24,13 +24,13 @@ import { Product, Category, Offer, products as initialProducts, categories as in
 import { useToast } from '@/hooks/use-toast';
 import Image from 'next/image';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
+import { Trash2 } from 'lucide-react';
 
 const PRODUCTS_STORAGE_KEY = 'admin_products';
 const CATEGORIES_STORAGE_KEY = 'admin_categories';
 const IMAGE_STORAGE_PREFIX = 'product_image_';
 
 type OfferInput = {
-  productId: string;
   type: 'percentage' | 'fixed';
   value: string;
 };
@@ -45,26 +45,22 @@ export default function AdminOffersPage() {
   useEffect(() => {
     try {
       const storedProducts = localStorage.getItem(PRODUCTS_STORAGE_KEY);
-      if (storedProducts) {
-        const parsedProducts: Product[] = JSON.parse(storedProducts);
-        setProducts(parsedProducts);
-        const initialInputs: { [productId: string]: Partial<OfferInput> } = {};
-        parsedProducts.forEach(p => {
-            if (p.offer) {
-                initialInputs[p.id] = { type: p.offer.type, value: p.offer.value.toString() };
-            }
-        });
-        setOfferInputs(initialInputs);
-      } else {
-        setProducts(initialProducts);
-      }
+      const productsData = storedProducts ? JSON.parse(storedProducts) : initialProducts;
+      setProducts(productsData);
 
+      const initialInputs: { [productId: string]: Partial<OfferInput> } = {};
+      productsData.forEach((p: Product) => {
+          if (p.offer) {
+              initialInputs[p.id] = { type: p.offer.type, value: p.offer.value.toString() };
+          } else {
+              initialInputs[p.id] = { type: 'percentage', value: '' };
+          }
+      });
+      setOfferInputs(initialInputs);
+      
       const storedCategories = localStorage.getItem(CATEGORIES_STORAGE_KEY);
-      if (storedCategories) {
-        setCategories(JSON.parse(storedCategories));
-      } else {
-        setCategories(initialCategories);
-      }
+      setCategories(storedCategories ? JSON.parse(storedCategories) : initialCategories);
+      
     } catch (error) {
       console.warn("Could not access localStorage. Using initial data.");
        setProducts(initialProducts);
@@ -86,46 +82,31 @@ export default function AdminOffersPage() {
     }
   };
 
-  const handleInputChange = (productId: string, field: keyof Omit<OfferInput, 'productId'>, value: string) => {
+  const handleInputChange = (productId: string, field: keyof OfferInput, value: string) => {
     setOfferInputs(prev => ({
         ...prev,
         [productId]: { ...prev[productId], [field]: value }
     }));
   };
 
-  const handleSaveOffer = (productId: string) => {
+  const handleSaveOrUpdateOffer = (productId: string) => {
     const product = products.find(p => p.id === productId);
     if (!product) return;
 
-    const input = offerInputs[productId] || {};
-    const offerType = input.type || product.offer?.type || 'percentage';
-    const offerValueStr = input.value ?? (product.offer ? String(product.offer.value) : '');
-
-    const value = parseFloat(offerValueStr);
-
-    if (offerValueStr === '' || isNaN(value) || value <= 0) {
-        const updatedProducts = products.map(p => 
-            p.id === productId ? { ...p, offer: null } : p
-        );
-        updateAndPersistProducts(updatedProducts);
-
-        setOfferInputs(prev => {
-            const newInputs = { ...prev };
-            // We just clear the value, not the whole entry, to keep type selection
-            if (newInputs[productId]) {
-                delete newInputs[productId].value;
-            }
-            return newInputs;
-        });
-        toast({
-            title: 'Offer Removed',
-            description: 'Offer details cleared for the product.',
-        });
+    const input = offerInputs[productId];
+    if (!input || !input.value || !input.type) {
+        toast({ title: 'Invalid Input', description: 'Please provide a valid offer type and value.', variant: 'destructive'});
         return;
+    }
+
+    const value = parseFloat(input.value);
+    if (isNaN(value) || value <= 0) {
+       toast({ title: 'Invalid Value', description: 'Please enter a positive number for the offer.', variant: 'destructive'});
+       return;
     }
     
     const newOffer: Offer = {
-        type: offerType,
+        type: input.type,
         value: value,
     };
 
@@ -135,10 +116,25 @@ export default function AdminOffersPage() {
     updateAndPersistProducts(updatedProducts);
     toast({
         title: 'Success',
-        description: 'Special offer saved successfully.',
+        description: `Special offer ${product.offer ? 'updated' : 'added'} successfully.`,
     });
   };
 
+  const handleRemoveOffer = (productId: string) => {
+      const updatedProducts = products.map(p => 
+            p.id === productId ? { ...p, offer: null } : p
+        );
+        updateAndPersistProducts(updatedProducts);
+
+        setOfferInputs(prev => ({
+            ...prev,
+            [productId]: { ...prev[productId], value: '' }
+        }));
+        toast({
+            title: 'Offer Removed',
+            description: 'The special offer has been removed from the product.',
+        });
+  }
 
   const getProductImage = (product: Product) => {
     try {
@@ -184,14 +180,17 @@ export default function AdminOffersPage() {
                 <TableHead>Image</TableHead>
                 <TableHead>Product Name</TableHead>
                 <TableHead>Price</TableHead>
-                <TableHead className='w-[120px]'>Offer Type</TableHead>
-                <TableHead className='w-[100px]'>Value</TableHead>
-                <TableHead className='w-[120px]'>Actions</TableHead>
+                <TableHead className='w-[150px]'>Offer Type</TableHead>
+                <TableHead className='w-[120px]'>Value</TableHead>
+                <TableHead className='text-right w-[200px]'>Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {filteredProducts.length > 0 ? (
-                filteredProducts.map((product) => (
+                filteredProducts.map((product) => {
+                    const currentOffer = product.offer;
+                    const hasOffer = currentOffer && currentOffer.value > 0;
+                    return (
                     <TableRow key={product.id}>
                       <TableCell>
                         <Image
@@ -206,7 +205,7 @@ export default function AdminOffersPage() {
                     <TableCell>${product.price.toFixed(2)}</TableCell>
                     <TableCell>
                        <Select
-                         value={offerInputs[product.id]?.type || product.offer?.type || 'percentage'}
+                         value={offerInputs[product.id]?.type || 'percentage'}
                          onValueChange={(value) => handleInputChange(product.id, 'type', value as 'percentage' | 'fixed')}
                        >
                             <SelectTrigger>
@@ -222,15 +221,26 @@ export default function AdminOffersPage() {
                         <Input 
                            type="number"
                            placeholder="e.g., 10"
-                           value={offerInputs[product.id]?.value ?? (product.offer ? String(product.offer.value) : '')}
+                           value={offerInputs[product.id]?.value ?? ''}
                            onChange={(e) => handleInputChange(product.id, 'value', e.target.value)}
                         />
                     </TableCell>
-                    <TableCell>
-                      <Button onClick={() => handleSaveOffer(product.id)}>Save</Button>
+                    <TableCell className="text-right">
+                        <div className='flex gap-2 justify-end'>
+                            {hasOffer ? (
+                                <>
+                                    <Button size="sm" onClick={() => handleSaveOrUpdateOffer(product.id)}>Update</Button>
+                                    <Button size="sm" variant="destructive" onClick={() => handleRemoveOffer(product.id)}>
+                                        <Trash2 className="h-4 w-4" />
+                                    </Button>
+                                </>
+                            ) : (
+                                 <Button size="sm" onClick={() => handleSaveOrUpdateOffer(product.id)}>Add Offer</Button>
+                            )}
+                        </div>
                     </TableCell>
                   </TableRow>
-                ))
+                )})
               ) : (
                 <TableRow>
                   <TableCell colSpan={6} className="text-center">
@@ -245,3 +255,4 @@ export default function AdminOffersPage() {
     </div>
   );
 }
+
