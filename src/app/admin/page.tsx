@@ -1,11 +1,11 @@
 
+'use client';
 
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { DollarSign, Package, ShoppingCart, Database } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { seedInitialData } from '@/lib/firestore';
 import { useToast } from '@/hooks/use-toast';
-'use client';
 
 
 export default function AdminDashboardPage() {
