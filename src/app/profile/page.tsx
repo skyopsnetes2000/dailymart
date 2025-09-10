@@ -20,10 +20,10 @@ export default function ProfilePage() {
             <p className="text-muted-foreground">You need to be logged in to access your profile and orders.</p>
             <div className="flex gap-4">
                 <Button asChild>
-                    <Link href="/login">Login</Link>
+                    <Link href="/login?tab=login">Login</Link>
                 </Button>
                 <Button asChild variant="outline">
-                    <Link href="/login">Sign Up</Link>
+                    <Link href="/login?tab=signup">Sign Up</Link>
                 </Button>
             </div>
         </div>
