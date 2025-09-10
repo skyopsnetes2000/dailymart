@@ -74,7 +74,7 @@ export default function Home() {
             <h2 className="font-headline text-xl font-bold">All Products</h2>
             <Link href="/products" className="text-sm font-medium text-primary">See All</Link>
           </div>
-          <div className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-4">
+          <div className="grid grid-cols-3 gap-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6">
             {products.slice(0, 8).map((product) => (
               <ProductCard key={product.id} product={product} />
             ))}
