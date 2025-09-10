@@ -7,9 +7,12 @@ import PageHeader from '@/components/shared/page-header';
 import { type Category, type Product } from '@/lib/data';
 import { notFound } from 'next/navigation';
 import { Skeleton } from '@/components/ui/skeleton';
+import { PlaceHolderImages } from '@/lib/placeholder-images';
 
 const PRODUCTS_STORAGE_KEY = 'admin_products';
 const CATEGORIES_STORAGE_KEY = 'admin_categories';
+const IMAGE_STORAGE_PREFIX = 'product_image_';
+
 
 export default function CategoryProductsPage({ params }: { params: { slug: string } }) {
   const { slug } = params;
@@ -46,6 +49,19 @@ export default function CategoryProductsPage({ params }: { params: { slug: strin
     }
   }, [slug]);
 
+  const getProductImage = (product: Product) => {
+    try {
+        const storedImage = localStorage.getItem(`${IMAGE_STORAGE_PREFIX}${product.id}`);
+        if (storedImage) {
+            return storedImage;
+        }
+    } catch (error) {
+        console.warn("Could not access localStorage for images");
+    }
+    const placeholder = PlaceHolderImages.find((img) => img.id === product.imageId);
+    return placeholder?.imageUrl;
+  }
+
   if (loading) {
     return (
         <div>
@@ -74,7 +90,7 @@ export default function CategoryProductsPage({ params }: { params: { slug: strin
       {products.length > 0 ? (
         <div className="grid grid-cols-3 gap-4 p-4 sm:p-6 md:grid-cols-4 lg:grid-cols-5">
           {products.map((product) => (
-            <ProductCard key={product.id} product={product} />
+            <ProductCard key={product.id} product={product} imageUrl={getProductImage(product)} />
           ))}
         </div>
       ) : (

@@ -23,6 +23,8 @@ import { Skeleton } from '@/components/ui/skeleton';
 
 const PRODUCTS_STORAGE_KEY = 'admin_products';
 const CATEGORIES_STORAGE_KEY = 'admin_categories';
+const IMAGE_STORAGE_PREFIX = 'product_image_';
+
 
 function LoadingSkeletons() {
     return (
@@ -73,6 +75,19 @@ export default function Home() {
         setLoading(false);
     }
   }, []);
+
+  const getProductImage = (product: Product) => {
+    try {
+        const storedImage = localStorage.getItem(`${IMAGE_STORAGE_PREFIX}${product.id}`);
+        if (storedImage) {
+            return storedImage;
+        }
+    } catch (error) {
+        console.warn("Could not access localStorage for images");
+    }
+    const placeholder = PlaceHolderImages.find((img) => img.id === product.imageId);
+    return placeholder?.imageUrl;
+  }
 
   const topCategories = categories.slice(0, 4);
   const heroImage = PlaceHolderImages.find((img) => img.id === 'hero-bg');
@@ -164,7 +179,7 @@ export default function Home() {
             <CarouselContent className="-ml-2">
               {specialOffers.map((product) => (
                 <CarouselItem key={product.id} className="basis-2/5 sm:basis-1/3 md:basis-1/4 lg:basis-1/5 pl-2">
-                  <ProductCard product={product} />
+                  <ProductCard product={product} imageUrl={getProductImage(product)} />
                 </CarouselItem>
               ))}
             </CarouselContent>
@@ -210,7 +225,7 @@ export default function Home() {
                     <CarouselContent className="-ml-2">
                       {categoryProducts.map((product) => (
                         <CarouselItem key={product.id} className="basis-2/5 sm:basis-1/3 md:basis-1/4 lg:basis-1/5 pl-2">
-                          <ProductCard product={product} />
+                          <ProductCard product={product} imageUrl={getProductImage(product)} />
                         </CarouselItem>
                       ))}
                     </CarouselContent>
@@ -232,7 +247,7 @@ export default function Home() {
           {products.length > 0 ? (
             <div className="grid grid-cols-3 gap-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6">
                 {products.slice(0, 12).map((product) => (
-                <ProductCard key={product.id} product={product} />
+                  <ProductCard key={product.id} product={product} imageUrl={getProductImage(product)} />
                 ))}
             </div>
           ) : (

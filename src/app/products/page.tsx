@@ -14,9 +14,13 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Skeleton } from '@/components/ui/skeleton';
+import { PlaceHolderImages } from '@/lib/placeholder-images';
+
 
 const PRODUCTS_STORAGE_KEY = 'admin_products';
 const CATEGORIES_STORAGE_KEY = 'admin_categories';
+const IMAGE_STORAGE_PREFIX = 'product_image_';
+
 
 export default function AllProductsPage() {
   const [allProducts, setAllProducts] = useState<Product[]>([]);
@@ -43,6 +47,19 @@ export default function AllProductsPage() {
         setLoading(false);
     }
   }, []);
+
+  const getProductImage = (product: Product) => {
+    try {
+        const storedImage = localStorage.getItem(`${IMAGE_STORAGE_PREFIX}${product.id}`);
+        if (storedImage) {
+            return storedImage;
+        }
+    } catch (error) {
+        console.warn("Could not access localStorage for images");
+    }
+    const placeholder = PlaceHolderImages.find((img) => img.id === product.imageId);
+    return placeholder?.imageUrl;
+  }
 
   const filteredProducts = allProducts.filter((product) => {
     const matchesCategory =
@@ -99,7 +116,7 @@ export default function AllProductsPage() {
       {filteredProducts.length > 0 ? (
         <div className="grid grid-cols-3 gap-3 p-4 pt-0 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6">
           {filteredProducts.map((product) => (
-            <ProductCard key={product.id} product={product} />
+            <ProductCard key={product.id} product={product} imageUrl={getProductImage(product)} />
           ))}
         </div>
       ) : (

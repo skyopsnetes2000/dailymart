@@ -1,3 +1,4 @@
+
 import Image from 'next/image';
 import type { FC } from 'react';
 import { Plus } from 'lucide-react';
@@ -11,27 +12,24 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
-import { PlaceHolderImages } from '@/lib/placeholder-images';
 import type { Product } from '@/lib/data';
 
 type ProductCardProps = {
   product: Product;
+  imageUrl?: string; // Accept an optional imageUrl prop
 };
 
-const ProductCard: FC<ProductCardProps> = ({ product }) => {
-  const image = PlaceHolderImages.find((img) => img.id === product.imageId);
-
+const ProductCard: FC<ProductCardProps> = ({ product, imageUrl }) => {
   return (
     <Card className="flex h-full flex-col overflow-hidden">
       <CardHeader className="p-0">
         <div className="relative aspect-[4/3] w-full">
-          {image && (
+          {imageUrl && (
             <Image
-              src={image.imageUrl}
+              src={imageUrl}
               alt={product.name}
               fill
               className="object-cover"
-              data-ai-hint={image.imageHint}
             />
           )}
         </div>
