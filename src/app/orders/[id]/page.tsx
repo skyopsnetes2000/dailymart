@@ -3,6 +3,7 @@ import { orders } from "@/lib/data";
 import { notFound } from "next/navigation";
 import OrderTracker from "@/components/order-tracker";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { format } from "date-fns";
 
 export default function OrderDetailsPage({ params }: { params: { id: string } }) {
     const order = orders.find(o => o.id === params.id);
@@ -17,7 +18,7 @@ export default function OrderDetailsPage({ params }: { params: { id: string } })
                 <Card>
                     <CardHeader>
                         <CardTitle>{order.id}</CardTitle>
-                        <CardDescription>Placed on {new Date(order.date).toLocaleDateString()} &bull; Total: ${order.total.toFixed(2)}</CardDescription>
+                        <CardDescription>Placed on {format(new Date(order.date), 'MM/dd/yyyy')} &bull; Total: ${order.total.toFixed(2)}</CardDescription>
                     </CardHeader>
                     <CardContent>
                         <h4 className="font-semibold mb-2">Items</h4>

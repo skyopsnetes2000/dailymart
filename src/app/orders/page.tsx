@@ -5,6 +5,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { ChevronRight } from 'lucide-react';
+import { format } from 'date-fns';
 
 export default function OrdersPage() {
     return (
@@ -17,7 +18,7 @@ export default function OrdersPage() {
                             <div className='flex justify-between items-center'>
                                 <div>
                                     <CardTitle className="text-lg">{order.id}</CardTitle>
-                                    <CardDescription>Placed on {new Date(order.date).toLocaleDateString()}</CardDescription>
+                                    <CardDescription>Placed on {format(new Date(order.date), 'MM/dd/yyyy')}</CardDescription>
                                 </div>
                                 <Badge variant={order.status === 'Delivered' ? 'default' : 'secondary'}>{order.status}</Badge>
                             </div>

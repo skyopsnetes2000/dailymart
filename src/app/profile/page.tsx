@@ -14,6 +14,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { format } from "date-fns";
 
 export default function ProfilePage() {
   const [user, loading] = useAuthState(auth);
@@ -112,7 +113,7 @@ export default function ProfilePage() {
                             <div className='flex justify-between items-center'>
                                 <div>
                                     <CardTitle className="text-base">{order.id}</CardTitle>
-                                    <CardDescription>Placed on {new Date(order.date).toLocaleDateString()}</CardDescription>
+                                    <CardDescription>Placed on {format(new Date(order.date), 'MM/dd/yyyy')}</CardDescription>
                                 </div>
                                 <Badge variant={order.status === 'Delivered' ? 'default' : 'secondary'}>{order.status}</Badge>
                             </div>

@@ -23,6 +23,7 @@ import { Button } from '@/components/ui/button';
 import { Eye } from 'lucide-react';
 import Link from 'next/link';
 import { useState } from 'react';
+import { format } from 'date-fns';
 
 const statusColors: { [key in OrderStatus]: string } = {
   Pending: 'bg-yellow-500',
@@ -79,7 +80,7 @@ export default function AdminOrdersPage() {
                 <TableRow key={order.id}>
                   <TableCell className="font-medium">{order.id}</TableCell>
                   <TableCell>
-                    {new Date(order.date).toLocaleDateString()}
+                    {format(new Date(order.date), 'MM/dd/yyyy')}
                   </TableCell>
                   <TableCell>John Doe</TableCell>
                   <TableCell>${order.total.toFixed(2)}</TableCell>
