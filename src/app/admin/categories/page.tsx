@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -44,6 +43,13 @@ const categorySchema = z.object({
   image: z.any(),
 });
 
+function generateSlug(name: string) {
+    return name
+        .toLowerCase()
+        .replace(/&/g, 'and')
+        .replace(/[^a-z0-9]+/g, '-')
+        .replace(/(^-|-$)+/g, '');
+}
 
 export default function AdminCategoriesPage() {
   const [categories, setCategories] = useState<Category[]>([]);
@@ -62,6 +68,13 @@ export default function AdminCategoriesPage() {
   const form = useForm<z.infer<typeof categorySchema>>({
     resolver: zodResolver(categorySchema),
   });
+
+  const watchName = form.watch("name");
+  useEffect(() => {
+    if (watchName && !editingCategory) {
+      form.setValue('slug', generateSlug(watchName));
+    }
+  }, [watchName, form, editingCategory]);
   
   const handleAddNew = () => {
     setEditingCategory(null);
@@ -174,7 +187,7 @@ export default function AdminCategoriesPage() {
                   <FormItem>
                     <FormLabel>Slug</FormLabel>
                     <FormControl>
-                      <Input {...field} />
+                      <Input {...field} readOnly={!editingCategory} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
