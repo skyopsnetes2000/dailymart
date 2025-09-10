@@ -101,7 +101,7 @@ export default function AdminOrdersPage() {
             <TableBody>
               {orders.map((order) => (
                 <Collapsible asChild key={order.id}>
-                  <tbody>
+                  <>
                     <TableRow>
                       <TableCell className="font-medium">{order.id}</TableCell>
                       <TableCell>
@@ -174,7 +174,7 @@ export default function AdminOrdersPage() {
                          </TableCell>
                        </TableRow>
                     </CollapsibleContent>
-                  </tbody>
+                  </>
                 </Collapsible>
               ))}
             </TableBody>
