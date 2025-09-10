@@ -11,12 +11,13 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { getCategories, getProducts } from '@/lib/firestore';
 
 export default function CategoryProductsPage({ params }: { params: Promise<{ slug: string }> }) {
-  const { slug } = use(params);
+  const { slug: encodedSlug } = use(params);
   const [category, setCategory] = useState<Category | null | undefined>(undefined);
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    const slug = decodeURIComponent(encodedSlug);
     const fetchData = async () => {
         try {
             const allCategories = await getCategories();
@@ -34,7 +35,7 @@ export default function CategoryProductsPage({ params }: { params: Promise<{ slu
         }
     };
     fetchData();
-  }, [slug]);
+  }, [encodedSlug]);
 
   if (loading) {
     return (
