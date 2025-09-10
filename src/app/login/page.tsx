@@ -12,7 +12,7 @@ import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { auth } from '@/lib/firebase';
-import { createUserWithEmailAndPassword, signInWithEmailAndPassword } from 'firebase/auth';
+import { createUserWithEmailAndPassword, sendEmailVerification, signInWithEmailAndPassword } from 'firebase/auth';
 import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
 
@@ -57,7 +57,18 @@ export default function LoginPage() {
   async function onLoginSubmit(data: z.infer<typeof loginSchema>) {
     setIsLoginLoading(true);
     try {
-      await signInWithEmailAndPassword(auth, data.email, data.password);
+      const userCredential = await signInWithEmailAndPassword(auth, data.email, data.password);
+      if (!userCredential.user.emailVerified) {
+        toast({
+          title: "Verification Required",
+          description: "Please verify your email before logging in. We've sent you a verification link.",
+          variant: "destructive",
+        });
+        // Optionally resend verification email
+        await sendEmailVerification(userCredential.user);
+        setIsLoginLoading(false);
+        return;
+      }
       toast({ title: "Success", description: "Logged in successfully!" });
       router.push('/profile');
     } catch (error: any) {
@@ -75,9 +86,12 @@ export default function LoginPage() {
   async function onSignupSubmit(data: z.infer<typeof signupSchema>) {
     setIsSignupLoading(true);
     try {
-      await createUserWithEmailAndPassword(auth, data.email, data.password);
-      toast({ title: "Success", description: "Account created successfully! Please log in." });
-      // This will automatically switch to the login tab.
+      const userCredential = await createUserWithEmailAndPassword(auth, data.email, data.password);
+      await sendEmailVerification(userCredential.user);
+      toast({
+        title: "Verification Sent",
+        description: "A verification link has been sent to your email. Please verify your account before logging in.",
+      });
       router.push('/login'); 
     } catch (error: any) {
       console.error("Signup Error:", error);
