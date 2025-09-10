@@ -61,11 +61,9 @@ export default function LoginPage() {
       if (!userCredential.user.emailVerified) {
         toast({
           title: "Verification Required",
-          description: "Please verify your email before logging in. We've sent you a verification link.",
+          description: "Please verify your email before logging in. Check your inbox for a verification link.",
           variant: "destructive",
         });
-        // Optionally resend verification email
-        await sendEmailVerification(userCredential.user);
         setIsLoginLoading(false);
         return;
       }
