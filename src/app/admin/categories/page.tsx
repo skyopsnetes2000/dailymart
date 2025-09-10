@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -95,11 +96,11 @@ export default function AdminCategoriesPage() {
       if (data.image && data.image.length > 0) {
         const file = data.image[0];
         const uploadResult = await uploadImage(file, 'categories');
-        imageId = uploadResult.url; // Use URL directly for firestore storage
+        imageId = uploadResult.id;
       } else if (!editingCategory) {
         const categoryImages = PlaceHolderImages.filter(img => img.id.startsWith('category-'));
         const randomImage = categoryImages[Math.floor(Math.random() * categoryImages.length)];
-        imageId = randomImage.imageUrl;
+        imageId = randomImage.id;
       }
 
       const categoryData: Omit<Category, 'id'> = {

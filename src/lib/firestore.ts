@@ -1,4 +1,5 @@
 
+
 import { db } from './firebase';
 import {
   collection,
@@ -13,6 +14,7 @@ import {
 } from 'firebase/firestore';
 import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { Product, Category, Offer, products as initialProducts, categories as initialCategories } from './data';
+import { PlaceHolderImages } from './placeholder-images';
 
 // --- Category Functions ---
 
@@ -102,8 +104,9 @@ export async function seedInitialData() {
   if (categoriesSnapshot.empty) {
     console.log("Seeding categories...");
     initialCategories.forEach(category => {
-      const docRef = doc(categoriesCol);
-      batch.set(docRef, category);
+      const docRef = doc(collection(db, 'categories'));
+      const placeholder = PlaceHolderImages.find(p => p.id === category.imageId);
+      batch.set(docRef, { ...category, imageId: placeholder?.imageUrl || '' });
     });
     seeded = true;
   }
@@ -111,8 +114,9 @@ export async function seedInitialData() {
   if (productsSnapshot.empty) {
     console.log("Seeding products...");
     initialProducts.forEach(product => {
-      const docRef = doc(productsCol);
-      batch.set(docRef, product);
+        const docRef = doc(collection(db, 'products'));
+        const placeholder = PlaceHolderImages.find(p => p.id === product.imageId);
+        batch.set(docRef, { ...product, imageId: placeholder?.imageUrl || '' });
     });
     seeded = true;
   }
