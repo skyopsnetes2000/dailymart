@@ -192,7 +192,10 @@ export default function AdminProductsPage() {
         }
       };
       reader.readAsDataURL(file);
-    } else if (!editingProduct) {
+    } else if (editingProduct) {
+        // Keep existing image if not changed
+        imageId = editingProduct.imageId;
+    } else {
         // Assign random placeholder if it's a new product without an image
         const productImages = PlaceHolderImages.filter(img => img.id.startsWith('product-'));
         const randomImage = productImages[Math.floor(Math.random() * productImages.length)];
@@ -415,5 +418,3 @@ export default function AdminProductsPage() {
       </Card>
     </div>
   );
-
-    

@@ -181,11 +181,11 @@ export default function AdminCategoriesPage() {
       <Dialog
         open={isDialogOpen}
         onOpenChange={(open) => {
-          setIsDialogOpen(open);
           if (!open) {
             setEditingCategory(null);
             form.reset();
           }
+          setIsDialogOpen(open);
         }}
       >
         <DialogContent>

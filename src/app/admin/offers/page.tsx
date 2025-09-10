@@ -20,7 +20,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Input } from '@/components/ui/input';
-import { Product, Category, Offer } from '@/lib/data';
+import { Product, Category, Offer, products as initialProducts, categories as initialCategories } from '@/lib/data';
 import { useToast } from '@/hooks/use-toast';
 import Image from 'next/image';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
@@ -56,14 +56,20 @@ export default function AdminOffersPage() {
             }
         });
         setOfferInputs(initialInputs);
+      } else {
+        setProducts(initialProducts);
       }
 
       const storedCategories = localStorage.getItem(CATEGORIES_STORAGE_KEY);
       if (storedCategories) {
         setCategories(JSON.parse(storedCategories));
+      } else {
+        setCategories(initialCategories);
       }
     } catch (error) {
-      console.warn("Could not access localStorage. Using empty lists.");
+      console.warn("Could not access localStorage. Using initial data.");
+       setProducts(initialProducts);
+       setCategories(initialCategories);
     }
   }, []);
 
@@ -81,7 +87,7 @@ export default function AdminOffersPage() {
     }
   };
 
-  const handleInputChange = (productId: string, field: keyof Offer, value: string) => {
+  const handleInputChange = (productId: string, field: keyof Omit<OfferInput, 'productId'>, value: string) => {
     setOfferInputs(prev => ({
         ...prev,
         [productId]: { ...prev[productId], [field]: value }
@@ -92,7 +98,7 @@ export default function AdminOffersPage() {
     const input = offerInputs[productId];
     const value = parseFloat(input?.value || '');
 
-    if (!input || !input.type || isNaN(value) || value <= 0) {
+    if (!input || !input.type || !input.value || isNaN(value) || value <= 0) {
         // Clear the offer if input is invalid or empty
         const updatedProducts = products.map(p => 
             p.id === productId ? { ...p, offer: null } : p
