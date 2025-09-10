@@ -103,9 +103,9 @@ export function AddressForm({ isOpen, onClose, onSave, address }: AddressFormPro
           </DialogDescription>
         </DialogHeader>
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)}>
-            <ScrollArea className="max-h-[60vh] p-1">
-              <div className='space-y-4 p-4'>
+          <form onSubmit={form.handleSubmit(onSubmit)} className='space-y-4'>
+            <ScrollArea className="h-96 w-full p-4">
+              <div className='space-y-4'>
                 <Button type="button" variant="outline" className="w-full" onClick={handleUseCurrentLocation} disabled={isLocating}>
                   {isLocating ? (
                     <>
@@ -220,7 +220,7 @@ export function AddressForm({ isOpen, onClose, onSave, address }: AddressFormPro
                 />
               </div>
             </ScrollArea>
-            <DialogFooter className="mt-4 px-4">
+            <DialogFooter className="px-4">
               <Button type="button" variant="outline" onClick={onClose}>
                 Cancel
               </Button>
