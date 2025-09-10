@@ -42,6 +42,7 @@ const categorySchema = z.object({
 });
 
 const STORAGE_KEY = 'admin_categories';
+const IMAGE_STORAGE_PREFIX = 'category_image_';
 
 export default function AdminCategoriesPage() {
   const [categories, setCategories] = useState<Category[]>([]);
@@ -95,23 +96,75 @@ export default function AdminCategoriesPage() {
 
   const handleDelete = (categoryId: string) => {
     updateAndPersistCategories(categories.filter((c) => c.id !== categoryId));
+     try {
+      localStorage.removeItem(`${IMAGE_STORAGE_PREFIX}${categoryId}`);
+    } catch (error) {
+      console.warn(`Could not remove image for category ${categoryId} from localStorage`);
+    }
   };
 
-  const onSubmit = (data: z.infer<typeof categorySchema>) => {
-    // In a real app, you'd upload the image and get a URL
-    const imageId = 'category-new'; // Placeholder
-    let newCategories;
-    if (editingCategory) {
-      newCategories = categories.map((c) =>
-          c.id === editingCategory.id ? { ...c, name: data.name, slug: data.slug, imageId: c.imageId } : c
-        );
-    } else {
-      newCategories = [
-        ...categories,
-        { ...data, id: Date.now().toString(), imageId },
-      ];
+  const getCategoryImage = (category: Category) => {
+    try {
+        const storedImage = localStorage.getItem(`${IMAGE_STORAGE_PREFIX}${category.id}`);
+        if (storedImage) {
+            return storedImage;
+        }
+    } catch (error) {
+        console.warn("Could not access localStorage for images");
     }
-    updateAndPersistCategories(newCategories);
+    const placeholder = PlaceHolderImages.find((img) => img.id === category.imageId);
+    return placeholder?.imageUrl;
+  }
+
+  const onSubmit = (data: z.infer<typeof categorySchema>) => {
+    const categoryId = editingCategory ? editingCategory.id : Date.now().toString();
+    let imageId = editingCategory ? editingCategory.imageId : '';
+
+     if (data.image && data.image.length > 0) {
+      const file = data.image[0];
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        const base64String = reader.result as string;
+        try {
+            localStorage.setItem(`${IMAGE_STORAGE_PREFIX}${categoryId}`, base64String);
+            imageId = `local_${categoryId}`; // Mark that we are using a local image
+            
+            const finalCategoryData = { ...data, id: categoryId, imageId: imageId };
+            
+            let newCategories;
+            if (editingCategory) {
+              newCategories = categories.map((c) => c.id === categoryId ? { ...c, ...finalCategoryData } : c);
+            } else {
+              newCategories = [...categories, finalCategoryData];
+            }
+            updateAndPersistCategories(newCategories);
+        } catch (error) {
+            console.error("Could not save image to localStorage", error);
+        }
+      };
+      reader.readAsDataURL(file);
+    } else if (!editingCategory) {
+        const categoryImages = PlaceHolderImages.filter(img => img.id.startsWith('category-'));
+        const randomImage = categoryImages[Math.floor(Math.random() * categoryImages.length)];
+        imageId = randomImage.id;
+    }
+
+    if (!data.image || data.image.length === 0) {
+        const categoryData = { ...data, id: categoryId, imageId: imageId };
+        let newCategories;
+        if (editingCategory) {
+          newCategories = categories.map((c) =>
+              c.id === editingCategory.id ? { ...c, ...categoryData } : c
+            );
+        } else {
+          newCategories = [
+            ...categories,
+            categoryData,
+          ];
+        }
+        updateAndPersistCategories(newCategories);
+    }
+    
     setIsDialogOpen(false);
   };
 
@@ -195,36 +248,51 @@ export default function AdminCategoriesPage() {
           <Table>
             <TableHeader>
               <TableRow>
+                <TableHead>Image</TableHead>
                 <TableHead>Name</TableHead>
                 <TableHead>Slug</TableHead>
                 <TableHead>Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {categories.map((category) => (
-                <TableRow key={category.id}>
-                  <TableCell className="font-medium">{category.name}</TableCell>
-                  <TableCell>{category.slug}</TableCell>
-                  <TableCell>
-                    <div className="flex gap-2">
-                      <Button
-                        variant="outline"
-                        size="icon"
-                        onClick={() => handleEdit(category)}
-                      >
-                        <Pencil className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        variant="destructive"
-                        size="icon"
-                        onClick={() => handleDelete(category.id)}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </TableCell>
-                </TableRow>
-              ))}
+              {categories.map((category) => {
+                const imageUrl = getCategoryImage(category);
+                return (
+                  <TableRow key={category.id}>
+                    <TableCell>
+                      {imageUrl && (
+                        <Image
+                          src={imageUrl}
+                          alt={category.name}
+                          width={40}
+                          height={40}
+                          className="rounded-md object-cover"
+                        />
+                      )}
+                    </TableCell>
+                    <TableCell className="font-medium">{category.name}</TableCell>
+                    <TableCell>{category.slug}</TableCell>
+                    <TableCell>
+                      <div className="flex gap-2">
+                        <Button
+                          variant="outline"
+                          size="icon"
+                          onClick={() => handleEdit(category)}
+                        >
+                          <Pencil className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="destructive"
+                          size="icon"
+                          onClick={() => handleDelete(category.id)}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
             </TableBody>
           </Table>
         </CardContent>

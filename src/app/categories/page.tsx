@@ -6,9 +6,11 @@ import CategoryCard from "@/components/category-card";
 import PageHeader from "@/components/shared/page-header";
 import { type Category } from "@/lib/data";
 import { Skeleton } from '@/components/ui/skeleton';
+import { PlaceHolderImages } from '@/lib/placeholder-images';
 
 
 const CATEGORIES_STORAGE_KEY = 'admin_categories';
+const IMAGE_STORAGE_PREFIX = 'category_image_';
 
 export default function CategoriesPage() {
   const [categories, setCategories] = useState<Category[]>([]);
@@ -26,6 +28,19 @@ export default function CategoriesPage() {
         setLoading(false);
     }
   }, []);
+  
+  const getCategoryImage = (category: Category) => {
+    try {
+        const storedImage = localStorage.getItem(`${IMAGE_STORAGE_PREFIX}${category.id}`);
+        if (storedImage) {
+            return storedImage;
+        }
+    } catch (error) {
+        console.warn("Could not access localStorage for images");
+    }
+    const placeholder = PlaceHolderImages.find((img) => img.id === category.imageId);
+    return placeholder?.imageUrl;
+  }
 
   return (
     <div>
@@ -39,7 +54,7 @@ export default function CategoriesPage() {
       ) : categories.length > 0 ? (
         <div className="grid grid-cols-4 gap-3 p-4 sm:p-6 sm:grid-cols-5 md:grid-cols-6 lg:grid-cols-8">
           {categories.map((category) => (
-            <CategoryCard key={category.id} category={category} />
+            <CategoryCard key={category.id} category={category} imageUrl={getCategoryImage(category)} />
           ))}
         </div>
       ) : (

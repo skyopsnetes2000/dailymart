@@ -23,7 +23,8 @@ import { Skeleton } from '@/components/ui/skeleton';
 
 const PRODUCTS_STORAGE_KEY = 'admin_products';
 const CATEGORIES_STORAGE_KEY = 'admin_categories';
-const IMAGE_STORAGE_PREFIX = 'product_image_';
+const PRODUCT_IMAGE_STORAGE_PREFIX = 'product_image_';
+const CATEGORY_IMAGE_STORAGE_PREFIX = 'category_image_';
 
 
 function LoadingSkeletons() {
@@ -78,7 +79,7 @@ export default function Home() {
 
   const getProductImage = (product: Product) => {
     try {
-        const storedImage = localStorage.getItem(`${IMAGE_STORAGE_PREFIX}${product.id}`);
+        const storedImage = localStorage.getItem(`${PRODUCT_IMAGE_STORAGE_PREFIX}${product.id}`);
         if (storedImage) {
             return storedImage;
         }
@@ -86,6 +87,19 @@ export default function Home() {
         console.warn("Could not access localStorage for images");
     }
     const placeholder = PlaceHolderImages.find((img) => img.id === product.imageId);
+    return placeholder?.imageUrl;
+  }
+  
+  const getCategoryImage = (category: Category) => {
+    try {
+        const storedImage = localStorage.getItem(`${CATEGORY_IMAGE_STORAGE_PREFIX}${category.id}`);
+        if (storedImage) {
+            return storedImage;
+        }
+    } catch (error) {
+        console.warn("Could not access localStorage for images");
+    }
+    const placeholder = PlaceHolderImages.find((img) => img.id === category.imageId);
     return placeholder?.imageUrl;
   }
 
@@ -197,7 +211,7 @@ export default function Home() {
            {categories.length > 0 ? (
             <div className="grid grid-cols-4 gap-3 sm:grid-cols-5 md:grid-cols-6 lg:grid-cols-8">
                 {categories.map((category) => (
-                <CategoryCard key={category.id} category={category} />
+                <CategoryCard key={category.id} category={category} imageUrl={getCategoryImage(category)} />
                 ))}
             </div>
             ) : (
