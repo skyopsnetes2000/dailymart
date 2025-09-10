@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useEffect, useState } from 'react';
@@ -28,10 +29,6 @@ export default function CategoriesPage() {
     fetchCategories();
   }, []);
   
-  const getCategoryImage = (category: Category) => {
-    const placeholder = PlaceHolderImages.find((img) => img.id === category.imageId || img.imageUrl === category.imageId);
-    return category.imageId.startsWith('https') ? category.imageId : placeholder?.imageUrl;
-  }
 
   return (
     <div>
@@ -45,7 +42,7 @@ export default function CategoriesPage() {
       ) : categories.length > 0 ? (
         <div className="grid grid-cols-4 gap-3 p-4 sm:p-6 sm:grid-cols-5 md:grid-cols-6 lg:grid-cols-8">
           {categories.map((category) => (
-            <CategoryCard key={category.id} category={category} imageUrl={getCategoryImage(category)} />
+            <CategoryCard key={category.id} category={category} />
           ))}
         </div>
       ) : (

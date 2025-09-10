@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useEffect, useState } from 'react';
@@ -36,11 +37,6 @@ export default function CategoryProductsPage({ params }: { params: { slug: strin
     fetchData();
   }, [slug]);
 
-  const getProductImage = (product: Product) => {
-    const placeholder = PlaceHolderImages.find((img) => img.id === product.imageId || img.imageUrl === product.imageId);
-    return product.imageId.startsWith('https') ? product.imageId : placeholder?.imageUrl;
-  }
-
   if (loading) {
     return (
         <div>
@@ -69,7 +65,7 @@ export default function CategoryProductsPage({ params }: { params: { slug: strin
       {products.length > 0 ? (
         <div className="grid grid-cols-3 gap-4 p-4 sm:p-6 md:grid-cols-4 lg:grid-cols-5">
           {products.map((product) => (
-            <ProductCard key={product.id} product={product} imageUrl={getProductImage(product)} />
+            <ProductCard key={product.id} product={product} />
           ))}
         </div>
       ) : (

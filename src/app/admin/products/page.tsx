@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -109,18 +110,15 @@ export default function AdminProductsPage() {
   const onSubmit = async (data: z.infer<typeof productSchema>) => {
     try {
       let imageUrl: string | undefined = editingProduct?.imageId;
-      let imageId: string | undefined = editingProduct?.imageId;
 
       if (data.image && data.image.length > 0) {
         const file = data.image[0];
         const uploadResult = await uploadImage(file, 'products');
         imageUrl = uploadResult.url;
-        imageId = uploadResult.id;
       } else if (!editingProduct) {
         const productImages = PlaceHolderImages.filter(img => img.id.startsWith('product-'));
         const randomImage = productImages[Math.floor(Math.random() * productImages.length)];
         imageUrl = randomImage.imageUrl;
-        imageId = randomImage.id;
       }
       
       const productData: Omit<Product, 'id'> = {
@@ -129,12 +127,12 @@ export default function AdminProductsPage() {
         price: data.price,
         weight: data.weight,
         categorySlug: data.categorySlug,
-        imageId: imageId || '',
+        imageId: imageUrl || (editingProduct?.imageId ?? ''),
       };
 
       if (editingProduct) {
-        await updateProduct(editingProduct.id, { ...productData, imageId: imageId || editingProduct.imageId });
-        setProducts(products.map(p => p.id === editingProduct.id ? { ...p, ...productData, imageId: imageId || editingProduct.imageId } : p));
+        await updateProduct(editingProduct.id, { ...productData, imageId: imageUrl || editingProduct.imageId });
+        setProducts(products.map(p => p.id === editingProduct.id ? { ...editingProduct, ...productData, imageId: imageUrl || editingProduct.imageId } : p));
         toast({ title: "Success", description: "Product updated." });
       } else {
         const newProductId = await addProduct(productData);
@@ -144,7 +142,8 @@ export default function AdminProductsPage() {
 
       setIsDialogOpen(false);
     } catch (error) {
-       toast({ title: "Error", description: "An error occurred.", variant: "destructive" });
+       console.error("Failed to save product:", error);
+       toast({ title: "Error", description: "An error occurred while saving the product.", variant: "destructive" });
     }
   };
 
@@ -297,14 +296,12 @@ export default function AdminProductsPage() {
             </TableHeader>
             <TableBody>
               {products.map((product) => {
-                const placeholder = PlaceHolderImages.find(p => p.id === product.imageId);
-                const imageUrl = product.imageId.startsWith('https') ? product.imageId : placeholder?.imageUrl;
                 return (
                   <TableRow key={product.id}>
                      <TableCell>
-                      {imageUrl && (
+                      {product.imageId && (
                         <Image
-                          src={imageUrl}
+                          src={product.imageId}
                           alt={product.name}
                           width={40}
                           height={40}

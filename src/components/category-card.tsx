@@ -1,27 +1,24 @@
 
+
 import Image from 'next/image';
 import Link from 'next/link';
 import type { FC } from 'react';
 import type { Category } from '@/lib/data';
 import { Card } from '@/components/ui/card';
-import { PlaceHolderImages } from '@/lib/placeholder-images';
 
 type CategoryCardProps = {
   category: Category;
-  imageUrl?: string;
 };
 
 const CategoryCard: FC<CategoryCardProps> = ({ category }) => {
-  const placeholder = PlaceHolderImages.find((img) => img.id === category.imageId || img.imageUrl === category.imageId);
-  const imageUrl = category.imageId.startsWith('https') ? category.imageId : placeholder?.imageUrl;
 
   return (
     <Link href={`/categories/${category.slug}`} className="group block">
       <Card className="overflow-hidden transition-all duration-300 group-hover:shadow-lg group-hover:shadow-primary/20">
         <div className="relative aspect-square">
-          {imageUrl && (
+          {category.imageId && (
             <Image
-              src={imageUrl}
+              src={category.imageId}
               alt={category.name}
               fill
               className="object-cover"

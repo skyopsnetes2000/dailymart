@@ -91,28 +91,27 @@ export default function AdminCategoriesPage() {
 
   const onSubmit = async (data: z.infer<typeof categorySchema>) => {
     try {
-      let imageId: string | undefined = editingCategory?.imageId;
+      let imageUrl: string | undefined = editingCategory?.imageId;
 
       if (data.image && data.image.length > 0) {
         const file = data.image[0];
         const uploadResult = await uploadImage(file, 'categories');
-        imageId = uploadResult.url; // Use the returned URL
+        imageUrl = uploadResult.url; 
       } else if (!editingCategory) {
-        // If no image is uploaded for a new category, use a random placeholder.
         const categoryImages = PlaceHolderImages.filter(img => img.id.startsWith('category-'));
         const randomImage = categoryImages[Math.floor(Math.random() * categoryImages.length)];
-        imageId = randomImage.imageUrl;
+        imageUrl = randomImage.imageUrl;
       }
 
       const categoryData: Omit<Category, 'id'> = {
         name: data.name,
         slug: data.slug,
-        imageId: imageId || (editingCategory?.imageId ?? ''), // Fallback to existing or empty string
+        imageId: imageUrl || (editingCategory?.imageId ?? ''),
       };
 
       if (editingCategory) {
         await updateCategory(editingCategory.id, categoryData);
-        setCategories(categories.map(c => c.id === editingCategory.id ? { ...editingCategory, ...categoryData } : c));
+        setCategories(categories.map(c => c.id === editingCategory.id ? { ...categoryData, id: editingCategory.id } : c));
         toast({ title: "Success", description: "Category updated." });
       } else {
         const newCategoryId = await addCategory(categoryData);
@@ -122,7 +121,8 @@ export default function AdminCategoriesPage() {
 
       setIsDialogOpen(false);
     } catch (error) {
-       toast({ title: "Error", description: "An error occurred.", variant: "destructive" });
+       console.error("Failed to save category:", error);
+       toast({ title: "Error", description: "An error occurred while saving the category.", variant: "destructive" });
     }
   };
 
@@ -214,14 +214,12 @@ export default function AdminCategoriesPage() {
             </TableHeader>
             <TableBody>
               {categories.map((category) => {
-                 const placeholder = PlaceHolderImages.find(p => p.imageUrl === category.imageId);
-                 const imageUrl = category.imageId.startsWith('https') ? category.imageId : placeholder?.imageUrl;
                 return (
                   <TableRow key={category.id}>
                     <TableCell>
-                      {imageUrl && (
+                      {category.imageId && (
                         <Image
-                          src={imageUrl}
+                          src={category.imageId}
                           alt={category.name}
                           width={40}
                           height={40}

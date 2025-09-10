@@ -1,4 +1,5 @@
 
+
 import Image from 'next/image';
 import type { FC } from 'react';
 import { Plus } from 'lucide-react';
@@ -13,11 +14,9 @@ import {
   CardTitle,
 } from '@/components/ui/card';
 import type { Product } from '@/lib/data';
-import { PlaceHolderImages } from '@/lib/placeholder-images';
 
 type ProductCardProps = {
   product: Product;
-  imageUrl?: string;
 };
 
 function calculateDiscountedPrice(product: Product) {
@@ -35,9 +34,7 @@ function calculateDiscountedPrice(product: Product) {
 
 const ProductCard: FC<ProductCardProps> = ({ product }) => {
   const discountedPrice = calculateDiscountedPrice(product);
-
-  const placeholder = PlaceHolderImages.find((img) => img.id === product.imageId || img.imageUrl === product.imageId);
-  const imageUrl = product.imageId.startsWith('https') ? product.imageId : placeholder?.imageUrl;
+  const imageUrl = product.imageId;
 
   return (
     <Card className="flex h-full flex-col overflow-hidden">

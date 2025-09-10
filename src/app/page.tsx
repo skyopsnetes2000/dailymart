@@ -1,4 +1,5 @@
 
+
 'use client'
 
 import React, { useEffect, useState } from 'react';
@@ -74,17 +75,7 @@ export default function Home() {
     };
     fetchData();
   }, []);
-
-  const getProductImage = (product: Product) => {
-    const placeholder = PlaceHolderImages.find((img) => img.id === product.imageId || img.imageUrl === product.imageId);
-    return product.imageId.startsWith('https') ? product.imageId : placeholder?.imageUrl;
-  }
   
-  const getCategoryImage = (category: Category) => {
-    const placeholder = PlaceHolderImages.find((img) => img.id === category.imageId || img.imageUrl === category.imageId);
-    return category.imageId.startsWith('https') ? category.imageId : placeholder?.imageUrl;
-  }
-
   const topCategories = categories.slice(0, 4);
   const heroImage = PlaceHolderImages.find((img) => img.id === 'hero-bg');
   
@@ -174,7 +165,7 @@ export default function Home() {
             <CarouselContent className="-ml-2">
               {specialOffers.map((product) => (
                 <CarouselItem key={product.id} className="basis-2/5 sm:basis-1/3 md:basis-1/4 lg:basis-1/5 pl-2">
-                  <ProductCard product={product} imageUrl={getProductImage(product)} />
+                  <ProductCard product={product} />
                 </CarouselItem>
               ))}
             </CarouselContent>
@@ -192,7 +183,7 @@ export default function Home() {
            {categories.length > 0 ? (
             <div className="grid grid-cols-4 gap-3 sm:grid-cols-5 md:grid-cols-6 lg:grid-cols-8">
                 {categories.map((category) => (
-                <CategoryCard key={category.id} category={category} imageUrl={getCategoryImage(category)} />
+                <CategoryCard key={category.id} category={category} />
                 ))}
             </div>
             ) : (
@@ -220,7 +211,7 @@ export default function Home() {
                     <CarouselContent className="-ml-2">
                       {categoryProducts.map((product) => (
                         <CarouselItem key={product.id} className="basis-2/5 sm:basis-1/3 md:basis-1/4 lg:basis-1/5 pl-2">
-                          <ProductCard product={product} imageUrl={getProductImage(product)} />
+                          <ProductCard product={product} />
                         </CarouselItem>
                       ))}
                     </CarouselContent>

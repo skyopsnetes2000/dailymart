@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -43,11 +44,6 @@ export default function AllProductsPage() {
     }
     fetchData();
   }, []);
-
-  const getProductImage = (product: Product) => {
-    const placeholder = PlaceHolderImages.find((img) => img.id === product.imageId || img.imageUrl === product.imageId);
-    return product.imageId.startsWith('https') ? product.imageId : placeholder?.imageUrl;
-  }
 
   const filteredProducts = allProducts.filter((product) => {
     const matchesCategory =
@@ -104,7 +100,7 @@ export default function AllProductsPage() {
       {filteredProducts.length > 0 ? (
         <div className="grid grid-cols-3 gap-3 p-4 pt-0 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6">
           {filteredProducts.map((product) => (
-            <ProductCard key={product.id} product={product} imageUrl={getProductImage(product)} />
+            <ProductCard key={product.id} product={product} />
           ))}
         </div>
       ) : (

@@ -1,5 +1,6 @@
 
 
+
 import { db } from './firebase';
 import {
   collection,
@@ -81,12 +82,12 @@ export async function deleteProduct(id: string): Promise<void> {
 
 // --- Image Upload ---
 
-export async function uploadImage(file: File, path: string): Promise<{ url: string, id: string }> {
+export async function uploadImage(file: File, path: string): Promise<{ url: string }> {
   const storage = getStorage();
   const storageRef = ref(storage, `${path}/${Date.now()}_${file.name}`);
   await uploadBytes(storageRef, file);
   const downloadURL = await getDownloadURL(storageRef);
-  return { url: downloadURL, id: downloadURL }; // Use URL as ID for simplicity
+  return { url: downloadURL }; 
 }
 
 // --- Data Seeding ---
@@ -104,10 +105,10 @@ export async function seedInitialData() {
   if (categoriesSnapshot.empty) {
     console.log("Seeding categories...");
     initialCategories.forEach(category => {
-      const docRef = doc(categoriesCol, category.slug); // Use slug as document id for predictability
+      const docRef = doc(categoriesCol); // Auto-generate ID
       const placeholder = PlaceHolderImages.find(p => p.id === category.imageId);
       // We set the imageId to the actual placeholder URL now
-      batch.set(docRef, { ...category, imageId: placeholder?.imageUrl || '' });
+      batch.set(docRef, { ...category, id: docRef.id, imageId: placeholder?.imageUrl || '' });
     });
     seeded = true;
   }
@@ -118,7 +119,7 @@ export async function seedInitialData() {
         const docRef = doc(productsCol); // Auto-generate ID for products
         const placeholder = PlaceHolderImages.find(p => p.id === product.imageId);
         // We set the imageId to the actual placeholder URL now
-        batch.set(docRef, { ...product, imageId: placeholder?.imageUrl || '' });
+        batch.set(docRef, { ...product, id: docRef.id, imageId: placeholder?.imageUrl || '' });
     });
     seeded = true;
   }
