@@ -25,8 +25,8 @@ const CategoryCard: FC<CategoryCardProps> = ({ category }) => {
             />
           )}
           <div className="absolute inset-0 bg-black/40 transition-colors duration-300 group-hover:bg-black/20" />
-          <div className="absolute bottom-0 left-0 p-2">
-            <h3 className="font-headline text-base font-semibold text-white">
+          <div className="absolute bottom-0 left-0 p-1.5">
+            <h3 className="font-headline text-xs font-semibold text-white sm:text-sm">
               {category.name}
             </h3>
           </div>

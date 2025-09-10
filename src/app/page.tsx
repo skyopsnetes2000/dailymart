@@ -32,7 +32,7 @@ export default function Home() {
             <h2 className="font-headline text-xl font-bold">Shop by Category</h2>
             <Link href="/categories" className="text-sm font-medium text-primary">See All</Link>
           </div>
-          <div className="grid grid-cols-2 gap-4 md:grid-cols-3">
+          <div className="grid grid-cols-3 gap-3 md:grid-cols-4">
             {categories.map((category) => (
               <CategoryCard key={category.id} category={category} />
             ))}
