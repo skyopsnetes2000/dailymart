@@ -5,8 +5,10 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { Input } from '@/components/ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { zodResolver } from '@hookform/resolvers/zod';
+import { Eye, EyeOff } from 'lucide-react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
+import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 
@@ -15,16 +17,24 @@ const loginSchema = z.object({
   password: z.string().min(1, 'Password is required.'),
 });
 
-const signupSchema = z.object({
-  name: z.string().min(2, 'Name must be at least 2 characters.'),
-  email: z.string().email('Invalid email address.'),
-  password: z.string().min(8, 'Password must be at least 8 characters.'),
-});
+const signupSchema = z
+  .object({
+    name: z.string().min(2, 'Name must be at least 2 characters.'),
+    email: z.string().email('Invalid email address.'),
+    password: z.string().min(8, 'Password must be at least 8 characters.'),
+    confirmPassword: z.string(),
+  })
+  .refine((data) => data.password === data.confirmPassword, {
+    message: "Passwords don't match",
+    path: ['confirmPassword'],
+  });
 
 
 export default function LoginPage() {
   const searchParams = useSearchParams();
   const defaultTab = searchParams.get('tab') || 'login';
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   const loginForm = useForm<z.infer<typeof loginSchema>>({
     resolver: zodResolver(loginSchema),
@@ -33,7 +43,7 @@ export default function LoginPage() {
 
   const signupForm = useForm<z.infer<typeof signupSchema>>({
     resolver: zodResolver(signupSchema),
-    defaultValues: { name: '', email: '', password: '' },
+    defaultValues: { name: '', email: '', password: '', confirmPassword: '' },
   });
 
   function onLoginSubmit(data: z.infer<typeof loginSchema>) {
@@ -81,9 +91,20 @@ export default function LoginPage() {
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>Password</FormLabel>
-                        <FormControl>
-                          <Input type="password" placeholder="••••••••" {...field} />
-                        </FormControl>
+                        <div className="relative">
+                          <FormControl>
+                            <Input type={showPassword ? 'text' : 'password'} placeholder="••••••••" {...field} />
+                          </FormControl>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7 text-muted-foreground"
+                            onClick={() => setShowPassword(!showPassword)}
+                          >
+                            {showPassword ? <EyeOff /> : <Eye />}
+                          </Button>
+                        </div>
                         <FormMessage />
                       </FormItem>
                     )}
@@ -140,9 +161,44 @@ export default function LoginPage() {
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>Password</FormLabel>
-                        <FormControl>
-                          <Input type="password" placeholder="••••••••" {...field} />
-                        </FormControl>
+                        <div className="relative">
+                          <FormControl>
+                            <Input type={showPassword ? 'text' : 'password'} placeholder="••••••••" {...field} />
+                          </FormControl>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7 text-muted-foreground"
+                            onClick={() => setShowPassword(!showPassword)}
+                          >
+                            {showPassword ? <EyeOff /> : <Eye />}
+                          </Button>
+                        </div>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={signupForm.control}
+                    name="confirmPassword"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Confirm Password</FormLabel>
+                         <div className="relative">
+                          <FormControl>
+                            <Input type={showConfirmPassword ? 'text' : 'password'} placeholder="••••••••" {...field} />
+                          </FormControl>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7 text-muted-foreground"
+                            onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                          >
+                            {showConfirmPassword ? <EyeOff /> : <Eye />}
+                          </Button>
+                        </div>
                         <FormMessage />
                       </FormItem>
                     )}
