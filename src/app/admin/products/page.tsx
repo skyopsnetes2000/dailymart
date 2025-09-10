@@ -56,6 +56,7 @@ const productSchema = z.object({
 
 const PRODUCTS_STORAGE_KEY = 'admin_products';
 const CATEGORIES_STORAGE_KEY = 'admin_categories';
+const IMAGE_STORAGE_PREFIX = 'product_image_';
 
 
 export default function AdminProductsPage() {
@@ -132,26 +133,93 @@ export default function AdminProductsPage() {
 
   const handleDelete = (productId: string) => {
     updateAndPersistProducts(products.filter((p) => p.id !== productId));
+    // Also remove the image from localStorage
+    try {
+      localStorage.removeItem(`${IMAGE_STORAGE_PREFIX}${productId}`);
+    } catch (error) {
+      console.warn(`Could not remove image for product ${productId} from localStorage`);
+    }
   };
 
-  const onSubmit = (data: z.infer<typeof productSchema>) => {
-    // In a real app, you would upload the image and get back a URL/ID
-    const productImages = PlaceHolderImages.filter(img => img.id.startsWith('product-'));
-    const randomImage = productImages[Math.floor(Math.random() * productImages.length)];
-    const imageId = randomImage.id;
-    
-    let newProducts;
-    if (editingProduct) {
-      newProducts = products.map((p) =>
-          p.id === editingProduct.id ? { ...editingProduct, ...data, imageId } : p
-        );
-    } else {
-      newProducts = [
-        ...products,
-        { ...data, id: Date.now().toString(), imageId },
-      ];
+  const getProductImage = (product: Product) => {
+    try {
+        const storedImage = localStorage.getItem(`${IMAGE_STORAGE_PREFIX}${product.id}`);
+        if (storedImage) {
+            return storedImage;
+        }
+    } catch (error) {
+        console.warn("Could not access localStorage for images");
     }
-    updateAndPersistProducts(newProducts);
+    const placeholder = PlaceHolderImages.find((img) => img.id === product.imageId);
+    return placeholder?.imageUrl;
+  }
+
+  const onSubmit = async (data: z.infer<typeof productSchema>) => {
+    const productId = editingProduct ? editingProduct.id : Date.now().toString();
+    let imageId = editingProduct ? editingProduct.imageId : '';
+    
+    // Handle image upload
+    if (data.image && data.image.length > 0) {
+      const file = data.image[0];
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        const base64String = reader.result as string;
+        try {
+            localStorage.setItem(`${IMAGE_STORAGE_PREFIX}${productId}`, base64String);
+            imageId = `local_${productId}`; // Mark that we are using a local image
+            
+            // This part is duplicated to ensure execution after file read
+            const finalProductData = {
+              ...data,
+              id: productId,
+              imageId: imageId,
+            };
+            
+            let newProducts;
+            if (editingProduct) {
+              newProducts = products.map((p) =>
+                  p.id === productId ? { ...p, ...finalProductData } : p
+                );
+            } else {
+              newProducts = [
+                ...products,
+                finalProductData,
+              ];
+            }
+            updateAndPersistProducts(newProducts);
+        } catch (error) {
+            console.error("Could not save image to localStorage", error);
+        }
+      };
+      reader.readAsDataURL(file);
+    } else if (!editingProduct) {
+        // Assign random placeholder if it's a new product without an image
+        const productImages = PlaceHolderImages.filter(img => img.id.startsWith('product-'));
+        const randomImage = productImages[Math.floor(Math.random() * productImages.length)];
+        imageId = randomImage.id;
+    }
+    
+    // Save other product data immediately if no image is being uploaded
+    if (!data.image || data.image.length === 0) {
+        const productData = {
+            ...data,
+            id: productId,
+            imageId: imageId,
+        };
+        let newProducts;
+        if (editingProduct) {
+          newProducts = products.map((p) =>
+              p.id === editingProduct.id ? { ...p, ...productData } : p
+            );
+        } else {
+          newProducts = [
+            ...products,
+            productData,
+          ];
+        }
+        updateAndPersistProducts(newProducts);
+    }
+    
     setIsDialogOpen(false);
   };
 
@@ -273,7 +341,7 @@ export default function AdminProductsPage() {
                         <FormItem>
                           <FormLabel>Product Image</FormLabel>
                           <FormControl>
-                            <Input type="file" onChange={(e) => field.onChange(e.target.files)} />
+                            <Input type="file" accept="image/*" onChange={(e) => field.onChange(e.target.files)} />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -304,15 +372,13 @@ export default function AdminProductsPage() {
             </TableHeader>
             <TableBody>
               {products.map((product) => {
-                const image = PlaceHolderImages.find(
-                  (img) => img.id === product.imageId
-                );
+                const imageUrl = getProductImage(product);
                 return (
                   <TableRow key={product.id}>
                      <TableCell>
-                      {image && (
+                      {imageUrl && (
                         <Image
-                          src={image.imageUrl}
+                          src={imageUrl}
                           alt={product.name}
                           width={40}
                           height={40}
@@ -349,4 +415,5 @@ export default function AdminProductsPage() {
       </Card>
     </div>
   );
-}
+
+    
