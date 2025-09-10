@@ -1,12 +1,12 @@
 
 'use client';
 
-import type { Metadata } from 'next';
 import './globals.css';
 import { Toaster } from '@/components/ui/toaster';
 import BottomNav from '@/components/shared/bottom-nav';
 import { cn } from '@/lib/utils';
 import { usePathname } from 'next/navigation';
+import { useEffect } from 'react';
 
 
 export default function RootLayout({
@@ -17,6 +17,15 @@ export default function RootLayout({
   const pathname = usePathname();
   // We only want to add the padding-bottom if the bottom nav is visible
   const showBottomNav = !pathname.startsWith('/admin') && pathname !== '/login';
+
+  useEffect(() => {
+    const theme = localStorage.getItem('theme') || 'system';
+     if (theme === 'dark' || (theme === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+        document.documentElement.classList.add('dark');
+      } else {
+        document.documentElement.classList.remove('dark');
+      }
+  }, []);
   
   return (
     <html lang="en" suppressHydrationWarning>

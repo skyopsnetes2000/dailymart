@@ -175,7 +175,7 @@ export default function ProfilePage() {
         </Tabs>
 
         <div className="mt-8">
-            <Button variant="outline" className="w-full" onClick={handleLogout}>
+            <Button variant="destructive" className="w-full" onClick={handleLogout}>
                 <LogOut className="mr-2 h-4 w-4" />
                 Logout
             </Button>

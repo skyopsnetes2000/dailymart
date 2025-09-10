@@ -18,9 +18,10 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { auth } from '@/lib/firebase';
 import { EmailAuthProvider, reauthenticateWithCredential, updatePassword } from 'firebase/auth';
 import { useToast } from '@/hooks/use-toast';
-import { useState } from 'react';
-import { Loader2 } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { Loader2, Monitor, Moon, Sun } from 'lucide-react';
 import { Switch } from '@/components/ui/switch';
+import { cn } from '@/lib/utils';
 
 const passwordSchema = z.object({
   currentPassword: z.string().min(1, 'Current password is required.'),
@@ -33,6 +34,31 @@ export default function AccountSettings() {
   const { toast } = useToast();
   const [isPasswordLoading, setIsPasswordLoading] = useState(false);
   const [isNotificationsLoading, setIsNotificationsLoading] = useState(false);
+  const [theme, setThemeState] = useState<string>('system');
+
+  useEffect(() => {
+    const storedTheme = localStorage.getItem('theme') || 'system';
+    setThemeState(storedTheme);
+    applyTheme(storedTheme);
+  }, []);
+
+  const applyTheme = (selectedTheme: string) => {
+    if (selectedTheme === 'dark' || (selectedTheme === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
+  };
+
+  const setTheme = (selectedTheme: string) => {
+    localStorage.setItem('theme', selectedTheme);
+    setThemeState(selectedTheme);
+    applyTheme(selectedTheme);
+     toast({
+      title: 'Theme Changed',
+      description: `Theme set to ${selectedTheme.charAt(0).toUpperCase() + selectedTheme.slice(1)}.`,
+    });
+  }
   
   const form = useForm<PasswordFormValues>({
     resolver: zodResolver(passwordSchema),
@@ -84,6 +110,31 @@ export default function AccountSettings() {
 
   return (
     <div className="space-y-6">
+      <Card>
+        <CardHeader>
+            <CardTitle>Appearance</CardTitle>
+            <CardDescription>
+                Customize the look and feel of the app.
+            </CardDescription>
+        </CardHeader>
+        <CardContent>
+            <div className="space-y-2">
+                <FormLabel>Theme</FormLabel>
+                <div className="grid grid-cols-3 gap-2 rounded-lg bg-muted p-1">
+                    <Button variant={theme === 'light' ? 'default' : 'ghost'} size="sm" onClick={() => setTheme('light')}>
+                        <Sun className="mr-2 h-4 w-4" /> Light
+                    </Button>
+                    <Button variant={theme === 'dark' ? 'default' : 'ghost'} size="sm" onClick={() => setTheme('dark')}>
+                        <Moon className="mr-2 h-4 w-4" /> Dark
+                    </Button>
+                    <Button variant={theme === 'system' ? 'default' : 'ghost'} size="sm" onClick={() => setTheme('system')}>
+                        <Monitor className="mr-2 h-4 w-4" /> System
+                    </Button>
+                </div>
+            </div>
+        </CardContent>
+      </Card>
+      
        <Card>
         <CardHeader>
           <CardTitle>Change Password</CardTitle>
