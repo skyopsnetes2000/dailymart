@@ -3,7 +3,7 @@
 
 import PageHeader from "@/components/shared/page-header";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { user as staticUser, orders as staticOrders, type Order } from "@/lib/data";
+import { user as staticUser, type Order } from "@/lib/data";
 import ProfileForm from "@/components/profile/profile-form";
 import AddressManager from "@/components/profile/address-manager";
 import Link from "next/link";
@@ -19,9 +19,10 @@ import { format } from "date-fns";
 import { signOut } from "firebase/auth";
 import { useToast } from "@/hooks/use-toast";
 import AccountSettings from "@/components/profile/account-settings";
+import { getOrders } from "@/lib/firestore";
 
 const ADMIN_EMAIL = 'dhandesaurav52@gmail.com';
-const ORDERS_STORAGE_KEY = 'user_orders';
+
 
 export default function ProfilePage() {
   const [user, loading] = useAuthState(auth);
@@ -37,16 +38,17 @@ export default function ProfilePage() {
   }, [user, loading, router]);
   
   useEffect(() => {
-      if (user) {
-        try {
-            const storedOrdersRaw = localStorage.getItem(ORDERS_STORAGE_KEY);
-            const storedOrders = storedOrdersRaw ? JSON.parse(storedOrdersRaw) : staticOrders;
-            setOrders(storedOrders);
-        } catch (error) {
-            console.warn("Could not access localStorage for orders. Using static data.");
-            setOrders(staticOrders);
+      const fetchOrders = async () => {
+        if (user) {
+            try {
+                const userOrders = await getOrders(user.uid);
+                setOrders(userOrders);
+            } catch (error) {
+                console.error("Could not fetch orders.", error);
+            }
         }
       }
+      fetchOrders();
   }, [user]);
 
   const handleLogout = async () => {

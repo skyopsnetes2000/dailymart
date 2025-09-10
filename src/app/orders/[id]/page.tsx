@@ -2,15 +2,16 @@
 'use client';
 
 import PageHeader from "@/components/shared/page-header";
-import { type Order, orders as staticOrders } from "@/lib/data";
+import { type Order } from "@/lib/data";
 import { notFound, useParams } from "next/navigation";
 import OrderTracker from "@/components/order-tracker";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { format } from "date-fns";
 import { useEffect, useState } from "react";
 import { Loader2 } from "lucide-react";
+import { doc, getDoc } from "firebase/firestore";
+import { db } from "@/lib/firebase";
 
-const ORDERS_STORAGE_KEY = 'user_orders';
 
 export default function OrderDetailsPage() {
     const params = useParams();
@@ -19,18 +20,28 @@ export default function OrderDetailsPage() {
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        try {
-            const storedOrdersRaw = localStorage.getItem(ORDERS_STORAGE_KEY);
-            const storedOrders = storedOrdersRaw ? JSON.parse(storedOrdersRaw) : staticOrders;
-            const currentOrder = storedOrders.find((o: Order) => o.id === id);
-            setOrder(currentOrder || null);
-        } catch (error) {
-            console.warn("Could not access localStorage. Using static orders.");
-            const currentOrder = staticOrders.find(o => o.id === id);
-            setOrder(currentOrder || null);
-        } finally {
-            setLoading(false);
+      const fetchOrder = async () => {
+        if (!id || typeof id !== 'string') {
+          setLoading(false);
+          return;
         }
+        try {
+          const orderRef = doc(db, "orders", id);
+          const orderSnap = await getDoc(orderRef);
+          if (orderSnap.exists()) {
+            setOrder({ ...orderSnap.data(), id: orderSnap.id } as Order);
+          } else {
+            setOrder(null);
+          }
+        } catch (error) {
+          console.error("Error fetching order details:", error);
+          setOrder(null);
+        } finally {
+          setLoading(false);
+        }
+      };
+
+      fetchOrder();
     }, [id]);
 
     if (loading) {

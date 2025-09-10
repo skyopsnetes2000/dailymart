@@ -1,6 +1,5 @@
 
 
-
 import { db } from './firebase';
 import {
   collection,
@@ -12,9 +11,10 @@ import {
   query,
   where,
   writeBatch,
+  orderBy,
 } from 'firebase/firestore';
 import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
-import { Product, Category, Offer, products as initialProducts, categories as initialCategories } from './data';
+import { Product, Category, Offer, Order, products as initialProducts, categories as initialCategories } from './data';
 import { PlaceHolderImages } from './placeholder-images';
 
 // --- Category Functions ---
@@ -78,6 +78,32 @@ export async function updateProductOffer(id: string, offer: Offer | null): Promi
 export async function deleteProduct(id: string): Promise<void> {
   const productDoc = doc(db, 'products', id);
   await deleteDoc(productDoc);
+}
+
+
+// --- Order Functions ---
+
+export async function addOrder(order: Omit<Order, 'id'>): Promise<string> {
+    const ordersCol = collection(db, 'orders');
+    const docRef = await addDoc(ordersCol, { ...order, id: `ORD-${Date.now().toString().slice(-6)}` });
+    await updateDoc(docRef, { id: docRef.id }); // Add the document ID as a field
+    return docRef.id;
+}
+
+export async function getOrders(userId?: string): Promise<Order[]> {
+    let ordersQuery;
+    if (userId) {
+        ordersQuery = query(collection(db, 'orders'), where('userId', '==', userId), orderBy('date', 'desc'));
+    } else {
+        ordersQuery = query(collection(db, 'orders'), orderBy('date', 'desc'));
+    }
+    const orderSnapshot = await getDocs(ordersQuery);
+    return orderSnapshot.docs.map(doc => ({ ...doc.data() as Order, id: doc.id }));
+}
+
+export async function updateOrderStatus(orderId: string, status: Order['status'], trackingHistory: Order['trackingHistory']): Promise<void> {
+    const orderDoc = doc(db, 'orders', orderId);
+    await updateDoc(orderDoc, { status, trackingHistory });
 }
 
 // --- Image Upload ---

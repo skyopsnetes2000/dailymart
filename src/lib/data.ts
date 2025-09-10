@@ -33,6 +33,7 @@ export type OrderStatus = 'Pending' | 'Packed' | 'Out for Delivery' | 'Delivered
 
 export type Order = {
   id: string;
+  userId: string;
   date: string;
   status: OrderStatus;
   total: number;
@@ -101,6 +102,7 @@ export const user = {
 export const orders: Order[] = [
     {
         id: 'ORD-12345',
+        userId: 'static-user',
         date: '2023-10-26T10:00:00Z',
         status: 'Delivered',
         total: 25.99,
@@ -119,6 +121,7 @@ export const orders: Order[] = [
     },
     {
         id: 'ORD-67890',
+        userId: 'static-user',
         date: '2023-10-27T11:30:00Z',
         status: 'Out for Delivery',
         total: 12.49,

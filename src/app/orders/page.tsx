@@ -4,32 +4,39 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import PageHeader from '@/components/shared/page-header';
-import { orders as staticOrders, type Order } from '@/lib/data';
+import { type Order } from '@/lib/data';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { ChevronRight, ShoppingBag } from 'lucide-react';
 import { format } from 'date-fns';
 import { Skeleton } from '@/components/ui/skeleton';
-
-const ORDERS_STORAGE_KEY = 'user_orders';
+import { useAuthState } from 'react-firebase-hooks/auth';
+import { auth } from '@/lib/firebase';
+import { getOrders } from '@/lib/firestore';
 
 export default function OrdersPage() {
+    const [user] = useAuthState(auth);
     const [orders, setOrders] = useState<Order[]>([]);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        try {
-            const storedOrdersRaw = localStorage.getItem(ORDERS_STORAGE_KEY);
-            const storedOrders = storedOrdersRaw ? JSON.parse(storedOrdersRaw) : staticOrders;
-            setOrders(storedOrders);
-        } catch (error) {
-            console.warn("Could not access localStorage. Using static orders.");
-            setOrders(staticOrders);
-        } finally {
-            setLoading(false);
+        const fetchOrders = async () => {
+            if (!user) {
+                setLoading(false);
+                return;
+            };
+            try {
+                const userOrders = await getOrders(user.uid);
+                setOrders(userOrders);
+            } catch (error) {
+                console.error("Could not fetch orders.", error);
+            } finally {
+                setLoading(false);
+            }
         }
-    }, []);
+        fetchOrders();
+    }, [user]);
 
     if (loading) {
         return (

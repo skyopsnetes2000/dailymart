@@ -1,7 +1,7 @@
 
 'use client';
 
-import * as React from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Table,
   TableBody,
@@ -18,12 +18,13 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Card, CardContent } from '@/components/ui/card';
-import { orders as staticOrders, Order, OrderStatus } from '@/lib/data';
+import { Order, OrderStatus } from '@/lib/data';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { useState, useEffect } from 'react';
 import { format } from 'date-fns';
 import { ChevronDown, ChevronUp } from 'lucide-react';
+import { getOrders, updateOrderStatus } from '@/lib/firestore';
+import { useToast } from '@/hooks/use-toast';
 
 const statusColors: { [key in OrderStatus]: string } = {
   Pending: 'bg-yellow-500',
@@ -36,33 +37,45 @@ const statusColors: { [key in OrderStatus]: string } = {
   Cancelled: 'bg-red-500',
 };
 
-const ORDERS_STORAGE_KEY = 'user_orders';
-
 
 export default function AdminOrdersPage() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [openOrderId, setOpenOrderId] = useState<string | null>(null);
+  const { toast } = useToast();
 
   useEffect(() => {
-    try {
-        const storedOrdersRaw = localStorage.getItem(ORDERS_STORAGE_KEY);
-        const storedOrders = storedOrdersRaw ? JSON.parse(storedOrdersRaw) : staticOrders;
-        setOrders(storedOrders);
-    } catch (error) {
-        console.warn("Could not access localStorage. Using static orders.");
-        setOrders(staticOrders);
+    const fetchOrders = async () => {
+        try {
+            const fetchedOrders = await getOrders();
+            setOrders(fetchedOrders);
+        } catch (error) {
+            console.error("Could not fetch orders.", error);
+            toast({
+                title: "Error",
+                description: "Failed to fetch orders from the database.",
+                variant: "destructive"
+            });
+        }
     }
-  }, []);
+    fetchOrders();
+  }, [toast]);
 
-  const handleStatusChange = (orderId: string, newStatus: OrderStatus) => {
-    const updatedOrders = orders.map((order) =>
-      order.id === orderId ? { ...order, status: newStatus, trackingHistory: [...order.trackingHistory, { status: newStatus, date: new Date().toISOString() }] } : order
-    );
-    setOrders(updatedOrders);
+  const handleStatusChange = async (orderId: string, newStatus: OrderStatus) => {
+    const orderToUpdate = orders.find(o => o.id === orderId);
+    if (!orderToUpdate) return;
+
+    const newTrackingHistory = [...orderToUpdate.trackingHistory, { status: newStatus, date: new Date().toISOString() }];
+
     try {
-      localStorage.setItem(ORDERS_STORAGE_KEY, JSON.stringify(updatedOrders));
+        await updateOrderStatus(orderId, newStatus, newTrackingHistory);
+        const updatedOrders = orders.map((order) =>
+          order.id === orderId ? { ...order, status: newStatus, trackingHistory: newTrackingHistory } : order
+        );
+        setOrders(updatedOrders);
+        toast({ title: "Success", description: `Order ${orderId} status updated to ${newStatus}.` });
     } catch (error) {
-      console.warn("Could not update orders in localStorage.");
+      console.error("Could not update order status.", error);
+      toast({ title: "Error", description: "Failed to update order status.", variant: "destructive" });
     }
   };
   

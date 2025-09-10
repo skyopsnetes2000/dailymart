@@ -21,11 +21,11 @@ import { Loader2, Plus, LogIn } from 'lucide-react';
 import { AddressForm, AddressSchema } from '@/components/profile/address-form';
 import { calculateDiscountedPrice } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
+import { addOrder } from '@/lib/firestore';
 
 
 type Address = z.infer<typeof AddressSchema> & { id: string };
 const ADDRESS_STORAGE_KEY = 'user_addresses';
-const ORDERS_STORAGE_KEY = 'user_orders';
 
 
 export default function CheckoutPage() {
@@ -100,7 +100,7 @@ export default function CheckoutPage() {
     return total + price * item.quantity;
   }, 0);
 
-  const handlePlaceOrder = () => {
+  const handlePlaceOrder = async () => {
     if (!selectedAddressId) {
         toast({ title: "Address Required", description: "Please select a delivery address.", variant: "destructive"});
         return;
@@ -113,41 +113,36 @@ export default function CheckoutPage() {
 
     setIsPlacingOrder(true);
     
-    // In a real app, you would process payment and save to a database here.
-    setTimeout(() => {
-      try {
-        const newOrder: Order = {
-          id: `ORD-${Date.now().toString().slice(-6)}`,
-          date: new Date().toISOString(),
-          status: 'Pending',
-          total: subtotal,
-          items: items.map(item => ({ productName: item.product.name, quantity: item.quantity })),
-          trackingHistory: [{ status: 'Pending', date: new Date().toISOString() }],
-          customerName: user.displayName || 'Guest User',
-          shippingAddress: selectedAddress,
-        };
+    try {
+      const newOrder: Omit<Order, 'id'> = {
+        userId: user.uid,
+        date: new Date().toISOString(),
+        status: 'Pending',
+        total: subtotal,
+        items: items.map(item => ({ productName: item.product.name, quantity: item.quantity })),
+        trackingHistory: [{ status: 'Pending', date: new Date().toISOString() }],
+        customerName: user.displayName || 'Guest User',
+        shippingAddress: selectedAddress,
+      };
 
-        const existingOrdersRaw = localStorage.getItem(ORDERS_STORAGE_KEY);
-        const existingOrders: Order[] = existingOrdersRaw ? JSON.parse(existingOrdersRaw) : [];
-        localStorage.setItem(ORDERS_STORAGE_KEY, JSON.stringify([newOrder, ...existingOrders]));
+      await addOrder(newOrder);
 
-        toast({
-            title: "Order Placed!",
-            description: "Your order has been successfully placed."
-        });
-        clearCart();
-        router.push('/orders');
-      } catch (error) {
-        console.error("Failed to save order", error);
-        toast({
-          title: 'Error',
-          description: 'There was a problem placing your order.',
-          variant: 'destructive',
-        });
-      } finally {
-        setIsPlacingOrder(false);
-      }
-    }, 1500);
+      toast({
+          title: "Order Placed!",
+          description: "Your order has been successfully placed."
+      });
+      clearCart();
+      router.push('/orders');
+    } catch (error) {
+      console.error("Failed to save order", error);
+      toast({
+        title: 'Error',
+        description: 'There was a problem placing your order.',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsPlacingOrder(false);
+    }
   }
 
   if (loading) {
