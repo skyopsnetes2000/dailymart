@@ -104,8 +104,9 @@ export async function seedInitialData() {
   if (categoriesSnapshot.empty) {
     console.log("Seeding categories...");
     initialCategories.forEach(category => {
-      const docRef = doc(collection(db, 'categories'));
+      const docRef = doc(categoriesCol, category.slug); // Use slug as document id for predictability
       const placeholder = PlaceHolderImages.find(p => p.id === category.imageId);
+      // We set the imageId to the actual placeholder URL now
       batch.set(docRef, { ...category, imageId: placeholder?.imageUrl || '' });
     });
     seeded = true;
@@ -114,8 +115,9 @@ export async function seedInitialData() {
   if (productsSnapshot.empty) {
     console.log("Seeding products...");
     initialProducts.forEach(product => {
-        const docRef = doc(collection(db, 'products'));
+        const docRef = doc(productsCol); // Auto-generate ID for products
         const placeholder = PlaceHolderImages.find(p => p.id === product.imageId);
+        // We set the imageId to the actual placeholder URL now
         batch.set(docRef, { ...product, imageId: placeholder?.imageUrl || '' });
     });
     seeded = true;
