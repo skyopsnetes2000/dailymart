@@ -143,7 +143,7 @@ export default function AdminProductsPage() {
     let newProducts;
     if (editingProduct) {
       newProducts = products.map((p) =>
-          p.id === editingProduct.id ? { ...editingProduct, ...data, imageId: editingProduct.imageId } : p
+          p.id === editingProduct.id ? { ...editingProduct, ...data, imageId } : p
         );
     } else {
       newProducts = [
