@@ -68,7 +68,7 @@ export default function LoginPage() {
         return;
       }
       toast({ title: "Success", description: "Logged in successfully!" });
-      router.push('/profile');
+      router.push('/');
     } catch (error: any) {
       console.error("Login Error:", error);
       toast({

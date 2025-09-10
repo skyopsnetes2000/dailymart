@@ -1,16 +1,44 @@
+'use client';
+
 import PageHeader from "@/components/shared/page-header";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { user } from "@/lib/data";
+import { user as staticUser } from "@/lib/data";
 import ProfileForm from "@/components/profile/profile-form";
 import AddressManager from "@/components/profile/address-manager";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import { LogIn } from "lucide-react";
+import { LogIn, Loader2 } from "lucide-react";
+import { useAuthState } from "react-firebase-hooks/auth";
+import { auth } from "@/lib/firebase";
+import { useEffect } from "react";
+import { useRouter } from "next/navigation";
 
 export default function ProfilePage() {
-  const isLoggedIn = false; // This will be dynamic in a real app
+  const [user, loading] = useAuthState(auth);
+  const router = useRouter();
 
-  if (!isLoggedIn) {
+  useEffect(() => {
+    // This could be extracted into a higher-order component or middleware
+    if (!loading && !user) {
+      // User is not logged in, you can keep them on this page to show login options
+      // or redirect them. For now, we show the login prompt.
+    }
+  }, [user, loading, router]);
+
+
+  if (loading) {
+    return (
+        <div>
+            <PageHeader title="Profile" />
+            <div className="flex h-[60vh] flex-col items-center justify-center">
+                <Loader2 className="h-16 w-16 animate-spin text-muted-foreground" />
+                <p className="mt-4 text-muted-foreground">Loading profile...</p>
+            </div>
+        </div>
+    )
+  }
+
+  if (!user) {
     return (
       <div>
         <PageHeader title="Profile" />
@@ -31,6 +59,11 @@ export default function ProfilePage() {
     );
   }
 
+  const profileData = {
+      name: user.displayName || staticUser.name,
+      email: user.email || staticUser.email,
+  }
+
   return (
     <div>
       <PageHeader title="My Profile" />
@@ -41,10 +74,10 @@ export default function ProfilePage() {
             <TabsTrigger value="addresses">Addresses</TabsTrigger>
           </TabsList>
           <TabsContent value="profile" className="mt-6">
-            <ProfileForm user={user} />
+            <ProfileForm user={profileData} />
           </TabsContent>
           <TabsContent value="addresses" className="mt-6">
-            <AddressManager addresses={user.addresses} />
+            <AddressManager addresses={staticUser.addresses} />
           </TabsContent>
         </Tabs>
 
