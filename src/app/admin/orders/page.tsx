@@ -20,16 +20,10 @@ import { Card, CardContent } from '@/components/ui/card';
 import { orders as staticOrders, Order, OrderStatus } from '@/lib/data';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Eye } from 'lucide-react';
 import Link from 'next/link';
 import { useState, useEffect } from 'react';
 import { format } from 'date-fns';
-import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
-} from '@/components/ui/collapsible';
-import { ChevronDown } from 'lucide-react';
+import { ChevronDown, ChevronUp } from 'lucide-react';
 
 const statusColors: { [key in OrderStatus]: string } = {
   Pending: 'bg-yellow-500',
@@ -47,6 +41,7 @@ const ORDERS_STORAGE_KEY = 'user_orders';
 
 export default function AdminOrdersPage() {
   const [orders, setOrders] = useState<Order[]>([]);
+  const [openOrderId, setOpenOrderId] = useState<string | null>(null);
 
   useEffect(() => {
     try {
@@ -70,6 +65,10 @@ export default function AdminOrdersPage() {
       console.warn("Could not update orders in localStorage.");
     }
   };
+  
+  const toggleRow = (orderId: string) => {
+    setOpenOrderId(openOrderId === orderId ? null : orderId);
+  }
 
   const orderStatuses: OrderStatus[] = [
     'Pending',
@@ -100,8 +99,7 @@ export default function AdminOrdersPage() {
             </TableHeader>
             <TableBody>
               {orders.map((order) => (
-                <Collapsible asChild key={order.id}>
-                  <>
+                  <React.Fragment key={order.id}>
                     <TableRow>
                       <TableCell className="font-medium">{order.id}</TableCell>
                       <TableCell>
@@ -141,14 +139,12 @@ export default function AdminOrdersPage() {
                         </Select>
                       </TableCell>
                       <TableCell className='text-right'>
-                        <CollapsibleTrigger asChild>
-                           <Button variant="ghost" size="icon">
-                              <ChevronDown className="h-4 w-4" />
+                           <Button variant="ghost" size="icon" onClick={() => toggleRow(order.id)}>
+                              {openOrderId === order.id ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
                            </Button>
-                        </CollapsibleTrigger>
                       </TableCell>
                     </TableRow>
-                    <CollapsibleContent asChild>
+                    {openOrderId === order.id && (
                        <TableRow>
                          <TableCell colSpan={6} className='p-0'>
                             <div className='bg-muted/50 p-4'>
@@ -173,9 +169,8 @@ export default function AdminOrdersPage() {
                             </div>
                          </TableCell>
                        </TableRow>
-                    </CollapsibleContent>
-                  </>
-                </Collapsible>
+                    )}
+                  </React.Fragment>
               ))}
             </TableBody>
           </Table>
