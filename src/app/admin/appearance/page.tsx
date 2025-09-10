@@ -18,26 +18,17 @@ import {
   FormMessage,
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { PlaceHolderImages } from '@/lib/placeholder-images';
-import Image from 'next/image';
 
 const appearanceSchema = z.object({
   heroTitle: z.string().min(1),
   heroSubtitle: z.string().min(1),
-  heroImageId: z.string().min(1),
-  ad1ImageId: z.string().min(1),
-  ad2ImageId: z.string().min(1),
-  ad3ImageId: z.string().min(1),
+  heroImage: z.any(),
+  ad1Image: z.any(),
+  ad2Image: z.any(),
+  ad3Image: z.any(),
 });
 
 export default function AdminAppearancePage() {
@@ -46,10 +37,6 @@ export default function AdminAppearancePage() {
     defaultValues: {
       heroTitle: 'Freshness at Your Fingertips',
       heroSubtitle: 'The best groceries, delivered fresh to your door daily.',
-      heroImageId: 'hero-bg',
-      ad1ImageId: 'ad-pharmacy',
-      ad2ImageId: 'ad-pet-care',
-      ad3ImageId: 'ad-baby-care',
     },
   });
 
@@ -100,36 +87,13 @@ export default function AdminAppearancePage() {
               />
               <FormField
                 control={form.control}
-                name="heroImageId"
+                name="heroImage"
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Background Image</FormLabel>
-                    <Select
-                      onValueChange={field.onChange}
-                      defaultValue={field.value}
-                    >
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select an image" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        {PlaceHolderImages.map((image) => (
-                          <SelectItem key={image.id} value={image.id}>
-                            <div className="flex items-center gap-2">
-                              <Image
-                                src={image.imageUrl}
-                                alt={image.description}
-                                width={24}
-                                height={24}
-                                className="rounded-sm object-cover"
-                              />
-                              <span>{image.description}</span>
-                            </div>
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                    <FormControl>
+                      <Input type="file" onChange={(e) => field.onChange(e.target.files)} />
+                    </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
@@ -147,81 +111,39 @@ export default function AdminAppearancePage() {
             <CardContent className="space-y-4">
               <FormField
                 control={form.control}
-                name="ad1ImageId"
+                name="ad1Image"
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Advertisement 1</FormLabel>
-                     <Select onValueChange={field.onChange} defaultValue={field.value}>
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select an image" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          {PlaceHolderImages.filter(img => img.id.startsWith('ad-')).map((image) => (
-                            <SelectItem key={image.id} value={image.id}>
-                               <div className="flex items-center gap-2">
-                                <Image src={image.imageUrl} alt={image.description} width={24} height={24} className="rounded-sm object-cover" />
-                                <span>{image.description}</span>
-                              </div>
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                     <FormControl>
+                      <Input type="file" onChange={(e) => field.onChange(e.target.files)} />
+                    </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
               />
                <FormField
                 control={form.control}
-                name="ad2ImageId"
+                name="ad2Image"
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Advertisement 2</FormLabel>
-                     <Select onValueChange={field.onChange} defaultValue={field.value}>
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select an image" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          {PlaceHolderImages.filter(img => img.id.startsWith('ad-')).map((image) => (
-                            <SelectItem key={image.id} value={image.id}>
-                               <div className="flex items-center gap-2">
-                                <Image src={image.imageUrl} alt={image.description} width={24} height={24} className="rounded-sm object-cover" />
-                                <span>{image.description}</span>
-                              </div>
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                    <FormControl>
+                      <Input type="file" onChange={(e) => field.onChange(e.target.files)} />
+                    </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
               />
                <FormField
                 control={form.control}
-                name="ad3ImageId"
+                name="ad3Image"
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Advertisement 3</FormLabel>
-                     <Select onValueChange={field.onChange} defaultValue={field.value}>
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select an image" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          {PlaceHolderImages.filter(img => img.id.startsWith('ad-')).map((image) => (
-                            <SelectItem key={image.id} value={image.id}>
-                               <div className="flex items-center gap-2">
-                                <Image src={image.imageUrl} alt={image.description} width={24} height={24} className="rounded-sm object-cover" />
-                                <span>{image.description}</span>
-                              </div>
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                    <FormControl>
+                      <Input type="file" onChange={(e) => field.onChange(e.target.files)} />
+                    </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}

@@ -32,14 +32,13 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { categories as initialCategories } from '@/lib/data';
 import { Pencil, PlusCircle, Trash2 } from 'lucide-react';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
 import Image from 'next/image';
 
 const categorySchema = z.object({
   name: z.string().min(1, 'Name is required'),
   slug: z.string().min(1, 'Slug is required'),
-  imageId: z.string().min(1, 'Image is required'),
+  image: z.any(),
 });
 
 export default function AdminCategoriesPage() {
@@ -55,13 +54,17 @@ export default function AdminCategoriesPage() {
   
   const handleAddNew = () => {
     setEditingCategory(null);
-    form.reset({ name: '', slug: '', imageId: '' });
+    form.reset({ name: '', slug: '', image: null });
     setIsDialogOpen(true);
   };
 
   const handleEdit = (category: (typeof initialCategories)[0]) => {
     setEditingCategory(category);
-    form.reset(category);
+    form.reset({
+      name: category.name,
+      slug: category.slug,
+      image: null
+    });
     setIsDialogOpen(true);
   };
 
@@ -70,16 +73,18 @@ export default function AdminCategoriesPage() {
   };
 
   const onSubmit = (data: z.infer<typeof categorySchema>) => {
+    // In a real app, you'd upload the image and get a URL
+    const imageId = 'category-new'; // Placeholder
     if (editingCategory) {
       setCategories(
         categories.map((c) =>
-          c.id === editingCategory.id ? { ...c, ...data } : c
+          c.id === editingCategory.id ? { ...c, name: data.name, slug: data.slug, imageId: c.imageId } : c
         )
       );
     } else {
       setCategories([
         ...categories,
-        { ...data, id: (categories.length + 1).toString() },
+        { ...data, id: (categories.length + 1).toString(), imageId },
       ]);
     }
     setIsDialogOpen(false);
@@ -141,27 +146,13 @@ export default function AdminCategoriesPage() {
               />
                <FormField
                   control={form.control}
-                  name="imageId"
+                  name="image"
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Category Image</FormLabel>
-                      <Select onValueChange={field.onChange} defaultValue={field.value}>
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select an image" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          {PlaceHolderImages.filter(img => img.id.startsWith('category-')).map((image) => (
-                            <SelectItem key={image.id} value={image.id}>
-                              <div className="flex items-center gap-2">
-                                <Image src={image.imageUrl} alt={image.description} width={24} height={24} className="rounded-sm object-cover" />
-                                <span>{image.description}</span>
-                              </div>
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                      <FormControl>
+                          <Input type="file" onChange={(e) => field.onChange(e.target.files)} />
+                      </FormControl>
                       <FormMessage />
                     </FormItem>
                   )}

@@ -50,7 +50,7 @@ const productSchema = z.object({
   price: z.coerce.number().min(0.01, 'Price must be greater than 0'),
   weight: z.string().min(1, 'Weight is required'),
   categorySlug: z.string().min(1, 'Category is required'),
-  imageId: z.string().min(1, 'Image is required'),
+  image: z.any(),
 });
 
 export default function AdminProductsPage() {
@@ -66,7 +66,7 @@ export default function AdminProductsPage() {
 
   const handleEdit = (product: (typeof initialProducts)[0]) => {
     setEditingProduct(product);
-    form.reset(product);
+    form.reset({...product, image: null});
     setIsDialogOpen(true);
   };
   
@@ -78,7 +78,7 @@ export default function AdminProductsPage() {
       price: 0,
       weight: '',
       categorySlug: '',
-      imageId: '',
+      image: null,
     });
     setIsDialogOpen(true);
   }
@@ -88,16 +88,18 @@ export default function AdminProductsPage() {
   };
 
   const onSubmit = (data: z.infer<typeof productSchema>) => {
+    // In a real app, you would upload the image and get back a URL/ID
+    const imageId = 'product-new'; // Placeholder for now
     if (editingProduct) {
       setProducts(
         products.map((p) =>
-          p.id === editingProduct.id ? { ...p, ...data } : p
+          p.id === editingProduct.id ? { ...editingProduct, ...data, imageId: editingProduct.imageId } : p
         )
       );
     } else {
       setProducts([
         ...products,
-        { ...data, id: (products.length + 1).toString() },
+        { ...data, id: (products.length + 1).toString(), imageId },
       ]);
     }
     setIsDialogOpen(false);
@@ -216,27 +218,13 @@ export default function AdminProductsPage() {
               </div>
               <FormField
                   control={form.control}
-                  name="imageId"
+                  name="image"
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Product Image</FormLabel>
-                      <Select onValueChange={field.onChange} defaultValue={field.value}>
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select an image" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          {PlaceHolderImages.filter(img => img.id.startsWith('product-')).map((image) => (
-                            <SelectItem key={image.id} value={image.id}>
-                              <div className="flex items-center gap-2">
-                                <Image src={image.imageUrl} alt={image.description} width={24} height={24} className="rounded-sm object-cover" />
-                                <span>{image.description}</span>
-                              </div>
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                      <FormControl>
+                        <Input type="file" onChange={(e) => field.onChange(e.target.files)} />
+                      </FormControl>
                       <FormMessage />
                     </FormItem>
                   )}
