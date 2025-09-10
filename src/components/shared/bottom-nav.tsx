@@ -12,7 +12,6 @@ const navItems = [
   { href: '/products', label: 'Products', icon: Archive },
   { href: '/cart', label: 'Cart', icon: ShoppingCart },
   { href: '/profile', label: 'Profile', icon: User },
-  { href: '/admin', label: 'Admin', icon: UserCog },
 ];
 
 export default function BottomNav() {
@@ -25,7 +24,7 @@ export default function BottomNav() {
 
   return (
     <nav className="fixed bottom-0 left-0 right-0 z-50 h-20 border-t bg-card/80 backdrop-blur-sm">
-      <div className="mx-auto grid h-full max-w-lg grid-cols-6 font-medium">
+      <div className="mx-auto grid h-full max-w-lg grid-cols-5 font-medium">
         {navItems.map((item) => {
           const isActive = (pathname === '/' && item.href === '/') || (pathname !== '/' && item.href !== '/' && pathname.startsWith(item.href));
           return (

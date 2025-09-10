@@ -14,6 +14,8 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const pathname = usePathname();
+  const showBottomNav = !pathname.startsWith('/admin') && pathname !== '/login';
   
   return (
     <html lang="en" suppressHydrationWarning>
@@ -25,7 +27,7 @@ export default function RootLayout({
       <body className="font-body antialiased">
         <div className="pb-20">{children}</div>
         <Toaster />
-        <BottomNav />
+        {showBottomNav && <BottomNav />}
       </body>
     </html>
   );

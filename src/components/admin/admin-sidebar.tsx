@@ -41,17 +41,17 @@ export default function AdminSidebar() {
           </Link>
         ))}
       </nav>
-      <Separator />
-       <div className="p-4">
-         <Link
-            href="/"
-            className={cn(
-              'flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary'
-            )}
-          >
-            <ArrowUpRightFromSquare className="h-4 w-4" />
-            View Store
-          </Link>
+      <div className="mt-auto p-4">
+        <Separator className="my-2" />
+        <Link
+          href="/"
+          className={cn(
+            'flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary'
+          )}
+        >
+          <ArrowUpRightFromSquare className="h-4 w-4" />
+          View Store
+        </Link>
       </div>
     </aside>
   );
