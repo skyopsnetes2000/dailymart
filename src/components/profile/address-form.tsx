@@ -8,13 +8,17 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Checkbox } from '@/components/ui/checkbox';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
+import { Loader2, LocateFixed } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
 
 export const AddressSchema = z.object({
   line1: z.string().min(1, 'Address is required.'),
+  landmark: z.string().optional(),
   city: z.string().min(1, 'City is required.'),
   state: z.string().min(1, 'State is required.'),
   zip: z.string().min(1, 'ZIP code is required.'),
+  mobile: z.string().min(10, 'A valid mobile number is required.'),
   isDefault: z.boolean().default(false),
 });
 
@@ -26,25 +30,32 @@ type AddressFormProps = {
 };
 
 export function AddressForm({ isOpen, onClose, onSave, address }: AddressFormProps) {
+  const { toast } = useToast();
+  const [isLocating, setIsLocating] = useState(false);
+  
   const form = useForm<z.infer<typeof AddressSchema>>({
     resolver: zodResolver(AddressSchema),
     defaultValues: address || {
       line1: '',
+      landmark: '',
       city: '',
       state: '',
       zip: '',
+      mobile: '',
       isDefault: false,
     },
   });
 
   useEffect(() => {
     form.reset(address || {
-        line1: '',
-        city: '',
-        state: '',
-        zip: '',
-        isDefault: false,
-      });
+      line1: '',
+      landmark: '',
+      city: '',
+      state: '',
+      zip: '',
+      mobile: '',
+      isDefault: false,
+    });
   }, [address, form]);
 
 
@@ -52,6 +63,32 @@ export function AddressForm({ isOpen, onClose, onSave, address }: AddressFormPro
     onSave(data);
     onClose();
   };
+
+  const handleUseCurrentLocation = () => {
+    setIsLocating(true);
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          // In a real app, you'd use a reverse geocoding service here.
+          // For now, we'll just fill in with placeholder data.
+          form.setValue('line1', '1600 Amphitheatre Parkway');
+          form.setValue('city', 'Mountain View');
+          form.setValue('state', 'CA');
+          form.setValue('zip', '94043');
+          setIsLocating(false);
+          toast({ title: "Location Filled", description: "Address details have been pre-filled." });
+        },
+        (error) => {
+          console.error("Geolocation error:", error);
+          toast({ title: "Error", description: "Could not retrieve your location.", variant: "destructive" });
+          setIsLocating(false);
+        }
+      );
+    } else {
+      toast({ title: "Error", description: "Geolocation is not supported by your browser.", variant: "destructive" });
+      setIsLocating(false);
+    }
+  }
   
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -64,6 +101,14 @@ export function AddressForm({ isOpen, onClose, onSave, address }: AddressFormPro
         </DialogHeader>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 py-4">
+            <Button type="button" variant="outline" className="w-full" onClick={handleUseCurrentLocation} disabled={isLocating}>
+              {isLocating ? (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              ) : (
+                <LocateFixed className="mr-2 h-4 w-4" />
+              )}
+              Use My Current Location
+            </Button>
             <FormField
               control={form.control}
               name="line1"
@@ -72,6 +117,19 @@ export function AddressForm({ isOpen, onClose, onSave, address }: AddressFormPro
                   <FormLabel>Address Line 1</FormLabel>
                   <FormControl>
                     <Input placeholder="123 Main St" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="landmark"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Landmark (optional)</FormLabel>
+                  <FormControl>
+                    <Input placeholder="Near the park" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -118,6 +176,19 @@ export function AddressForm({ isOpen, onClose, onSave, address }: AddressFormPro
                 </FormItem>
               )}
             />
+             <FormField
+                control={form.control}
+                name="mobile"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Mobile Number</FormLabel>
+                    <FormControl>
+                      <Input type="tel" placeholder="123-456-7890" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
             <FormField
               control={form.control}
               name="isDefault"

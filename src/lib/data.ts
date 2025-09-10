@@ -24,6 +24,17 @@ export type Order = {
   trackingHistory: { status: string; date: string; }[];
 };
 
+export type Address = {
+    id: string;
+    line1: string;
+    landmark?: string;
+    city: string;
+    state: string;
+    zip: string;
+    mobile: string;
+    isDefault: boolean;
+}
+
 export const categories: Category[] = [
   { id: '1', name: 'Fresh Vegetables', slug: 'fresh-vegetables', imageId: 'category-veg' },
   { id: '2', name: 'Fresh Fruits', slug: 'fresh-fruits', imageId: 'category-fruits' },
@@ -48,8 +59,8 @@ export const user = {
   name: 'Alex Doe',
   email: 'alex.doe@example.com',
   addresses: [
-    { id: '1', line1: '123 Market St', city: 'Greenfield', state: 'CA', zip: '90210', isDefault: true },
-    { id: '2', line1: '456 Farm Rd', city: 'Spring Valley', state: 'CA', zip: '90211', isDefault: false },
+    { id: '1', line1: '123 Market St', city: 'Greenfield', state: 'CA', zip: '90210', mobile: '111-222-3333', isDefault: true, landmark: 'Next to the fountain' },
+    { id: '2', line1: '456 Farm Rd', city: 'Spring Valley', state: 'CA', zip: '90211', mobile: '444-555-6666', isDefault: false },
   ]
 };
 

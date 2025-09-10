@@ -9,14 +9,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { AddressForm, AddressSchema } from './address-form';
 import type { z } from 'zod';
 
-type Address = {
-  id: string;
-  line1: string;
-  city: string;
-  state: string;
-  zip: string;
-  isDefault: boolean;
-};
+type Address = z.infer<typeof AddressSchema> & { id: string };
 
 export default function AddressManager({ addresses: initialAddresses }: { addresses: Address[] }) {
   const [addresses, setAddresses] = useState(initialAddresses);
@@ -76,6 +69,9 @@ export default function AddressManager({ addresses: initialAddresses }: { addres
                 </CardTitle>
                 <CardDescription>
                   {address.city}, {address.state} {address.zip}
+                </CardDescription>
+                 <CardDescription>
+                  {address.mobile}
                 </CardDescription>
               </div>
               {address.isDefault && <Badge variant="outline">Default</Badge>}
