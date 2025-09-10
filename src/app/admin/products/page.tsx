@@ -39,7 +39,7 @@ import {
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { products as initialProducts, categories, type Product } from '@/lib/data';
+import { products as initialProducts, categories as initialCategories, type Product, type Category } from '@/lib/data';
 import { Pencil, PlusCircle, Trash2 } from 'lucide-react';
 import Image from 'next/image';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
@@ -53,33 +53,50 @@ const productSchema = z.object({
   image: z.any(),
 });
 
-const STORAGE_KEY = 'admin_products';
+const PRODUCTS_STORAGE_KEY = 'admin_products';
+const CATEGORIES_STORAGE_KEY = 'admin_categories';
 
 
 export default function AdminProductsPage() {
   const [products, setProducts] = useState<Product[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
 
   useEffect(() => {
+    // Load products
     try {
-      const storedProducts = localStorage.getItem(STORAGE_KEY);
+      const storedProducts = localStorage.getItem(PRODUCTS_STORAGE_KEY);
       if (storedProducts) {
         setProducts(JSON.parse(storedProducts));
       } else {
         setProducts(initialProducts);
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(initialProducts));
+        localStorage.setItem(PRODUCTS_STORAGE_KEY, JSON.stringify(initialProducts));
       }
     } catch (error) {
-      console.warn("Could not access localStorage. Using initial products.");
+      console.warn("Could not access localStorage for products. Using initial products.");
       setProducts(initialProducts);
+    }
+    
+    // Load categories
+    try {
+      const storedCategories = localStorage.getItem(CATEGORIES_STORAGE_KEY);
+      if (storedCategories) {
+        setCategories(JSON.parse(storedCategories));
+      } else {
+        setCategories(initialCategories);
+        localStorage.setItem(CATEGORIES_STORAGE_KEY, JSON.stringify(initialCategories));
+      }
+    } catch (error) {
+      console.warn("Could not access localStorage for categories. Using initial categories.");
+      setCategories(initialCategories);
     }
   }, []);
 
   const updateAndPersistProducts = (newProducts: Product[]) => {
     setProducts(newProducts);
     try {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(newProducts));
+        localStorage.setItem(PRODUCTS_STORAGE_KEY, JSON.stringify(newProducts));
     } catch (error) {
         console.warn("Could not save products to localStorage.");
     }
