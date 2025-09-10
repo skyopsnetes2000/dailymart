@@ -2,16 +2,18 @@
 
 import PageHeader from "@/components/shared/page-header";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { user as staticUser } from "@/lib/data";
+import { user as staticUser, orders } from "@/lib/data";
 import ProfileForm from "@/components/profile/profile-form";
 import AddressManager from "@/components/profile/address-manager";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import { LogIn, Loader2 } from "lucide-react";
+import { LogIn, Loader2, ChevronRight } from "lucide-react";
 import { useAuthState } from "react-firebase-hooks/auth";
 import { auth } from "@/lib/firebase";
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 
 export default function ProfilePage() {
   const [user, loading] = useAuthState(auth);
@@ -64,6 +66,8 @@ export default function ProfilePage() {
       email: user.email || staticUser.email,
   }
 
+  const recentOrders = orders.slice(0, 3);
+
   return (
     <div>
       <PageHeader title="My Profile" />
@@ -82,11 +86,38 @@ export default function ProfilePage() {
         </Tabs>
 
         <div className="mt-8 border-t pt-8">
-            <h3 className="text-lg font-semibold mb-4">My Orders</h3>
-            <p className="text-muted-foreground mb-4">View your past and current orders.</p>
-            <Button asChild>
-                <Link href="/orders">View All Orders</Link>
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-lg font-semibold">My Recent Orders</h3>
+               <Button asChild variant="link">
+                <Link href="/orders">View All</Link>
             </Button>
+            </div>
+            
+            <div className="space-y-4">
+                {recentOrders.map(order => (
+                    <Card key={order.id}>
+                        <CardHeader>
+                            <div className='flex justify-between items-center'>
+                                <div>
+                                    <CardTitle className="text-base">{order.id}</CardTitle>
+                                    <CardDescription>Placed on {new Date(order.date).toLocaleDateString()}</CardDescription>
+                                </div>
+                                <Badge variant={order.status === 'Delivered' ? 'default' : 'secondary'}>{order.status}</Badge>
+                            </div>
+                        </CardHeader>
+                        <CardContent>
+                            <p className="font-semibold text-base">${order.total.toFixed(2)}</p>
+                        </CardContent>
+                         <CardFooter>
+                            <Button asChild variant="outline" size="sm" className="w-full sm:w-auto">
+                                <Link href={`/orders/${order.id}`}>
+                                    View Details <ChevronRight className="ml-2 h-4 w-4" />
+                                </Link>
+                            </Button>
+                        </CardFooter>
+                    </Card>
+                ))}
+            </div>
         </div>
       </div>
     </div>
