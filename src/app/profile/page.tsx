@@ -73,9 +73,10 @@ export default function ProfilePage() {
       <PageHeader title="My Profile" />
       <div className="p-4 sm:p-6">
         <Tabs defaultValue="profile" className="w-full">
-          <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="profile">Profile Details</TabsTrigger>
+          <TabsList className="grid w-full grid-cols-3">
+            <TabsTrigger value="profile">Profile</TabsTrigger>
             <TabsTrigger value="addresses">Addresses</TabsTrigger>
+            <TabsTrigger value="orders">Orders</TabsTrigger>
           </TabsList>
           <TabsContent value="profile" className="mt-6">
             <ProfileForm user={profileData} />
@@ -83,17 +84,14 @@ export default function ProfilePage() {
           <TabsContent value="addresses" className="mt-6">
             <AddressManager addresses={staticUser.addresses} />
           </TabsContent>
-        </Tabs>
-
-        <div className="mt-8 border-t pt-8">
-            <div className="flex justify-between items-center mb-4">
-              <h3 className="text-lg font-semibold">My Recent Orders</h3>
-               <Button asChild variant="link">
-                <Link href="/orders">View All</Link>
-            </Button>
-            </div>
-            
-            <div className="space-y-4">
+          <TabsContent value="orders" className="mt-6">
+             <div className="space-y-4">
+                <div className="flex justify-between items-center mb-4">
+                    <h3 className="text-lg font-semibold">My Recent Orders</h3>
+                    <Button asChild variant="link">
+                        <Link href="/orders">View All</Link>
+                    </Button>
+                </div>
                 {recentOrders.map(order => (
                     <Card key={order.id}>
                         <CardHeader>
@@ -118,7 +116,8 @@ export default function ProfilePage() {
                     </Card>
                 ))}
             </div>
-        </div>
+          </TabsContent>
+        </Tabs>
       </div>
     </div>
   );
