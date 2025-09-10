@@ -13,6 +13,11 @@ import {
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import { auth } from '@/lib/firebase';
+import { updateProfile } from 'firebase/auth';
+import { useToast } from '@/hooks/use-toast';
+import { useState } from 'react';
+import { Loader2 } from 'lucide-react';
 
 const profileSchema = z.object({
   name: z.string().min(2, 'Name must be at least 2 characters.'),
@@ -22,6 +27,8 @@ const profileSchema = z.object({
 type ProfileFormValues = z.infer<typeof profileSchema>;
 
 export default function ProfileForm({ user }: { user: { name: string; email: string } }) {
+  const { toast } = useToast();
+  const [isLoading, setIsLoading] = useState(false);
   const form = useForm<ProfileFormValues>({
     resolver: zodResolver(profileSchema),
     defaultValues: {
@@ -30,9 +37,29 @@ export default function ProfileForm({ user }: { user: { name: string; email: str
     },
   });
 
-  function onSubmit(data: ProfileFormValues) {
-    console.log(data);
-    // Here you would typically call an API to update the user's profile
+  async function onSubmit(data: ProfileFormValues) {
+    setIsLoading(true);
+    try {
+      const currentUser = auth.currentUser;
+      if (currentUser) {
+        await updateProfile(currentUser, { displayName: data.name });
+        toast({
+          title: 'Success',
+          description: 'Your profile has been updated.',
+        });
+      } else {
+        throw new Error('No user is currently signed in.');
+      }
+    } catch (error: any) {
+      console.error("Profile Update Error:", error);
+      toast({
+        title: 'Update Failed',
+        description: error.message || 'An unexpected error occurred.',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsLoading(false);
+    }
   }
 
   return (
@@ -63,7 +90,7 @@ export default function ProfileForm({ user }: { user: { name: string; email: str
                 <FormItem>
                   <FormLabel>Email</FormLabel>
                   <FormControl>
-                    <Input type="email" placeholder="your@email.com" {...field} />
+                    <Input type="email" placeholder="your@email.com" {...field} readOnly disabled />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -71,7 +98,10 @@ export default function ProfileForm({ user }: { user: { name: string; email: str
             />
           </CardContent>
           <CardFooter>
-            <Button type="submit">Save Changes</Button>
+            <Button type="submit" disabled={isLoading}>
+              {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              Save Changes
+            </Button>
           </CardFooter>
         </form>
       </Form>
