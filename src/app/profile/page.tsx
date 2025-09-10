@@ -5,8 +5,32 @@ import ProfileForm from "@/components/profile/profile-form";
 import AddressManager from "@/components/profile/address-manager";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
+import { LogIn } from "lucide-react";
 
 export default function ProfilePage() {
+  const isLoggedIn = user; // This will be dynamic in a real app
+
+  if (!isLoggedIn) {
+    return (
+      <div>
+        <PageHeader title="Profile" />
+        <div className="flex h-[60vh] flex-col items-center justify-center gap-4 text-center">
+            <LogIn className="h-16 w-16 text-muted-foreground" />
+            <h2 className="text-xl font-semibold">Login to view your profile</h2>
+            <p className="text-muted-foreground">You need to be logged in to access your profile and orders.</p>
+            <div className="flex gap-4">
+                <Button asChild>
+                    <Link href="/login">Login</Link>
+                </Button>
+                <Button asChild variant="outline">
+                    <Link href="/login">Sign Up</Link>
+                </Button>
+            </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div>
       <PageHeader title="My Profile" />
