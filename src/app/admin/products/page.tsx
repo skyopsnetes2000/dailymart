@@ -72,7 +72,9 @@ export default function AdminProductsPage() {
         setProducts(JSON.parse(storedProducts));
       } else {
         setProducts(initialProducts);
-        localStorage.setItem(PRODUCTS_STORAGE_KEY, JSON.stringify(initialProducts));
+        if (typeof window !== 'undefined') {
+          localStorage.setItem(PRODUCTS_STORAGE_KEY, JSON.stringify(initialProducts));
+        }
       }
     } catch (error) {
       console.warn("Could not access localStorage for products. Using initial products.");
@@ -86,7 +88,9 @@ export default function AdminProductsPage() {
         setCategories(JSON.parse(storedCategories));
       } else {
         setCategories(initialCategories);
-        localStorage.setItem(CATEGORIES_STORAGE_KEY, JSON.stringify(initialCategories));
+         if (typeof window !== 'undefined') {
+          localStorage.setItem(CATEGORIES_STORAGE_KEY, JSON.stringify(initialCategories));
+        }
       }
     } catch (error) {
       console.warn("Could not access localStorage for categories. Using initial categories.");
@@ -132,7 +136,10 @@ export default function AdminProductsPage() {
 
   const onSubmit = (data: z.infer<typeof productSchema>) => {
     // In a real app, you would upload the image and get back a URL/ID
-    const imageId = 'product-new'; // Placeholder for now
+    const productImages = PlaceHolderImages.filter(img => img.id.startsWith('product-'));
+    const randomImage = productImages[Math.floor(Math.random() * productImages.length)];
+    const imageId = randomImage.id;
+    
     let newProducts;
     if (editingProduct) {
       newProducts = products.map((p) =>
