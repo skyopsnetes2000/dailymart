@@ -1,3 +1,19 @@
 {
-  "placeholderImages": []
+  "placeholderImages": [
+    { "id": "hero-bg", "description": "A background image showing fresh groceries.", "imageUrl": "https://picsum.photos/seed/101/1200/800", "imageHint": "fresh groceries" },
+    { "id": "category-veg", "description": "An assortment of fresh vegetables.", "imageUrl": "https://picsum.photos/seed/102/400/300", "imageHint": "fresh vegetables" },
+    { "id": "category-fruits", "description": "An assortment of fresh fruits.", "imageUrl": "https://picsum.photos/seed/103/400/300", "imageHint": "fresh fruit" },
+    { "id": "category-dairy", "description": "Dairy products like milk and cheese.", "imageUrl": "https://picsum.photos/seed/104/400/300", "imageHint": "dairy products" },
+    { "id": "category-bakery", "description": "Bakery items like bread and pastries.", "imageUrl": "https://picsum.photos/seed/105/400/300", "imageHint": "fresh bread" },
+    { "id": "category-meat", "description": "Fresh cuts of meat and fish.", "imageUrl": "https://picsum.photos/seed/106/400/300", "imageHint": "raw meat" },
+    { "id": "category-beverages", "description": "Various beverages.", "imageUrl": "https://picsum.photos/seed/107/400/300", "imageHint": "juice bottles" },
+    { "id": "product-banana", "description": "A bunch of bananas.", "imageUrl": "https://picsum.photos/seed/201/400/300", "imageHint": "bananas" },
+    { "id": "product-eggs", "description": "A carton of eggs.", "imageUrl": "https://picsum.photos/seed/202/400/300", "imageHint": "carton eggs" },
+    { "id": "product-milk", "description": "A bottle of milk.", "imageUrl": "https://picsum.photos/seed/203/400/300", "imageHint": "milk bottle" },
+    { "id": "product-bread", "description": "A loaf of bread.", "imageUrl": "https://picsum.photos/seed/204/400/300", "imageHint": "sourdough bread" },
+    { "id": "product-tomatoes", "description": "Fresh tomatoes.", "imageUrl": "https://picsum.photos/seed/205/400/300", "imageHint": "tomatoes vine" },
+    { "id": "product-carrots", "description": "A bunch of carrots.", "imageUrl": "https://picsum.photos/seed/206/400/300", "imageHint": "carrots" },
+    { "id": "product-apples", "description": "Green apples.", "imageUrl": "https://picsum.photos/seed/207/400/300", "imageHint": "green apples" },
+    { "id": "product-chicken", "description": "Raw chicken breast.", "imageUrl": "https://picsum.photos/seed/208/400/300", "imageHint": "chicken breast" }
+  ]
 }
