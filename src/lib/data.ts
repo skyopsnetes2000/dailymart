@@ -38,6 +38,8 @@ export type Order = {
   total: number;
   items: { productName: string, quantity: number }[];
   trackingHistory: { status: string; date: string; }[];
+  customerName: string;
+  shippingAddress: Address;
 };
 
 export type Address = {
@@ -111,7 +113,9 @@ export const orders: Order[] = [
             { status: 'Packed', date: '2023-10-26T12:00:00Z' },
             { status: 'Out for Delivery', date: '2023-10-26T14:00:00Z' },
             { status: 'Delivered', date: '2023-10-26T16:30:00Z' },
-        ]
+        ],
+        customerName: 'John Doe',
+        shippingAddress: user.addresses[0],
     },
     {
         id: 'ORD-67890',
@@ -126,6 +130,8 @@ export const orders: Order[] = [
             { status: 'Pending', date: '2023-10-27T11:30:00Z' },
             { status: 'Packed', date: '2023-10-27T13:00:00Z' },
             { status: 'Out for Delivery', date: '2023-10-27T15:00:00Z' },
-        ]
+        ],
+        customerName: 'John Doe',
+        shippingAddress: user.addresses[1],
     },
 ];

@@ -24,6 +24,12 @@ import { Eye } from 'lucide-react';
 import Link from 'next/link';
 import { useState, useEffect } from 'react';
 import { format } from 'date-fns';
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from '@/components/ui/collapsible';
+import { ChevronDown } from 'lucide-react';
 
 const statusColors: { [key in OrderStatus]: string } = {
   Pending: 'bg-yellow-500',
@@ -55,7 +61,7 @@ export default function AdminOrdersPage() {
 
   const handleStatusChange = (orderId: string, newStatus: OrderStatus) => {
     const updatedOrders = orders.map((order) =>
-      order.id === orderId ? { ...order, status: newStatus } : order
+      order.id === orderId ? { ...order, status: newStatus, trackingHistory: [...order.trackingHistory, { status: newStatus, date: new Date().toISOString() }] } : order
     );
     setOrders(updatedOrders);
     try {
@@ -89,57 +95,81 @@ export default function AdminOrdersPage() {
                 <TableHead>Customer</TableHead>
                 <TableHead>Total</TableHead>
                 <TableHead>Status</TableHead>
-                <TableHead>Actions</TableHead>
+                <TableHead className='text-right'>Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {orders.map((order) => (
-                <TableRow key={order.id}>
-                  <TableCell className="font-medium">{order.id}</TableCell>
-                  <TableCell>
-                    {format(new Date(order.date), 'MM/dd/yyyy')}
-                  </TableCell>
-                  <TableCell>John Doe</TableCell>
-                  <TableCell>${order.total.toFixed(2)}</TableCell>
-                  <TableCell>
-                    <Select
-                      value={order.status}
-                      onValueChange={(value) =>
-                        handleStatusChange(order.id, value as OrderStatus)
-                      }
-                    >
-                      <SelectTrigger className="w-48">
-                        <SelectValue>
-                           <Badge
-                              className={`${
-                                statusColors[order.status]
-                              } hover:${statusColors[order.status]}`}
-                            >
-                              {order.status}
-                            </Badge>
-                        </SelectValue>
-                      </SelectTrigger>
-                      <SelectContent>
-                        {orderStatuses.map((status) => (
-                          <SelectItem key={status} value={status}>
-                             <Badge
-                              className={`${statusColors[status]} hover:${statusColors[status]}`}
-                            >
-                              {status}
-                            </Badge>
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </TableCell>
-                  <TableCell>
-                    <Button asChild variant="outline" size="icon">
-                      <Link href={`/orders/${order.id}`}>
-                        <Eye className="h-4 w-4" />
-                      </Link>
-                    </Button>
-                  </TableCell>
-                </TableRow>
+                <Collapsible asChild key={order.id}>
+                  <>
+                    <TableRow>
+                      <TableCell className="font-medium">{order.id}</TableCell>
+                      <TableCell>
+                        {format(new Date(order.date), 'MM/dd/yyyy')}
+                      </TableCell>
+                      <TableCell>{order.customerName}</TableCell>
+                      <TableCell>${order.total.toFixed(2)}</TableCell>
+                      <TableCell>
+                        <Select
+                          value={order.status}
+                          onValueChange={(value) =>
+                            handleStatusChange(order.id, value as OrderStatus)
+                          }
+                        >
+                          <SelectTrigger className="w-48">
+                            <SelectValue>
+                              <Badge
+                                className={`${
+                                  statusColors[order.status]
+                                } hover:${statusColors[order.status]}`}
+                              >
+                                {order.status}
+                              </Badge>
+                            </SelectValue>
+                          </SelectTrigger>
+                          <SelectContent>
+                            {orderStatuses.map((status) => (
+                              <SelectItem key={status} value={status}>
+                                <Badge
+                                  className={`${statusColors[status]} hover:${statusColors[status]}`}
+                                >
+                                  {status}
+                                </Badge>
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </TableCell>
+                      <TableCell className='text-right'>
+                        <CollapsibleTrigger asChild>
+                           <Button variant="ghost" size="icon">
+                              <ChevronDown className="h-4 w-4" />
+                           </Button>
+                        </CollapsibleTrigger>
+                      </TableCell>
+                    </TableRow>
+                    <CollapsibleContent asChild>
+                       <TableRow>
+                         <TableCell colSpan={6} className='p-0'>
+                            <div className='bg-muted/50 p-4'>
+                                <h4 className='font-semibold mb-2'>Shipping Details</h4>
+                                <p>{order.customerName}</p>
+                                <p>{order.shippingAddress.line1}</p>
+                                {order.shippingAddress.landmark && <p>{order.shippingAddress.landmark}</p>}
+                                <p>{order.shippingAddress.city}, {order.shippingAddress.state} {order.shippingAddress.zip}</p>
+                                <p>Mobile: {order.shippingAddress.mobile}</p>
+                                <h4 className='font-semibold mt-4 mb-2'>Order Items</h4>
+                                <ul>
+                                    {order.items.map((item, index) => (
+                                        <li key={index}>{item.productName} (x{item.quantity})</li>
+                                    ))}
+                                </ul>
+                            </div>
+                         </TableCell>
+                       </TableRow>
+                    </CollapsibleContent>
+                  </>
+                </Collapsible>
               ))}
             </TableBody>
           </Table>

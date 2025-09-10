@@ -105,6 +105,12 @@ export default function CheckoutPage() {
         toast({ title: "Address Required", description: "Please select a delivery address.", variant: "destructive"});
         return;
     }
+    const selectedAddress = addresses.find(a => a.id === selectedAddressId);
+    if (!selectedAddress || !user) {
+        toast({ title: "Error", description: "Could not find selected address or user.", variant: "destructive"});
+        return;
+    }
+
     setIsPlacingOrder(true);
     
     // In a real app, you would process payment and save to a database here.
@@ -117,6 +123,8 @@ export default function CheckoutPage() {
           total: subtotal,
           items: items.map(item => ({ productName: item.product.name, quantity: item.quantity })),
           trackingHistory: [{ status: 'Pending', date: new Date().toISOString() }],
+          customerName: user.displayName || 'Guest User',
+          shippingAddress: selectedAddress,
         };
 
         const existingOrdersRaw = localStorage.getItem(ORDERS_STORAGE_KEY);

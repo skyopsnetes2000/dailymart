@@ -74,6 +74,21 @@ export default function OrderDetailsPage() {
                         <OrderTracker order={order} />
                     </CardContent>
                 </Card>
+
+                {order.shippingAddress && (
+                    <Card>
+                        <CardHeader>
+                            <CardTitle>Shipping Address</CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                            <p className="font-semibold">{order.customerName}</p>
+                            <p className="text-muted-foreground">{order.shippingAddress.line1}</p>
+                            {order.shippingAddress.landmark && <p className="text-muted-foreground">{order.shippingAddress.landmark}</p>}
+                            <p className="text-muted-foreground">{order.shippingAddress.city}, {order.shippingAddress.state} {order.shippingAddress.zip}</p>
+                            <p className="text-muted-foreground">Mobile: {order.shippingAddress.mobile}</p>
+                        </CardContent>
+                    </Card>
+                )}
             </div>
         </div>
     )
