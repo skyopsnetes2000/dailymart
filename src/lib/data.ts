@@ -6,6 +6,7 @@ export type Product = {
   price: number;
   imageId: string;
   categorySlug: string;
+  isSpecialOffer?: boolean;
 };
 
 export type Category = {
