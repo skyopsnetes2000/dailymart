@@ -1,19 +1,20 @@
 
+'use client';
+
 import type { Metadata } from 'next';
 import './globals.css';
 import { Toaster } from '@/components/ui/toaster';
 import BottomNav from '@/components/shared/bottom-nav';
+import { cn } from '@/lib/utils';
+import { usePathname } from 'next/navigation';
 
-export const metadata: Metadata = {
-  title: 'DailyMart',
-  description: 'Your daily essentials, delivered.',
-};
 
 export default function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  
   return (
     <html lang="en" suppressHydrationWarning>
       <head>

@@ -1,3 +1,4 @@
+
 'use client';
 
 import { Home, LayoutGrid, ShoppingCart, User, Archive, UserCog } from 'lucide-react';
@@ -17,8 +18,8 @@ const navItems = [
 export default function BottomNav() {
   const pathname = usePathname();
 
-  // Hide bottom nav on admin pages
-  if (pathname.startsWith('/admin')) {
+  // Hide bottom nav on admin pages and login page
+  if (pathname.startsWith('/admin') || pathname === '/login') {
     return null;
   }
 
