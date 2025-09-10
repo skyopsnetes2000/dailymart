@@ -1,3 +1,4 @@
+
 'use client';
 
 import PageHeader from "@/components/shared/page-header";
@@ -7,7 +8,7 @@ import ProfileForm from "@/components/profile/profile-form";
 import AddressManager from "@/components/profile/address-manager";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import { LogIn, Loader2, ChevronRight } from "lucide-react";
+import { LogIn, Loader2, ChevronRight, UserCog } from "lucide-react";
 import { useAuthState } from "react-firebase-hooks/auth";
 import { auth } from "@/lib/firebase";
 import { useEffect, useState } from "react";
@@ -15,6 +16,8 @@ import { useRouter } from "next/navigation";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { format } from "date-fns";
+
+const ADMIN_EMAIL = 'dhandesaurav52@gmail.com';
 
 export default function ProfilePage() {
   const [user, loading] = useAuthState(auth);
@@ -82,11 +85,28 @@ export default function ProfilePage() {
   }
 
   const recentOrders = orders.slice(0, 3);
+  const isAdmin = user.email === ADMIN_EMAIL;
 
   return (
     <div>
       <PageHeader title={getTitleForTab(activeTab)} />
       <div className="p-4 sm:p-6">
+        {isAdmin && (
+          <Card className="mb-6">
+            <CardHeader>
+              <CardTitle>Admin Access</CardTitle>
+              <CardDescription>You have administrative privileges.</CardDescription>
+            </CardHeader>
+            <CardFooter>
+              <Button asChild>
+                <Link href="/admin">
+                  <UserCog className="mr-2 h-4 w-4" />
+                  Go to Admin Panel
+                </Link>
+              </Button>
+            </CardFooter>
+          </Card>
+        )}
         <Tabs defaultValue="profile" className="w-full" onValueChange={setActiveTab}>
           <TabsList className="grid w-full grid-cols-3">
             <TabsTrigger value="profile">Profile</TabsTrigger>

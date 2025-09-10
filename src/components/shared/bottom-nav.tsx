@@ -16,16 +16,15 @@ const baseNavItems = [
   { href: '/categories', label: 'Categories', icon: LayoutGrid },
   { href: '/products', label: 'Products', icon: Archive },
   { href: '/cart', label: 'Cart', icon: ShoppingCart },
+  { href: '/profile', label: 'Profile', icon: User },
 ];
-
-const regularUserItem = { href: '/profile', label: 'Profile', icon: User };
-const adminUserItem = { href: '/admin', label: 'Admin', icon: UserCog };
 
 
 export default function BottomNav() {
   const pathname = usePathname();
   const [user, loading] = useAuthState(auth);
 
+  // Do not render the nav on admin pages or the login page.
   if (pathname.startsWith('/admin') || pathname === '/login') {
     return null;
   }
@@ -45,7 +44,7 @@ export default function BottomNav() {
     )
   }
 
-  const navItems = user?.email === ADMIN_EMAIL ? [...baseNavItems, adminUserItem] : [...baseNavItems, regularUserItem];
+  const navItems = baseNavItems;
 
   return (
     <nav className="fixed bottom-0 left-0 right-0 z-50 h-20 border-t bg-card/80 backdrop-blur-sm">
