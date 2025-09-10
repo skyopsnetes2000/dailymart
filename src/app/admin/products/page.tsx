@@ -246,11 +246,13 @@ export default function AdminProductsPage() {
                               </SelectTrigger>
                             </FormControl>
                             <SelectContent>
-                              {categories.map((c) => (
-                                <SelectItem key={c.id} value={c.slug}>
-                                  {c.name}
-                                </SelectItem>
-                              ))}
+                              <ScrollArea className="h-48">
+                                {categories.map((c) => (
+                                  <SelectItem key={c.id} value={c.slug}>
+                                    {c.name}
+                                  </SelectItem>
+                                ))}
+                              </ScrollArea>
                             </SelectContent>
                           </Select>
                           <FormMessage />
