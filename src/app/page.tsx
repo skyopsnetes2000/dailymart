@@ -105,7 +105,7 @@ export default function Home() {
 
   const topCategories = categories.slice(0, 4);
   const heroImage = PlaceHolderImages.find((img) => img.id === 'hero-bg');
-  const specialOffers = products.filter(p => p.isSpecialOffer);
+  const specialOffers = products.filter(p => p.offer && p.offer.value > 0);
   
   const autoplayPlugin = React.useRef(
     Autoplay({ delay: 3000, stopOnInteraction: true })

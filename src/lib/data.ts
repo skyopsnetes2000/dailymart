@@ -1,3 +1,9 @@
+
+export type Offer = {
+  type: 'percentage' | 'fixed';
+  value: number;
+};
+
 export type Product = {
   id: string;
   name: string;
@@ -6,7 +12,7 @@ export type Product = {
   price: number;
   imageId: string;
   categorySlug: string;
-  isSpecialOffer?: boolean;
+  offer?: Offer | null;
 };
 
 export type Category = {

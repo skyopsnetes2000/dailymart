@@ -19,8 +19,8 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { Switch } from '@/components/ui/switch';
-import { Product, Category } from '@/lib/data';
+import { Input } from '@/components/ui/input';
+import { Product, Category, Offer } from '@/lib/data';
 import { useToast } from '@/hooks/use-toast';
 import Image from 'next/image';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
@@ -29,17 +29,33 @@ const PRODUCTS_STORAGE_KEY = 'admin_products';
 const CATEGORIES_STORAGE_KEY = 'admin_categories';
 const IMAGE_STORAGE_PREFIX = 'product_image_';
 
+type OfferInput = {
+  productId: string;
+  type: 'percentage' | 'fixed';
+  value: string;
+};
+
 export default function AdminOffersPage() {
   const [products, setProducts] = useState<Product[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [selectedCategory, setSelectedCategory] = useState<string>('');
+  const [offerInputs, setOfferInputs] = useState<{ [productId: string]: Partial<OfferInput> }>({});
   const { toast } = useToast();
 
   useEffect(() => {
     try {
       const storedProducts = localStorage.getItem(PRODUCTS_STORAGE_KEY);
       if (storedProducts) {
-        setProducts(JSON.parse(storedProducts));
+        const parsedProducts: Product[] = JSON.parse(storedProducts);
+        setProducts(parsedProducts);
+        // Initialize offerInputs from stored product offers
+        const initialInputs: { [productId: string]: Partial<OfferInput> } = {};
+        parsedProducts.forEach(p => {
+            if (p.offer) {
+                initialInputs[p.id] = { type: p.offer.type, value: p.offer.value.toString() };
+            }
+        });
+        setOfferInputs(initialInputs);
       }
 
       const storedCategories = localStorage.getItem(CATEGORIES_STORAGE_KEY);
@@ -65,16 +81,50 @@ export default function AdminOffersPage() {
     }
   };
 
-  const handleOfferToggle = (productId: string, isSpecialOffer: boolean) => {
-    const updatedProducts = products.map((p) =>
-      p.id === productId ? { ...p, isSpecialOffer } : p
+  const handleInputChange = (productId: string, field: keyof Offer, value: string) => {
+    setOfferInputs(prev => ({
+        ...prev,
+        [productId]: { ...prev[productId], [field]: value }
+    }));
+  };
+
+  const handleSaveOffer = (productId: string) => {
+    const input = offerInputs[productId];
+    const value = parseFloat(input?.value || '');
+
+    if (!input || !input.type || isNaN(value) || value <= 0) {
+        // Clear the offer if input is invalid or empty
+        const updatedProducts = products.map(p => 
+            p.id === productId ? { ...p, offer: null } : p
+        );
+        updateAndPersistProducts(updatedProducts);
+        setOfferInputs(prev => {
+            const newInputs = { ...prev };
+            delete newInputs[productId];
+            return newInputs;
+        });
+        toast({
+            title: 'Offer Removed',
+            description: 'Offer details cleared for the product.',
+        });
+        return;
+    }
+    
+    const newOffer: Offer = {
+        type: input.type,
+        value: value,
+    };
+
+    const updatedProducts = products.map(p => 
+        p.id === productId ? { ...p, offer: newOffer } : p
     );
     updateAndPersistProducts(updatedProducts);
     toast({
-      title: 'Success',
-      description: 'Special offer status updated.',
+        title: 'Success',
+        description: 'Special offer saved successfully.',
     });
   };
+
 
   const getProductImage = (product: Product) => {
     try {
@@ -120,7 +170,9 @@ export default function AdminOffersPage() {
                 <TableHead>Image</TableHead>
                 <TableHead>Product Name</TableHead>
                 <TableHead>Price</TableHead>
-                <TableHead>Special Offer</TableHead>
+                <TableHead className='w-[120px]'>Offer Type</TableHead>
+                <TableHead className='w-[100px]'>Value</TableHead>
+                <TableHead className='w-[120px]'>Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -139,18 +191,35 @@ export default function AdminOffersPage() {
                     <TableCell className="font-medium">{product.name}</TableCell>
                     <TableCell>${product.price.toFixed(2)}</TableCell>
                     <TableCell>
-                      <Switch
-                        checked={product.isSpecialOffer || false}
-                        onCheckedChange={(checked) =>
-                          handleOfferToggle(product.id, checked)
-                        }
-                      />
+                       <Select
+                         value={offerInputs[product.id]?.type || product.offer?.type || 'percentage'}
+                         onValueChange={(value) => handleInputChange(product.id, 'type', value as 'percentage' | 'fixed')}
+                       >
+                            <SelectTrigger>
+                                <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="percentage">Percentage (%)</SelectItem>
+                                <SelectItem value="fixed">Fixed ($)</SelectItem>
+                            </SelectContent>
+                        </Select>
+                    </TableCell>
+                    <TableCell>
+                        <Input 
+                           type="number"
+                           placeholder="e.g., 10"
+                           value={offerInputs[product.id]?.value || ''}
+                           onChange={(e) => handleInputChange(product.id, 'value', e.target.value)}
+                        />
+                    </TableCell>
+                    <TableCell>
+                      <Button onClick={() => handleSaveOffer(product.id)}>Save</Button>
                     </TableCell>
                   </TableRow>
                 ))
               ) : (
                 <TableRow>
-                  <TableCell colSpan={4} className="text-center">
+                  <TableCell colSpan={6} className="text-center">
                     {selectedCategory ? 'No products in this category.' : 'Please select a category to see products.'}
                   </TableCell>
                 </TableRow>
