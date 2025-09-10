@@ -53,7 +53,7 @@ export default function HomeHeader() {
               <span className="hidden sm:inline">Deliver to: </span>
               {selectedAddress ? (
                 <>
-                  <span className="font-semibold">{selectedAddress.city}</span>
+                  <span className="font-semibold">{selectedAddress.line1}</span>
                   <ChevronDown className="h-4 w-4 opacity-50" />
                 </>
               ) : (
