@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
@@ -39,7 +39,7 @@ import {
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { products as initialProducts, categories } from '@/lib/data';
+import { products as initialProducts, categories, type Product } from '@/lib/data';
 import { Pencil, PlusCircle, Trash2 } from 'lucide-react';
 import Image from 'next/image';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
@@ -53,18 +53,43 @@ const productSchema = z.object({
   image: z.any(),
 });
 
+const STORAGE_KEY = 'admin_products';
+
+
 export default function AdminProductsPage() {
-  const [products, setProducts] = useState(initialProducts);
+  const [products, setProducts] = useState<Product[]>([]);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [editingProduct, setEditingProduct] = useState<
-    (typeof initialProducts)[0] | null
-  >(null);
+  const [editingProduct, setEditingProduct] = useState<Product | null>(null);
+
+  useEffect(() => {
+    try {
+      const storedProducts = localStorage.getItem(STORAGE_KEY);
+      if (storedProducts) {
+        setProducts(JSON.parse(storedProducts));
+      } else {
+        setProducts(initialProducts);
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(initialProducts));
+      }
+    } catch (error) {
+      console.warn("Could not access localStorage. Using initial products.");
+      setProducts(initialProducts);
+    }
+  }, []);
+
+  const updateAndPersistProducts = (newProducts: Product[]) => {
+    setProducts(newProducts);
+    try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(newProducts));
+    } catch (error) {
+        console.warn("Could not save products to localStorage.");
+    }
+  };
 
   const form = useForm<z.infer<typeof productSchema>>({
     resolver: zodResolver(productSchema),
   });
 
-  const handleEdit = (product: (typeof initialProducts)[0]) => {
+  const handleEdit = (product: Product) => {
     setEditingProduct(product);
     form.reset({...product, image: null});
     setIsDialogOpen(true);
@@ -84,24 +109,24 @@ export default function AdminProductsPage() {
   }
 
   const handleDelete = (productId: string) => {
-    setProducts(products.filter((p) => p.id !== productId));
+    updateAndPersistProducts(products.filter((p) => p.id !== productId));
   };
 
   const onSubmit = (data: z.infer<typeof productSchema>) => {
     // In a real app, you would upload the image and get back a URL/ID
     const imageId = 'product-new'; // Placeholder for now
+    let newProducts;
     if (editingProduct) {
-      setProducts(
-        products.map((p) =>
+      newProducts = products.map((p) =>
           p.id === editingProduct.id ? { ...editingProduct, ...data, imageId: editingProduct.imageId } : p
-        )
-      );
+        );
     } else {
-      setProducts([
+      newProducts = [
         ...products,
-        { ...data, id: (products.length + 1).toString(), imageId },
-      ]);
+        { ...data, id: Date.now().toString(), imageId },
+      ];
     }
+    updateAndPersistProducts(newProducts);
     setIsDialogOpen(false);
   };
 

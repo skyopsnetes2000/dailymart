@@ -21,6 +21,7 @@ import { Input } from '@/components/ui/input';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
+import { useEffect, useState } from 'react';
 
 const appearanceSchema = z.object({
   heroTitle: z.string().min(1),
@@ -31,19 +32,54 @@ const appearanceSchema = z.object({
   ad3Image: z.any(),
 });
 
+type AppearanceFormValues = z.infer<typeof appearanceSchema>;
+
+const STORAGE_KEY = 'admin_appearance';
+
+const defaultValues: AppearanceFormValues = {
+  heroTitle: 'Freshness at Your Fingertips',
+  heroSubtitle: 'The best groceries, delivered fresh to your door daily.',
+  heroImage: null,
+  ad1Image: null,
+  ad2Image: null,
+  ad3Image: null,
+};
+
 export default function AdminAppearancePage() {
-  const form = useForm<z.infer<typeof appearanceSchema>>({
+  const [initialData, setInitialData] = useState<AppearanceFormValues>(defaultValues);
+
+  useEffect(() => {
+    try {
+      const storedData = localStorage.getItem(STORAGE_KEY);
+      if (storedData) {
+        const parsedData = JSON.parse(storedData);
+        // Exclude file inputs from being loaded
+        const { heroImage, ad1Image, ad2Image, ad3Image, ...rest } = parsedData;
+        setInitialData({ ...defaultValues, ...rest });
+      }
+    } catch (error) {
+      console.warn("Could not access localStorage. Using default values.");
+    }
+  }, []);
+
+  const form = useForm<AppearanceFormValues>({
     resolver: zodResolver(appearanceSchema),
-    defaultValues: {
-      heroTitle: 'Freshness at Your Fingertips',
-      heroSubtitle: 'The best groceries, delivered fresh to your door daily.',
-    },
+    values: initialData,
   });
 
-  const onSubmit = (data: z.infer<typeof appearanceSchema>) => {
-    // In a real app, you'd save this to a database
-    console.log(data);
-    alert('Appearance settings saved!');
+  useEffect(() => {
+    form.reset(initialData);
+  }, [initialData, form]);
+
+  const onSubmit = (data: AppearanceFormValues) => {
+    try {
+      const { heroImage, ad1Image, ad2Image, ad3Image, ...dataToSave } = data;
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(dataToSave));
+      alert('Appearance settings saved!');
+    } catch (error) {
+      console.error("Could not save to localStorage", error);
+      alert('Failed to save settings.');
+    }
   };
 
   return (

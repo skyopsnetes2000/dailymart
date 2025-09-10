@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
@@ -30,7 +30,7 @@ import { Input } from '@/components/ui/input';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { categories as initialCategories } from '@/lib/data';
+import { categories as initialCategories, type Category } from '@/lib/data';
 import { Pencil, PlusCircle, Trash2 } from 'lucide-react';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
 import Image from 'next/image';
@@ -41,12 +41,37 @@ const categorySchema = z.object({
   image: z.any(),
 });
 
+const STORAGE_KEY = 'admin_categories';
+
 export default function AdminCategoriesPage() {
-  const [categories, setCategories] = useState(initialCategories);
+  const [categories, setCategories] = useState<Category[]>([]);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [editingCategory, setEditingCategory] = useState<
-    (typeof initialCategories)[0] | null
-  >(null);
+  const [editingCategory, setEditingCategory] = useState<Category | null>(null);
+
+  useEffect(() => {
+    try {
+      const storedCategories = localStorage.getItem(STORAGE_KEY);
+      if (storedCategories) {
+        setCategories(JSON.parse(storedCategories));
+      } else {
+        setCategories(initialCategories);
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(initialCategories));
+      }
+    } catch (error) {
+      console.warn("Could not access localStorage. Using initial categories.");
+      setCategories(initialCategories);
+    }
+  }, []);
+
+  const updateAndPersistCategories = (newCategories: Category[]) => {
+    setCategories(newCategories);
+    try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(newCategories));
+    } catch (error) {
+        console.warn("Could not save categories to localStorage.");
+    }
+  };
+
 
   const form = useForm<z.infer<typeof categorySchema>>({
     resolver: zodResolver(categorySchema),
@@ -58,7 +83,7 @@ export default function AdminCategoriesPage() {
     setIsDialogOpen(true);
   };
 
-  const handleEdit = (category: (typeof initialCategories)[0]) => {
+  const handleEdit = (category: Category) => {
     setEditingCategory(category);
     form.reset({
       name: category.name,
@@ -69,24 +94,24 @@ export default function AdminCategoriesPage() {
   };
 
   const handleDelete = (categoryId: string) => {
-    setCategories(categories.filter((c) => c.id !== categoryId));
+    updateAndPersistCategories(categories.filter((c) => c.id !== categoryId));
   };
 
   const onSubmit = (data: z.infer<typeof categorySchema>) => {
     // In a real app, you'd upload the image and get a URL
     const imageId = 'category-new'; // Placeholder
+    let newCategories;
     if (editingCategory) {
-      setCategories(
-        categories.map((c) =>
+      newCategories = categories.map((c) =>
           c.id === editingCategory.id ? { ...c, name: data.name, slug: data.slug, imageId: c.imageId } : c
-        )
-      );
+        );
     } else {
-      setCategories([
+      newCategories = [
         ...categories,
-        { ...data, id: (categories.length + 1).toString(), imageId },
-      ]);
+        { ...data, id: Date.now().toString(), imageId },
+      ];
     }
+    updateAndPersistCategories(newCategories);
     setIsDialogOpen(false);
   };
 
