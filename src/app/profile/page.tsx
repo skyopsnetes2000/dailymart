@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { LogIn } from "lucide-react";
 
 export default function ProfilePage() {
-  const isLoggedIn = user; // This will be dynamic in a real app
+  const isLoggedIn = false; // This will be dynamic in a real app
 
   if (!isLoggedIn) {
     return (
