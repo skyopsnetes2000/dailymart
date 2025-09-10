@@ -28,22 +28,22 @@ export default function AllProductsPage() {
 
   return (
     <div>
-      <div className="space-y-4 p-4 sm:p-6">
-        <div className="relative">
+      <div className="flex gap-2 p-4 sm:p-6">
+        <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-muted-foreground" />
           <Input
-            placeholder="Search for products..."
+            placeholder="Search..."
             className="h-12 pl-10"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
           />
         </div>
         <Select onValueChange={setSelectedCategory} defaultValue="all">
-          <SelectTrigger className="w-full">
-            <SelectValue placeholder="Sort by category" />
+          <SelectTrigger className="w-[150px] h-12">
+            <SelectValue placeholder="Category" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">All Categories</SelectItem>
+            <SelectItem value="all">All</SelectItem>
             {categories.map((category) => (
               <SelectItem key={category.id} value={category.slug}>
                 {category.name}
@@ -54,7 +54,7 @@ export default function AllProductsPage() {
       </div>
 
       {filteredProducts.length > 0 ? (
-        <div className="grid grid-cols-3 gap-3 p-4 pt-0 sm:grid-cols-4 sm:p-6 md:grid-cols-5 lg:grid-cols-6">
+        <div className="grid grid-cols-2 gap-3 p-4 pt-0 sm:grid-cols-3 sm:p-6 md:grid-cols-4 lg:grid-cols-5">
           {filteredProducts.map((product) => (
             <ProductCard key={product.id} product={product} />
           ))}
