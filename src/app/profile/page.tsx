@@ -8,7 +8,7 @@ import ProfileForm from "@/components/profile/profile-form";
 import AddressManager from "@/components/profile/address-manager";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import { LogIn, Loader2, ChevronRight, UserCog } from "lucide-react";
+import { LogIn, Loader2, ChevronRight, UserCog, LogOut } from "lucide-react";
 import { useAuthState } from "react-firebase-hooks/auth";
 import { auth } from "@/lib/firebase";
 import { useEffect, useState } from "react";
@@ -16,21 +16,35 @@ import { useRouter } from "next/navigation";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { format } from "date-fns";
+import { signOut } from "firebase/auth";
+import { useToast } from "@/hooks/use-toast";
+import AccountSettings from "@/components/profile/account-settings";
 
 const ADMIN_EMAIL = 'dhandesaurav52@gmail.com';
 
 export default function ProfilePage() {
   const [user, loading] = useAuthState(auth);
   const router = useRouter();
+  const { toast } = useToast();
   const [activeTab, setActiveTab] = useState('profile');
   
   useEffect(() => {
-    // This could be extracted into a higher-order component or middleware
     if (!loading && !user) {
-      // User is not logged in, you can keep them on this page to show login options
-      // or redirect them. For now, we show the login prompt.
+      // User is not logged in, show the login prompt.
     }
   }, [user, loading, router]);
+
+  const handleLogout = async () => {
+    try {
+      await signOut(auth);
+      toast({ title: "Logged Out", description: "You have been successfully logged out." });
+      router.push('/login');
+    } catch (error) {
+      console.error("Logout Error:", error);
+      toast({ title: "Error", description: "Failed to log out.", variant: "destructive" });
+    }
+  };
+
 
   const getTitleForTab = (tab: string) => {
     switch (tab) {
@@ -40,6 +54,8 @@ export default function ProfilePage() {
             return 'My Addresses';
         case 'orders':
             return 'My Orders';
+        case 'settings':
+            return 'Account Settings'
         default:
             return 'My Profile';
     }
@@ -108,10 +124,11 @@ export default function ProfilePage() {
           </Card>
         )}
         <Tabs defaultValue="profile" className="w-full" onValueChange={setActiveTab}>
-          <TabsList className="grid w-full grid-cols-3">
+          <TabsList className="grid w-full grid-cols-4">
             <TabsTrigger value="profile">Profile</TabsTrigger>
             <TabsTrigger value="addresses">Addresses</TabsTrigger>
             <TabsTrigger value="orders">Orders</TabsTrigger>
+            <TabsTrigger value="settings">Settings</TabsTrigger>
           </TabsList>
           <TabsContent value="profile" className="mt-6">
             <ProfileForm user={profileData} />
@@ -152,7 +169,17 @@ export default function ProfilePage() {
                 ))}
             </div>
           </TabsContent>
+          <TabsContent value="settings" className="mt-6">
+              <AccountSettings />
+          </TabsContent>
         </Tabs>
+
+        <div className="mt-8">
+            <Button variant="outline" className="w-full" onClick={handleLogout}>
+                <LogOut className="mr-2 h-4 w-4" />
+                Logout
+            </Button>
+        </div>
       </div>
     </div>
   );
