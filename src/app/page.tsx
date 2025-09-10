@@ -75,7 +75,7 @@ export default function Home() {
           >
             <CarouselContent className="-ml-2">
               {ads.map((ad) => (
-                ad && <CarouselItem key={ad.id} className="basis-2/3 sm:basis-1/2 md:basis-1/3 pl-2">
+                ad && <CarouselItem key={ad.id} className="basis-1/2 sm:basis-1/3 md:basis-1/4 pl-2">
                   <Card className="overflow-hidden relative aspect-video">
                      <Image
                         src={ad.imageUrl}
@@ -85,9 +85,9 @@ export default function Home() {
                         data-ai-hint={ad.imageHint}
                       />
                       <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
-                      <div className="absolute bottom-0 left-0 p-2 md:p-4">
-                        <h3 className="font-bold text-sm md:text-lg">{ad.description}</h3>
-                         <Button size="sm" variant="secondary" className="mt-1 md:mt-2 h-7 text-xs md:h-8 md:text-sm">Order Now</Button>
+                      <div className="absolute bottom-0 left-0 p-1 md:p-2">
+                        <h3 className="font-bold text-xs md:text-base">{ad.description}</h3>
+                         <Button size="sm" variant="secondary" className="mt-1 h-6 text-xs md:h-7">Order Now</Button>
                       </div>
                   </Card>
                 </CarouselItem>
