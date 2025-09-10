@@ -1,3 +1,4 @@
+
 import type { Metadata } from 'next';
 import './globals.css';
 import { Toaster } from '@/components/ui/toaster';
@@ -21,10 +22,7 @@ export default function RootLayout({
         <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet" />
       </head>
       <body className="font-body antialiased">
-        <div className="relative flex min-h-screen w-full flex-col">
-          <main className="flex-1 pb-24">{children}</main>
-          <BottomNav />
-        </div>
+        {children}
         <Toaster />
       </body>
     </html>
