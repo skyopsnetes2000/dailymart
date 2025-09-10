@@ -252,23 +252,6 @@ export default function Home() {
             <p className="text-muted-foreground">No best-selling products yet.</p>
           )}
         </section>
-
-        <section className="space-y-4">
-          <div className="flex justify-between items-center">
-            <h2 className="font-headline text-xl font-bold">All Products</h2>
-            <Link href="/products" className="text-sm font-medium text-primary">See All</Link>
-          </div>
-          {products.length > 0 ? (
-            <div className="grid grid-cols-3 gap-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6">
-                {products.slice(0, 12).map((product) => (
-                  <ProductCard key={product.id} product={product} imageUrl={getProductImage(product)} />
-                ))}
-            </div>
-          ) : (
-            <p className="text-muted-foreground">No products available at the moment.</p>
-          )}
-        </section>
-
       </div>
     </>
   );
