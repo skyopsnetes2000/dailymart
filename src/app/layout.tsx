@@ -15,6 +15,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   const pathname = usePathname();
+  // We only want to add the padding-bottom if the bottom nav is visible
   const showBottomNav = !pathname.startsWith('/admin') && pathname !== '/login';
   
   return (
@@ -25,7 +26,7 @@ export default function RootLayout({
         <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet" />
       </head>
       <body className="font-body antialiased">
-        <div className="pb-20">{children}</div>
+        <div className={cn(showBottomNav && "pb-20")}>{children}</div>
         <Toaster />
         {showBottomNav && <BottomNav />}
       </body>
