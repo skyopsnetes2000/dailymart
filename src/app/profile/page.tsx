@@ -3,7 +3,7 @@
 
 import PageHeader from "@/components/shared/page-header";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { user as staticUser, orders } from "@/lib/data";
+import { user as staticUser, orders as staticOrders, type Order } from "@/lib/data";
 import ProfileForm from "@/components/profile/profile-form";
 import AddressManager from "@/components/profile/address-manager";
 import Link from "next/link";
@@ -21,18 +21,33 @@ import { useToast } from "@/hooks/use-toast";
 import AccountSettings from "@/components/profile/account-settings";
 
 const ADMIN_EMAIL = 'dhandesaurav52@gmail.com';
+const ORDERS_STORAGE_KEY = 'user_orders';
 
 export default function ProfilePage() {
   const [user, loading] = useAuthState(auth);
   const router = useRouter();
   const { toast } = useToast();
   const [activeTab, setActiveTab] = useState('profile');
+  const [orders, setOrders] = useState<Order[]>([]);
   
   useEffect(() => {
     if (!loading && !user) {
       // User is not logged in, show the login prompt.
     }
   }, [user, loading, router]);
+  
+  useEffect(() => {
+      if (user) {
+        try {
+            const storedOrdersRaw = localStorage.getItem(ORDERS_STORAGE_KEY);
+            const storedOrders = storedOrdersRaw ? JSON.parse(storedOrdersRaw) : staticOrders;
+            setOrders(storedOrders);
+        } catch (error) {
+            console.warn("Could not access localStorage for orders. Using static data.");
+            setOrders(staticOrders);
+        }
+      }
+  }, [user]);
 
   const handleLogout = async () => {
     try {
@@ -144,7 +159,7 @@ export default function ProfilePage() {
                         <Link href="/orders">View All</Link>
                     </Button>
                 </div>
-                {recentOrders.map(order => (
+                {recentOrders.length > 0 ? recentOrders.map(order => (
                     <Card key={order.id}>
                         <CardHeader>
                             <div className='flex justify-between items-center'>
@@ -166,7 +181,9 @@ export default function ProfilePage() {
                             </Button>
                         </CardFooter>
                     </Card>
-                ))}
+                )) : (
+                  <p className='text-center text-muted-foreground'>No recent orders to show.</p>
+                )}
             </div>
           </TabsContent>
           <TabsContent value="settings" className="mt-6">

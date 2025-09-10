@@ -8,7 +8,7 @@ import { useAuthState } from 'react-firebase-hooks/auth';
 import { auth } from '@/lib/firebase';
 import useCart from '@/hooks/use-cart';
 import { useToast } from '@/hooks/use-toast';
-import { user as staticUser } from '@/lib/data';
+import { user as staticUser, type Order } from '@/lib/data';
 import type { z } from 'zod';
 
 import PageHeader from '@/components/shared/page-header';
@@ -25,6 +25,7 @@ import { Badge } from '@/components/ui/badge';
 
 type Address = z.infer<typeof AddressSchema> & { id: string };
 const ADDRESS_STORAGE_KEY = 'user_addresses';
+const ORDERS_STORAGE_KEY = 'user_orders';
 
 
 export default function CheckoutPage() {
@@ -105,15 +106,39 @@ export default function CheckoutPage() {
         return;
     }
     setIsPlacingOrder(true);
-    // In a real app, you would process payment here.
+    
+    // In a real app, you would process payment and save to a database here.
     setTimeout(() => {
+      try {
+        const newOrder: Order = {
+          id: `ORD-${Date.now().toString().slice(-6)}`,
+          date: new Date().toISOString(),
+          status: 'Pending',
+          total: subtotal,
+          items: items.map(item => ({ productName: item.product.name, quantity: item.quantity })),
+          trackingHistory: [{ status: 'Pending', date: new Date().toISOString() }],
+        };
+
+        const existingOrdersRaw = localStorage.getItem(ORDERS_STORAGE_KEY);
+        const existingOrders: Order[] = existingOrdersRaw ? JSON.parse(existingOrdersRaw) : [];
+        localStorage.setItem(ORDERS_STORAGE_KEY, JSON.stringify([newOrder, ...existingOrders]));
+
         toast({
             title: "Order Placed!",
             description: "Your order has been successfully placed."
         });
         clearCart();
         router.push('/orders');
+      } catch (error) {
+        console.error("Failed to save order", error);
+        toast({
+          title: 'Error',
+          description: 'There was a problem placing your order.',
+          variant: 'destructive',
+        });
+      } finally {
         setIsPlacingOrder(false);
+      }
     }, 1500);
   }
 
@@ -200,7 +225,7 @@ export default function CheckoutPage() {
                 </div>
             </CardContent>
             <CardFooter>
-                 <Button className="w-full" onClick={handlePlaceOrder} disabled={isPlacingOrder}>
+                 <Button className="w-full" onClick={handlePlaceOrder} disabled={isPlacingOrder || items.length === 0}>
                     {isPlacingOrder && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                     Place Order
                 </Button>

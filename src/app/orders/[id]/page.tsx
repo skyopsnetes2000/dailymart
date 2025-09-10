@@ -1,12 +1,46 @@
+
+'use client';
+
 import PageHeader from "@/components/shared/page-header";
-import { orders } from "@/lib/data";
-import { notFound } from "next/navigation";
+import { type Order, orders as staticOrders } from "@/lib/data";
+import { notFound, useParams } from "next/navigation";
 import OrderTracker from "@/components/order-tracker";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { format } from "date-fns";
+import { useEffect, useState } from "react";
+import { Loader2 } from "lucide-react";
 
-export default function OrderDetailsPage({ params }: { params: { id: string } }) {
-    const order = orders.find(o => o.id === params.id);
+const ORDERS_STORAGE_KEY = 'user_orders';
+
+export default function OrderDetailsPage() {
+    const params = useParams();
+    const { id } = params;
+    const [order, setOrder] = useState<Order | null>(null);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        try {
+            const storedOrdersRaw = localStorage.getItem(ORDERS_STORAGE_KEY);
+            const storedOrders = storedOrdersRaw ? JSON.parse(storedOrdersRaw) : staticOrders;
+            const currentOrder = storedOrders.find((o: Order) => o.id === id);
+            setOrder(currentOrder || null);
+        } catch (error) {
+            console.warn("Could not access localStorage. Using static orders.");
+            const currentOrder = staticOrders.find(o => o.id === id);
+            setOrder(currentOrder || null);
+        } finally {
+            setLoading(false);
+        }
+    }, [id]);
+
+    if (loading) {
+        return (
+             <div className="flex h-screen items-center justify-center">
+                <Loader2 className="h-8 w-8 animate-spin" />
+             </div>
+        )
+    }
+
     if (!order) {
         notFound();
     }
