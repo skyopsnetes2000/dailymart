@@ -48,7 +48,6 @@ export default function AdminOffersPage() {
       if (storedProducts) {
         const parsedProducts: Product[] = JSON.parse(storedProducts);
         setProducts(parsedProducts);
-        // Initialize offerInputs from stored product offers
         const initialInputs: { [productId: string]: Partial<OfferInput> } = {};
         parsedProducts.forEach(p => {
             if (p.offer) {
@@ -95,18 +94,27 @@ export default function AdminOffersPage() {
   };
 
   const handleSaveOffer = (productId: string) => {
-    const input = offerInputs[productId];
-    const value = parseFloat(input?.value || '');
+    const product = products.find(p => p.id === productId);
+    if (!product) return;
 
-    if (!input || !input.type || !input.value || isNaN(value) || value <= 0) {
-        // Clear the offer if input is invalid or empty
+    const input = offerInputs[productId] || {};
+    const offerType = input.type || product.offer?.type || 'percentage';
+    const offerValueStr = input.value ?? (product.offer ? String(product.offer.value) : '');
+
+    const value = parseFloat(offerValueStr);
+
+    if (offerValueStr === '' || isNaN(value) || value <= 0) {
         const updatedProducts = products.map(p => 
             p.id === productId ? { ...p, offer: null } : p
         );
         updateAndPersistProducts(updatedProducts);
+
         setOfferInputs(prev => {
             const newInputs = { ...prev };
-            delete newInputs[productId];
+            // We just clear the value, not the whole entry, to keep type selection
+            if (newInputs[productId]) {
+                delete newInputs[productId].value;
+            }
             return newInputs;
         });
         toast({
@@ -117,7 +125,7 @@ export default function AdminOffersPage() {
     }
     
     const newOffer: Offer = {
-        type: input.type,
+        type: offerType,
         value: value,
     };
 
@@ -214,7 +222,7 @@ export default function AdminOffersPage() {
                         <Input 
                            type="number"
                            placeholder="e.g., 10"
-                           value={offerInputs[product.id]?.value || ''}
+                           value={offerInputs[product.id]?.value ?? (product.offer ? String(product.offer.value) : '')}
                            onChange={(e) => handleInputChange(product.id, 'value', e.target.value)}
                         />
                     </TableCell>
