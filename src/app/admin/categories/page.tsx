@@ -96,22 +96,23 @@ export default function AdminCategoriesPage() {
       if (data.image && data.image.length > 0) {
         const file = data.image[0];
         const uploadResult = await uploadImage(file, 'categories');
-        imageId = uploadResult.id;
+        imageId = uploadResult.url; // Use the returned URL
       } else if (!editingCategory) {
+        // If no image is uploaded for a new category, use a random placeholder.
         const categoryImages = PlaceHolderImages.filter(img => img.id.startsWith('category-'));
         const randomImage = categoryImages[Math.floor(Math.random() * categoryImages.length)];
-        imageId = randomImage.id;
+        imageId = randomImage.imageUrl;
       }
 
       const categoryData: Omit<Category, 'id'> = {
         name: data.name,
         slug: data.slug,
-        imageId: imageId || '',
+        imageId: imageId || (editingCategory?.imageId ?? ''), // Fallback to existing or empty string
       };
 
       if (editingCategory) {
         await updateCategory(editingCategory.id, categoryData);
-        setCategories(categories.map(c => c.id === editingCategory.id ? { ...c, ...categoryData } : c));
+        setCategories(categories.map(c => c.id === editingCategory.id ? { ...editingCategory, ...categoryData } : c));
         toast({ title: "Success", description: "Category updated." });
       } else {
         const newCategoryId = await addCategory(categoryData);
