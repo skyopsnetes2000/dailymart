@@ -1,11 +1,10 @@
 
 'use client'
 
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import HomeHeader from '@/components/home-header';
 import CategoryCard from '@/components/category-card';
 import ProductCard from '@/components/product-card';
-import { categories, products } from '@/lib/data';
 import { Input } from '@/components/ui/input';
 import { Search } from 'lucide-react';
 import Link from 'next/link';
@@ -14,15 +13,67 @@ import {
   Carousel,
   CarouselContent,
   CarouselItem,
-  CarouselNext,
-  CarouselPrevious,
 } from '@/components/ui/carousel';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
 import Autoplay from "embla-carousel-autoplay";
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
+import { Product, Category } from '@/lib/data';
+import { Skeleton } from '@/components/ui/skeleton';
+
+const PRODUCTS_STORAGE_KEY = 'admin_products';
+const CATEGORIES_STORAGE_KEY = 'admin_categories';
+
+function LoadingSkeletons() {
+    return (
+        <div className="space-y-8 p-4 sm:p-6">
+            <Skeleton className="relative -mx-4 -mt-4 h-64 w-auto rounded-b-2xl" />
+            <Skeleton className="h-12 w-full" />
+            <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-4">
+                 {Array.from({ length: 3 }).map((_, i) => (
+                    <Skeleton key={i} className="aspect-video" />
+                ))}
+            </div>
+            <Skeleton className="h-8 w-1/4" />
+            <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 md:basis-1/4 lg:basis-1/5">
+                {Array.from({ length: 4 }).map((_, i) => (
+                    <Skeleton key={i} className="h-32" />
+                ))}
+            </div>
+            <Skeleton className="h-8 w-1/4" />
+             <div className="grid grid-cols-4 gap-3 md:grid-cols-5 lg:grid-cols-6">
+                {Array.from({ length: 6 }).map((_, i) => (
+                    <Skeleton key={i} className="h-24" />
+                ))}
+            </div>
+        </div>
+    )
+}
+
 
 export default function Home() {
+  const [products, setProducts] = useState<Product[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [loading, setLoading] = useState(true);
+  
+  useEffect(() => {
+    try {
+        const storedProducts = localStorage.getItem(PRODUCTS_STORAGE_KEY);
+        const storedCategories = localStorage.getItem(CATEGORIES_STORAGE_KEY);
+
+        if (storedProducts) {
+            setProducts(JSON.parse(storedProducts));
+        }
+        if (storedCategories) {
+            setCategories(JSON.parse(storedCategories));
+        }
+    } catch (error) {
+        console.warn("Could not access localStorage. Some content may not be available.");
+    } finally {
+        setLoading(false);
+    }
+  }, []);
+
   const topCategories = categories.slice(0, 4);
   const heroImage = PlaceHolderImages.find((img) => img.id === 'hero-bg');
   const specialOffers = products.slice(0, 4);
@@ -37,6 +88,14 @@ export default function Home() {
     PlaceHolderImages.find(img => img.id === 'ad-baby-care'),
   ].filter(Boolean);
 
+  if (loading) {
+      return (
+        <>
+            <HomeHeader />
+            <LoadingSkeletons />
+        </>
+      )
+  }
 
   return (
     <>
@@ -75,8 +134,8 @@ export default function Home() {
           >
             <CarouselContent className="-ml-2">
               {ads.map((ad) => (
-                ad && <CarouselItem key={ad.id} className="basis-1/2 sm:basis-1/3 md:basis-1/4 pl-2">
-                  <Card className="overflow-hidden relative aspect-video">
+                ad && <CarouselItem key={ad.id} className="pl-2 basis-auto">
+                  <Card className="overflow-hidden relative aspect-video w-48">
                      <Image
                         src={ad.imageUrl}
                         alt={ad.description}
@@ -86,7 +145,7 @@ export default function Home() {
                       />
                       <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
                       <div className="absolute bottom-0 left-0 p-1 md:p-2">
-                        <h3 className="font-bold text-xs md:text-base">{ad.description}</h3>
+                        <h3 className="font-bold text-xs md:text-sm">{ad.description}</h3>
                          <Button size="sm" variant="secondary" className="mt-1 h-6 text-xs md:h-7">Order Now</Button>
                       </div>
                   </Card>
@@ -98,6 +157,7 @@ export default function Home() {
 
          <section className="space-y-4">
           <h2 className="font-headline text-xl font-bold">Special Offers</h2>
+          {specialOffers.length > 0 ? (
           <Carousel
             opts={{ align: 'start', loop: true }}
           >
@@ -109,6 +169,9 @@ export default function Home() {
               ))}
             </CarouselContent>
           </Carousel>
+          ) : (
+            <p className="text-muted-foreground">No special offers at the moment.</p>
+          )}
         </section>
 
         <section className="space-y-4">
@@ -116,15 +179,20 @@ export default function Home() {
             <h2 className="font-headline text-xl font-bold">Shop by Category</h2>
             <Link href="/categories" className="text-sm font-medium text-primary">See All</Link>
           </div>
-          <div className="grid grid-cols-4 gap-3 md:grid-cols-5 lg:grid-cols-6">
-            {categories.map((category) => (
-              <CategoryCard key={category.id} category={category} />
-            ))}
-          </div>
+           {categories.length > 0 ? (
+            <div className="grid grid-cols-4 gap-3 sm:grid-cols-5 md:grid-cols-6 lg:grid-cols-8">
+                {categories.map((category) => (
+                <CategoryCard key={category.id} category={category} />
+                ))}
+            </div>
+            ) : (
+                <p className="text-muted-foreground">No categories found. Please check back later.</p>
+            )}
         </section>
         
         <section className="space-y-6">
           <h2 className="font-headline text-xl font-bold">Best Sellers</h2>
+          {categories.length > 0 ? (
           <div className="space-y-8">
             {topCategories.map((category) => {
               const categoryProducts = products.filter(p => p.categorySlug === category.slug);
@@ -151,6 +219,9 @@ export default function Home() {
               );
             })}
           </div>
+          ) : (
+            <p className="text-muted-foreground">No best-selling products yet.</p>
+          )}
         </section>
 
         <section className="space-y-4">
@@ -158,11 +229,15 @@ export default function Home() {
             <h2 className="font-headline text-xl font-bold">All Products</h2>
             <Link href="/products" className="text-sm font-medium text-primary">See All</Link>
           </div>
-          <div className="grid grid-cols-3 gap-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6">
-            {products.slice(0, 12).map((product) => (
-              <ProductCard key={product.id} product={product} />
-            ))}
-          </div>
+          {products.length > 0 ? (
+            <div className="grid grid-cols-3 gap-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6">
+                {products.slice(0, 12).map((product) => (
+                <ProductCard key={product.id} product={product} />
+                ))}
+            </div>
+          ) : (
+            <p className="text-muted-foreground">No products available at the moment.</p>
+          )}
         </section>
 
       </div>

@@ -1,8 +1,9 @@
+
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import ProductCard from '@/components/product-card';
-import { products, categories } from '@/lib/data';
+import { type Product, type Category } from '@/lib/data';
 import { Input } from '@/components/ui/input';
 import { Search } from 'lucide-react';
 import {
@@ -12,12 +13,38 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { Skeleton } from '@/components/ui/skeleton';
+
+const PRODUCTS_STORAGE_KEY = 'admin_products';
+const CATEGORIES_STORAGE_KEY = 'admin_categories';
 
 export default function AllProductsPage() {
+  const [allProducts, setAllProducts] = useState<Product[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [loading, setLoading] = useState(true);
+
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');
 
-  const filteredProducts = products.filter((product) => {
+  useEffect(() => {
+    try {
+      const storedProducts = localStorage.getItem(PRODUCTS_STORAGE_KEY);
+      const storedCategories = localStorage.getItem(CATEGORIES_STORAGE_KEY);
+
+      if (storedProducts) {
+        setAllProducts(JSON.parse(storedProducts));
+      }
+      if (storedCategories) {
+        setCategories(JSON.parse(storedCategories));
+      }
+    } catch (error) {
+        console.warn("Could not access localStorage. Content may not be up to date.");
+    } finally {
+        setLoading(false);
+    }
+  }, []);
+
+  const filteredProducts = allProducts.filter((product) => {
     const matchesCategory =
       selectedCategory === 'all' || product.categorySlug === selectedCategory;
     const matchesSearch = product.name
@@ -25,6 +52,22 @@ export default function AllProductsPage() {
       .includes(searchTerm.toLowerCase());
     return matchesCategory && matchesSearch;
   });
+  
+  if (loading) {
+    return (
+      <div>
+        <div className="flex gap-2 p-4 sm:p-6">
+          <Skeleton className="h-12 flex-1" />
+          <Skeleton className="h-12 w-[150px]" />
+        </div>
+        <div className="grid grid-cols-3 gap-3 p-4 pt-0 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6">
+            {Array.from({ length: 18 }).map((_, i) => (
+                <Skeleton key={i} className="h-48 w-full" />
+            ))}
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div>
