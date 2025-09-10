@@ -3,7 +3,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Home, Package, ShoppingCart, LayoutGrid, Settings, UtensilsCrossed } from 'lucide-react';
+import { Home, Package, ShoppingCart, LayoutGrid, Settings, UtensilsCrossed, ArrowUpRightFromSquare } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Separator } from '@/components/ui/separator';
 
@@ -50,6 +50,7 @@ export default function AdminSidebar() {
               'flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary'
             )}
           >
+            <ArrowUpRightFromSquare className="h-4 w-4" />
             View Store
           </Link>
       </div>
