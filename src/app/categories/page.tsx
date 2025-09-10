@@ -7,39 +7,30 @@ import PageHeader from "@/components/shared/page-header";
 import { type Category } from "@/lib/data";
 import { Skeleton } from '@/components/ui/skeleton';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
+import { getCategories } from '@/lib/firestore';
 
-
-const CATEGORIES_STORAGE_KEY = 'admin_categories';
-const IMAGE_STORAGE_PREFIX = 'category_image_';
 
 export default function CategoriesPage() {
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    try {
-      const storedCategories = localStorage.getItem(CATEGORIES_STORAGE_KEY);
-      if (storedCategories) {
-        setCategories(JSON.parse(storedCategories));
-      }
-    } catch (error) {
-       console.warn("Could not access localStorage. Categories may not be up to date.");
-    } finally {
-        setLoading(false);
-    }
+    const fetchCategories = async () => {
+        try {
+            const categoriesData = await getCategories();
+            setCategories(categoriesData);
+        } catch (error) {
+            console.error("Error fetching categories", error);
+        } finally {
+            setLoading(false);
+        }
+    };
+    fetchCategories();
   }, []);
   
   const getCategoryImage = (category: Category) => {
-    try {
-        const storedImage = localStorage.getItem(`${IMAGE_STORAGE_PREFIX}${category.id}`);
-        if (storedImage) {
-            return storedImage;
-        }
-    } catch (error) {
-        console.warn("Could not access localStorage for images");
-    }
-    const placeholder = PlaceHolderImages.find((img) => img.id === category.imageId);
-    return placeholder?.imageUrl;
+    const placeholder = PlaceHolderImages.find((img) => img.id === category.imageId || img.imageUrl === category.imageId);
+    return category.imageId.startsWith('https') ? category.imageId : placeholder?.imageUrl;
   }
 
   return (

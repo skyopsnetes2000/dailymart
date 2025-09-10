@@ -20,15 +20,12 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Input } from '@/components/ui/input';
-import { Product, Category, Offer, products as initialProducts, categories as initialCategories } from '@/lib/data';
+import { Product, Category, Offer } from '@/lib/data';
 import { useToast } from '@/hooks/use-toast';
 import Image from 'next/image';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
 import { Trash2 } from 'lucide-react';
-
-const PRODUCTS_STORAGE_KEY = 'admin_products';
-const CATEGORIES_STORAGE_KEY = 'admin_categories';
-const IMAGE_STORAGE_PREFIX = 'product_image_';
+import { getCategories, getProducts, updateProductOffer } from '@/lib/firestore';
 
 type OfferInput = {
   type: 'percentage' | 'fixed';
@@ -43,44 +40,35 @@ export default function AdminOffersPage() {
   const { toast } = useToast();
 
   useEffect(() => {
-    try {
-      const storedProducts = localStorage.getItem(PRODUCTS_STORAGE_KEY);
-      const productsData = storedProducts ? JSON.parse(storedProducts) : initialProducts;
-      setProducts(productsData);
-
-      const initialInputs: { [productId: string]: Partial<OfferInput> } = {};
-      productsData.forEach((p: Product) => {
-          if (p.offer) {
-              initialInputs[p.id] = { type: p.offer.type, value: p.offer.value.toString() };
-          } else {
-              initialInputs[p.id] = { type: 'percentage', value: '' };
-          }
-      });
-      setOfferInputs(initialInputs);
-      
-      const storedCategories = localStorage.getItem(CATEGORIES_STORAGE_KEY);
-      setCategories(storedCategories ? JSON.parse(storedCategories) : initialCategories);
-      
-    } catch (error) {
-      console.warn("Could not access localStorage. Using initial data.");
-       setProducts(initialProducts);
-       setCategories(initialCategories);
+    const fetchOffersData = async () => {
+        const categoriesData = await getCategories();
+        setCategories(categoriesData);
+        // Products will be fetched when a category is selected
     }
+    fetchOffersData();
   }, []);
 
-  const updateAndPersistProducts = (newProducts: Product[]) => {
-    setProducts(newProducts);
-    try {
-      localStorage.setItem(PRODUCTS_STORAGE_KEY, JSON.stringify(newProducts));
-    } catch (error) {
-      console.error("Could not save products to localStorage", error);
-      toast({
-        title: 'Error',
-        description: 'Could not save your changes.',
-        variant: 'destructive',
-      });
-    }
-  };
+  useEffect(() => {
+    const fetchProductsForCategory = async () => {
+        if (!selectedCategory) {
+            setProducts([]);
+            return;
+        }
+        const productsData = await getProducts(selectedCategory);
+        setProducts(productsData);
+
+        const initialInputs: { [productId: string]: Partial<OfferInput> } = {};
+        productsData.forEach((p: Product) => {
+            if (p.offer) {
+                initialInputs[p.id] = { type: p.offer.type, value: p.offer.value.toString() };
+            } else {
+                initialInputs[p.id] = { type: 'percentage', value: '' };
+            }
+        });
+        setOfferInputs(initialInputs);
+    };
+    fetchProductsForCategory();
+  }, [selectedCategory])
 
   const handleInputChange = (productId: string, field: keyof OfferInput, value: string) => {
     setOfferInputs(prev => ({
@@ -89,7 +77,7 @@ export default function AdminOffersPage() {
     }));
   };
 
-  const handleSaveOrUpdateOffer = (productId: string) => {
+  const handleSaveOrUpdateOffer = async (productId: string) => {
     const product = products.find(p => p.id === productId);
     if (!product) return;
 
@@ -109,22 +97,29 @@ export default function AdminOffersPage() {
         type: input.type,
         value: value,
     };
-
-    const updatedProducts = products.map(p => 
-        p.id === productId ? { ...p, offer: newOffer } : p
-    );
-    updateAndPersistProducts(updatedProducts);
-    toast({
-        title: 'Success',
-        description: `Special offer ${product.offer ? 'updated' : 'added'} successfully.`,
-    });
+    
+    try {
+        await updateProductOffer(productId, newOffer);
+        const updatedProducts = products.map(p => 
+            p.id === productId ? { ...p, offer: newOffer } : p
+        );
+        setProducts(updatedProducts);
+        toast({
+            title: 'Success',
+            description: `Special offer ${product.offer ? 'updated' : 'added'} successfully.`,
+        });
+    } catch (error) {
+        toast({ title: 'Error', description: 'Could not save the offer.', variant: 'destructive'});
+    }
   };
 
-  const handleRemoveOffer = (productId: string) => {
-      const updatedProducts = products.map(p => 
-            p.id === productId ? { ...p, offer: null } : p
+  const handleRemoveOffer = async (productId: string) => {
+      try {
+        await updateProductOffer(productId, null);
+        const updatedProducts = products.map(p => 
+            p.id === productId ? { ...p, offer: undefined } : p
         );
-        updateAndPersistProducts(updatedProducts);
+        setProducts(updatedProducts);
 
         setOfferInputs(prev => ({
             ...prev,
@@ -134,24 +129,17 @@ export default function AdminOffersPage() {
             title: 'Offer Removed',
             description: 'The special offer has been removed from the product.',
         });
+      } catch (error) {
+         toast({ title: 'Error', description: 'Could not remove the offer.', variant: 'destructive'});
+      }
   }
 
   const getProductImage = (product: Product) => {
-    try {
-        const storedImage = localStorage.getItem(`${IMAGE_STORAGE_PREFIX}${product.id}`);
-        if (storedImage) {
-            return storedImage;
-        }
-    } catch (error) {
-        console.warn("Could not access localStorage for images");
-    }
     const placeholder = PlaceHolderImages.find((img) => img.id === product.imageId);
-    return placeholder?.imageUrl;
+    return product.imageId.startsWith('https') ? product.imageId : placeholder?.imageUrl;
   }
 
-  const filteredProducts = selectedCategory
-    ? products.filter((p) => p.categorySlug === selectedCategory)
-    : [];
+  const filteredProducts = products;
 
   return (
     <div className="space-y-6">
@@ -255,4 +243,3 @@ export default function AdminOffersPage() {
     </div>
   );
 }
-

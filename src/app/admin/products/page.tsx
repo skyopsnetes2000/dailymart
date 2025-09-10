@@ -17,7 +17,6 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from '@/components/ui/dialog';
 import {
   Form,
@@ -39,11 +38,13 @@ import {
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { products as initialProducts, categories as initialCategories, type Product, type Category } from '@/lib/data';
+import { type Product, type Category } from '@/lib/data';
 import { Pencil, PlusCircle, Trash2 } from 'lucide-react';
 import Image from 'next/image';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { useToast } from '@/hooks/use-toast';
+import { addProduct, deleteProduct, getCategories, getProducts, updateProduct, uploadImage } from '@/lib/firestore';
 
 const productSchema = z.object({
   name: z.string().min(1, 'Name is required'),
@@ -54,59 +55,23 @@ const productSchema = z.object({
   image: z.any(),
 });
 
-const PRODUCTS_STORAGE_KEY = 'admin_products';
-const CATEGORIES_STORAGE_KEY = 'admin_categories';
-const IMAGE_STORAGE_PREFIX = 'product_image_';
-
 
 export default function AdminProductsPage() {
   const [products, setProducts] = useState<Product[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
+  const { toast } = useToast();
 
   useEffect(() => {
-    // Load products
-    try {
-      const storedProducts = localStorage.getItem(PRODUCTS_STORAGE_KEY);
-      if (storedProducts) {
-        setProducts(JSON.parse(storedProducts));
-      } else {
-        setProducts(initialProducts);
-        if (typeof window !== 'undefined') {
-          localStorage.setItem(PRODUCTS_STORAGE_KEY, JSON.stringify(initialProducts));
-        }
-      }
-    } catch (error) {
-      console.warn("Could not access localStorage for products. Using initial products.");
-      setProducts(initialProducts);
-    }
-    
-    // Load categories
-    try {
-      const storedCategories = localStorage.getItem(CATEGORIES_STORAGE_KEY);
-      if (storedCategories) {
-        setCategories(JSON.parse(storedCategories));
-      } else {
-        setCategories(initialCategories);
-         if (typeof window !== 'undefined') {
-          localStorage.setItem(CATEGORIES_STORAGE_KEY, JSON.stringify(initialCategories));
-        }
-      }
-    } catch (error) {
-      console.warn("Could not access localStorage for categories. Using initial categories.");
-      setCategories(initialCategories);
-    }
+    const fetchProductsAndCategories = async () => {
+        const productsData = await getProducts();
+        const categoriesData = await getCategories();
+        setProducts(productsData);
+        setCategories(categoriesData);
+    };
+    fetchProductsAndCategories();
   }, []);
-
-  const updateAndPersistProducts = (newProducts: Product[]) => {
-    setProducts(newProducts);
-    try {
-        localStorage.setItem(PRODUCTS_STORAGE_KEY, JSON.stringify(newProducts));
-    } catch (error) {
-        console.warn("Could not save products to localStorage.");
-    }
-  };
 
   const form = useForm<z.infer<typeof productSchema>>({
     resolver: zodResolver(productSchema),
@@ -131,99 +96,56 @@ export default function AdminProductsPage() {
     setIsDialogOpen(true);
   }
 
-  const handleDelete = (productId: string) => {
-    updateAndPersistProducts(products.filter((p) => p.id !== productId));
-    // Also remove the image from localStorage
+  const handleDelete = async (productId: string) => {
     try {
-      localStorage.removeItem(`${IMAGE_STORAGE_PREFIX}${productId}`);
+        await deleteProduct(productId);
+        setProducts(products.filter((p) => p.id !== productId));
+        toast({ title: "Success", description: "Product deleted." });
     } catch (error) {
-      console.warn(`Could not remove image for product ${productId} from localStorage`);
+        toast({ title: "Error", description: "Could not delete product.", variant: "destructive" });
     }
   };
 
-  const getProductImage = (product: Product) => {
-    try {
-        const storedImage = localStorage.getItem(`${IMAGE_STORAGE_PREFIX}${product.id}`);
-        if (storedImage) {
-            return storedImage;
-        }
-    } catch (error) {
-        console.warn("Could not access localStorage for images");
-    }
-    const placeholder = PlaceHolderImages.find((img) => img.id === product.imageId);
-    return placeholder?.imageUrl;
-  }
-
   const onSubmit = async (data: z.infer<typeof productSchema>) => {
-    const productId = editingProduct ? editingProduct.id : Date.now().toString();
-    let imageId = editingProduct ? editingProduct.imageId : '';
-    
-    // Handle image upload
-    if (data.image && data.image.length > 0) {
-      const file = data.image[0];
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        const base64String = reader.result as string;
-        try {
-            localStorage.setItem(`${IMAGE_STORAGE_PREFIX}${productId}`, base64String);
-            imageId = `local_${productId}`; // Mark that we are using a local image
-            
-            // This part is duplicated to ensure execution after file read
-            const finalProductData = {
-              ...data,
-              id: productId,
-              imageId: imageId,
-            };
-            
-            let newProducts;
-            if (editingProduct) {
-              newProducts = products.map((p) =>
-                  p.id === productId ? { ...p, ...finalProductData } : p
-                );
-            } else {
-              newProducts = [
-                ...products,
-                finalProductData,
-              ];
-            }
-            updateAndPersistProducts(newProducts);
-        } catch (error) {
-            console.error("Could not save image to localStorage", error);
-        }
-      };
-      reader.readAsDataURL(file);
-    } else if (editingProduct) {
-        // Keep existing image if not changed
-        imageId = editingProduct.imageId;
-    } else {
-        // Assign random placeholder if it's a new product without an image
+    try {
+      let imageUrl: string | undefined = editingProduct?.imageId;
+      let imageId: string | undefined = editingProduct?.imageId;
+
+      if (data.image && data.image.length > 0) {
+        const file = data.image[0];
+        const uploadResult = await uploadImage(file, 'products');
+        imageUrl = uploadResult.url;
+        imageId = uploadResult.id;
+      } else if (!editingProduct) {
         const productImages = PlaceHolderImages.filter(img => img.id.startsWith('product-'));
         const randomImage = productImages[Math.floor(Math.random() * productImages.length)];
+        imageUrl = randomImage.imageUrl;
         imageId = randomImage.id;
+      }
+      
+      const productData: Omit<Product, 'id'> = {
+        name: data.name,
+        description: data.description,
+        price: data.price,
+        weight: data.weight,
+        categorySlug: data.categorySlug,
+        imageId: imageId || '',
+      };
+
+      if (editingProduct) {
+        await updateProduct(editingProduct.id, { ...productData, imageId: imageId || editingProduct.imageId });
+        setProducts(products.map(p => p.id === editingProduct.id ? { ...p, ...productData, imageId: imageId || editingProduct.imageId } : p));
+        toast({ title: "Success", description: "Product updated." });
+      } else {
+        const newProductId = await addProduct(productData);
+        setProducts([...products, { ...productData, id: newProductId }]);
+        toast({ title: "Success", description: "Product created." });
+      }
+
+      setIsDialogOpen(false);
+    } catch (error) {
+       toast({ title: "Error", description: "An error occurred.", variant: "destructive" });
     }
-    
-    // Save other product data immediately if no image is being uploaded
-    if (!data.image || data.image.length === 0) {
-        const productData = {
-            ...data,
-            id: productId,
-            imageId: imageId,
-        };
-        let newProducts;
-        if (editingProduct) {
-          newProducts = products.map((p) =>
-              p.id === editingProduct.id ? { ...p, ...productData } : p
-            );
-        } else {
-          newProducts = [
-            ...products,
-            productData,
-          ];
-        }
-        updateAndPersistProducts(newProducts);
-    }
-    
-    setIsDialogOpen(false);
   };
 
   return (
@@ -375,7 +297,8 @@ export default function AdminProductsPage() {
             </TableHeader>
             <TableBody>
               {products.map((product) => {
-                const imageUrl = getProductImage(product);
+                const placeholder = PlaceHolderImages.find(p => p.id === product.imageId);
+                const imageUrl = product.imageId.startsWith('https') ? product.imageId : placeholder?.imageUrl;
                 return (
                   <TableRow key={product.id}>
                      <TableCell>
@@ -418,3 +341,4 @@ export default function AdminProductsPage() {
       </Card>
     </div>
   );
+}

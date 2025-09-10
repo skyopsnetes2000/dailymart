@@ -15,11 +15,7 @@ import {
 } from '@/components/ui/select';
 import { Skeleton } from '@/components/ui/skeleton';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
-
-
-const PRODUCTS_STORAGE_KEY = 'admin_products';
-const CATEGORIES_STORAGE_KEY = 'admin_categories';
-const IMAGE_STORAGE_PREFIX = 'product_image_';
+import { getCategories, getProducts } from '@/lib/firestore';
 
 
 export default function AllProductsPage() {
@@ -31,34 +27,26 @@ export default function AllProductsPage() {
   const [selectedCategory, setSelectedCategory] = useState('all');
 
   useEffect(() => {
-    try {
-      const storedProducts = localStorage.getItem(PRODUCTS_STORAGE_KEY);
-      const storedCategories = localStorage.getItem(CATEGORIES_STORAGE_KEY);
-
-      if (storedProducts) {
-        setAllProducts(JSON.parse(storedProducts));
-      }
-      if (storedCategories) {
-        setCategories(JSON.parse(storedCategories));
-      }
-    } catch (error) {
-        console.warn("Could not access localStorage. Content may not be up to date.");
-    } finally {
-        setLoading(false);
+    const fetchData = async () => {
+        try {
+            const [productsData, categoriesData] = await Promise.all([
+                getProducts(),
+                getCategories()
+            ]);
+            setAllProducts(productsData);
+            setCategories(categoriesData);
+        } catch (error) {
+            console.error("Could not fetch data from Firestore.", error);
+        } finally {
+            setLoading(false);
+        }
     }
+    fetchData();
   }, []);
 
   const getProductImage = (product: Product) => {
-    try {
-        const storedImage = localStorage.getItem(`${IMAGE_STORAGE_PREFIX}${product.id}`);
-        if (storedImage) {
-            return storedImage;
-        }
-    } catch (error) {
-        console.warn("Could not access localStorage for images");
-    }
-    const placeholder = PlaceHolderImages.find((img) => img.id === product.imageId);
-    return placeholder?.imageUrl;
+    const placeholder = PlaceHolderImages.find((img) => img.id === product.imageId || img.imageUrl === product.imageId);
+    return product.imageId.startsWith('https') ? product.imageId : placeholder?.imageUrl;
   }
 
   const filteredProducts = allProducts.filter((product) => {

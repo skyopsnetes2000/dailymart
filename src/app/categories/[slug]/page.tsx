@@ -8,11 +8,7 @@ import { type Category, type Product } from '@/lib/data';
 import { notFound } from 'next/navigation';
 import { Skeleton } from '@/components/ui/skeleton';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
-
-const PRODUCTS_STORAGE_KEY = 'admin_products';
-const CATEGORIES_STORAGE_KEY = 'admin_categories';
-const IMAGE_STORAGE_PREFIX = 'product_image_';
-
+import { getCategories, getProducts } from '@/lib/firestore';
 
 export default function CategoryProductsPage({ params }: { params: { slug: string } }) {
   const { slug } = params;
@@ -21,45 +17,28 @@ export default function CategoryProductsPage({ params }: { params: { slug: strin
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    try {
-      const storedCategories = localStorage.getItem(CATEGORIES_STORAGE_KEY);
-      const storedProducts = localStorage.getItem(PRODUCTS_STORAGE_KEY);
-      
-      let allCategories: Category[] = [];
-      if (storedCategories) {
-        allCategories = JSON.parse(storedCategories);
-      }
-      
-      let allProducts: Product[] = [];
-      if (storedProducts) {
-        allProducts = JSON.parse(storedProducts);
-      }
+    const fetchData = async () => {
+        try {
+            const allCategories = await getCategories();
+            const currentCategory = allCategories.find((c) => c.slug === slug);
+            setCategory(currentCategory);
 
-      const currentCategory = allCategories.find((c) => c.slug === slug);
-      setCategory(currentCategory);
-
-      if (currentCategory) {
-        const categoryProducts = allProducts.filter((p) => p.categorySlug === slug);
-        setProducts(categoryProducts);
-      }
-    } catch (error) {
-        console.warn("Could not access localStorage. Content may not be up to date.");
-    } finally {
-        setLoading(false);
-    }
+            if (currentCategory) {
+                const categoryProducts = await getProducts(slug);
+                setProducts(categoryProducts);
+            }
+        } catch (error) {
+            console.error("Error fetching data", error);
+        } finally {
+            setLoading(false);
+        }
+    };
+    fetchData();
   }, [slug]);
 
   const getProductImage = (product: Product) => {
-    try {
-        const storedImage = localStorage.getItem(`${IMAGE_STORAGE_PREFIX}${product.id}`);
-        if (storedImage) {
-            return storedImage;
-        }
-    } catch (error) {
-        console.warn("Could not access localStorage for images");
-    }
-    const placeholder = PlaceHolderImages.find((img) => img.id === product.imageId);
-    return placeholder?.imageUrl;
+    const placeholder = PlaceHolderImages.find((img) => img.id === product.imageId || img.imageUrl === product.imageId);
+    return product.imageId.startsWith('https') ? product.imageId : placeholder?.imageUrl;
   }
 
   if (loading) {

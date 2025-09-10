@@ -20,12 +20,7 @@ import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Product, Category } from '@/lib/data';
 import { Skeleton } from '@/components/ui/skeleton';
-
-const PRODUCTS_STORAGE_KEY = 'admin_products';
-const CATEGORIES_STORAGE_KEY = 'admin_categories';
-const PRODUCT_IMAGE_STORAGE_PREFIX = 'product_image_';
-const CATEGORY_IMAGE_STORAGE_PREFIX = 'category_image_';
-
+import { getCategories, getProducts, getSpecialOfferProducts } from '@/lib/firestore';
 
 function LoadingSkeletons() {
     return (
@@ -57,55 +52,41 @@ function LoadingSkeletons() {
 export default function Home() {
   const [products, setProducts] = useState<Product[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
+  const [specialOffers, setSpecialOffers] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   
   useEffect(() => {
-    try {
-        const storedProducts = localStorage.getItem(PRODUCTS_STORAGE_KEY);
-        const storedCategories = localStorage.getItem(CATEGORIES_STORAGE_KEY);
-
-        if (storedProducts) {
-            setProducts(JSON.parse(storedProducts));
+    const fetchData = async () => {
+        try {
+            const [productsData, categoriesData, specialOffersData] = await Promise.all([
+                getProducts(),
+                getCategories(),
+                getSpecialOfferProducts(),
+            ]);
+            setProducts(productsData);
+            setCategories(categoriesData);
+            setSpecialOffers(specialOffersData);
+        } catch (error) {
+            console.error("Error fetching data from Firestore", error);
+        } finally {
+            setLoading(false);
         }
-        if (storedCategories) {
-            setCategories(JSON.parse(storedCategories));
-        }
-    } catch (error) {
-        console.warn("Could not access localStorage. Some content may not be available.");
-    } finally {
-        setLoading(false);
-    }
+    };
+    fetchData();
   }, []);
 
   const getProductImage = (product: Product) => {
-    try {
-        const storedImage = localStorage.getItem(`${PRODUCT_IMAGE_STORAGE_PREFIX}${product.id}`);
-        if (storedImage) {
-            return storedImage;
-        }
-    } catch (error) {
-        console.warn("Could not access localStorage for images");
-    }
-    const placeholder = PlaceHolderImages.find((img) => img.id === product.imageId);
-    return placeholder?.imageUrl;
+    const placeholder = PlaceHolderImages.find((img) => img.id === product.imageId || img.imageUrl === product.imageId);
+    return product.imageId.startsWith('https') ? product.imageId : placeholder?.imageUrl;
   }
   
   const getCategoryImage = (category: Category) => {
-    try {
-        const storedImage = localStorage.getItem(`${CATEGORY_IMAGE_STORAGE_PREFIX}${category.id}`);
-        if (storedImage) {
-            return storedImage;
-        }
-    } catch (error) {
-        console.warn("Could not access localStorage for images");
-    }
-    const placeholder = PlaceHolderImages.find((img) => img.id === category.imageId);
-    return placeholder?.imageUrl;
+    const placeholder = PlaceHolderImages.find((img) => img.id === category.imageId || img.imageUrl === category.imageId);
+    return category.imageId.startsWith('https') ? category.imageId : placeholder?.imageUrl;
   }
 
   const topCategories = categories.slice(0, 4);
   const heroImage = PlaceHolderImages.find((img) => img.id === 'hero-bg');
-  const specialOffers = products.filter(p => p.offer && p.offer.value > 0);
   
   const autoplayPlugin = React.useRef(
     Autoplay({ delay: 3000, stopOnInteraction: true })

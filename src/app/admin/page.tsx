@@ -1,8 +1,30 @@
 
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { DollarSign, Package, ShoppingCart } from 'lucide-react';
+
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import { DollarSign, Package, ShoppingCart, Database } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { seedInitialData } from '@/lib/firestore';
+import { useToast } from '@/hooks/use-toast';
+'use client';
+
 
 export default function AdminDashboardPage() {
+
+    const handleSeedData = async () => {
+        try {
+            const result = await seedInitialData();
+            if (result.success) {
+                alert(result.message + " Please refresh the page to see the data.");
+            } else {
+                 alert(result.message);
+            }
+        } catch (error) {
+            console.error("Seeding failed:", error);
+            alert("An error occurred during seeding.");
+        }
+    };
+
+
   return (
     <div className="space-y-6">
       <h1 className="text-3xl font-bold">Dashboard</h1>
@@ -44,6 +66,22 @@ export default function AdminDashboardPage() {
           </CardContent>
         </Card>
       </div>
+
+       <Card>
+        <CardHeader>
+            <CardTitle>Database Tools</CardTitle>
+            <CardDescription>
+                Use this to seed your Firestore database with initial product and category data.
+                This is useful for development and testing.
+            </CardDescription>
+        </CardHeader>
+        <CardFooter>
+            <Button onClick={handleSeedData}>
+                <Database className="mr-2 h-4 w-4" />
+                Seed Database
+            </Button>
+        </CardFooter>
+      </Card>
     </div>
   );
 }

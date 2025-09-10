@@ -13,10 +13,11 @@ import {
   CardTitle,
 } from '@/components/ui/card';
 import type { Product } from '@/lib/data';
+import { PlaceHolderImages } from '@/lib/placeholder-images';
 
 type ProductCardProps = {
   product: Product;
-  imageUrl?: string; // Accept an optional imageUrl prop
+  imageUrl?: string;
 };
 
 function calculateDiscountedPrice(product: Product) {
@@ -32,8 +33,11 @@ function calculateDiscountedPrice(product: Product) {
     return null;
 }
 
-const ProductCard: FC<ProductCardProps> = ({ product, imageUrl }) => {
+const ProductCard: FC<ProductCardProps> = ({ product }) => {
   const discountedPrice = calculateDiscountedPrice(product);
+
+  const placeholder = PlaceHolderImages.find((img) => img.id === product.imageId || img.imageUrl === product.imageId);
+  const imageUrl = product.imageId.startsWith('https') ? product.imageId : placeholder?.imageUrl;
 
   return (
     <Card className="flex h-full flex-col overflow-hidden">

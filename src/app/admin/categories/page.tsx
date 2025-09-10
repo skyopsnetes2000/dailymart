@@ -30,10 +30,12 @@ import { Input } from '@/components/ui/input';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { categories as initialCategories, type Category } from '@/lib/data';
+import { type Category } from '@/lib/data';
 import { Pencil, PlusCircle, Trash2 } from 'lucide-react';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
 import Image from 'next/image';
+import { useToast } from '@/hooks/use-toast';
+import { addCategory, deleteCategory, getCategories, updateCategory, uploadImage } from '@/lib/firestore';
 
 const categorySchema = z.object({
   name: z.string().min(1, 'Name is required'),
@@ -41,39 +43,21 @@ const categorySchema = z.object({
   image: z.any(),
 });
 
-const STORAGE_KEY = 'admin_categories';
-const IMAGE_STORAGE_PREFIX = 'category_image_';
 
 export default function AdminCategoriesPage() {
   const [categories, setCategories] = useState<Category[]>([]);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingCategory, setEditingCategory] = useState<Category | null>(null);
+  const { toast } = useToast();
 
   useEffect(() => {
-    try {
-      const storedCategories = localStorage.getItem(STORAGE_KEY);
-      if (storedCategories) {
-        setCategories(JSON.parse(storedCategories));
-      } else {
-        setCategories(initialCategories);
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(initialCategories));
-      }
-    } catch (error) {
-      console.warn("Could not access localStorage. Using initial categories.");
-      setCategories(initialCategories);
-    }
+    const fetchCategories = async () => {
+        const categoriesData = await getCategories();
+        setCategories(categoriesData);
+    };
+    fetchCategories();
   }, []);
-
-  const updateAndPersistCategories = (newCategories: Category[]) => {
-    setCategories(newCategories);
-    try {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(newCategories));
-    } catch (error) {
-        console.warn("Could not save categories to localStorage.");
-    }
-  };
-
-
+  
   const form = useForm<z.infer<typeof categorySchema>>({
     resolver: zodResolver(categorySchema),
   });
@@ -94,78 +78,50 @@ export default function AdminCategoriesPage() {
     setIsDialogOpen(true);
   };
 
-  const handleDelete = (categoryId: string) => {
-    updateAndPersistCategories(categories.filter((c) => c.id !== categoryId));
-     try {
-      localStorage.removeItem(`${IMAGE_STORAGE_PREFIX}${categoryId}`);
+  const handleDelete = async (categoryId: string) => {
+    try {
+        await deleteCategory(categoryId);
+        setCategories(categories.filter((c) => c.id !== categoryId));
+        toast({ title: "Success", description: "Category deleted." });
     } catch (error) {
-      console.warn(`Could not remove image for category ${categoryId} from localStorage`);
+        toast({ title: "Error", description: "Could not delete category.", variant: "destructive" });
     }
   };
 
-  const getCategoryImage = (category: Category) => {
+  const onSubmit = async (data: z.infer<typeof categorySchema>) => {
     try {
-        const storedImage = localStorage.getItem(`${IMAGE_STORAGE_PREFIX}${category.id}`);
-        if (storedImage) {
-            return storedImage;
-        }
-    } catch (error) {
-        console.warn("Could not access localStorage for images");
-    }
-    const placeholder = PlaceHolderImages.find((img) => img.id === category.imageId);
-    return placeholder?.imageUrl;
-  }
+      let imageId: string | undefined = editingCategory?.imageId;
 
-  const onSubmit = (data: z.infer<typeof categorySchema>) => {
-    const categoryId = editingCategory ? editingCategory.id : Date.now().toString();
-    let imageId = editingCategory ? editingCategory.imageId : '';
-
-     if (data.image && data.image.length > 0) {
-      const file = data.image[0];
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        const base64String = reader.result as string;
-        try {
-            localStorage.setItem(`${IMAGE_STORAGE_PREFIX}${categoryId}`, base64String);
-            imageId = `local_${categoryId}`; // Mark that we are using a local image
-            
-            const finalCategoryData = { ...data, id: categoryId, imageId: imageId };
-            
-            let newCategories;
-            if (editingCategory) {
-              newCategories = categories.map((c) => c.id === categoryId ? { ...c, ...finalCategoryData } : c);
-            } else {
-              newCategories = [...categories, finalCategoryData];
-            }
-            updateAndPersistCategories(newCategories);
-        } catch (error) {
-            console.error("Could not save image to localStorage", error);
-        }
-      };
-      reader.readAsDataURL(file);
-    } else if (!editingCategory) {
+      if (data.image && data.image.length > 0) {
+        const file = data.image[0];
+        const uploadResult = await uploadImage(file, 'categories');
+        imageId = uploadResult.url; // Use URL directly for firestore storage
+      } else if (!editingCategory) {
         const categoryImages = PlaceHolderImages.filter(img => img.id.startsWith('category-'));
         const randomImage = categoryImages[Math.floor(Math.random() * categoryImages.length)];
-        imageId = randomImage.id;
-    }
+        imageId = randomImage.imageUrl;
+      }
 
-    if (!data.image || data.image.length === 0) {
-        const categoryData = { ...data, id: categoryId, imageId: imageId };
-        let newCategories;
-        if (editingCategory) {
-          newCategories = categories.map((c) =>
-              c.id === editingCategory.id ? { ...c, ...categoryData } : c
-            );
-        } else {
-          newCategories = [
-            ...categories,
-            categoryData,
-          ];
-        }
-        updateAndPersistCategories(newCategories);
+      const categoryData: Omit<Category, 'id'> = {
+        name: data.name,
+        slug: data.slug,
+        imageId: imageId || '',
+      };
+
+      if (editingCategory) {
+        await updateCategory(editingCategory.id, categoryData);
+        setCategories(categories.map(c => c.id === editingCategory.id ? { ...c, ...categoryData } : c));
+        toast({ title: "Success", description: "Category updated." });
+      } else {
+        const newCategoryId = await addCategory(categoryData);
+        setCategories([...categories, { ...categoryData, id: newCategoryId }]);
+        toast({ title: "Success", description: "Category created." });
+      }
+
+      setIsDialogOpen(false);
+    } catch (error) {
+       toast({ title: "Error", description: "An error occurred.", variant: "destructive" });
     }
-    
-    setIsDialogOpen(false);
   };
 
   return (
@@ -256,7 +212,8 @@ export default function AdminCategoriesPage() {
             </TableHeader>
             <TableBody>
               {categories.map((category) => {
-                const imageUrl = getCategoryImage(category);
+                 const placeholder = PlaceHolderImages.find(p => p.imageUrl === category.imageId);
+                 const imageUrl = category.imageId.startsWith('https') ? category.imageId : placeholder?.imageUrl;
                 return (
                   <TableRow key={category.id}>
                     <TableCell>
