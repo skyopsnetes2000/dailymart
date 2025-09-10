@@ -72,12 +72,14 @@ export function AddressForm({ isOpen, onClose, onSave, address }: AddressFormPro
         (position) => {
           // In a real app, you'd use a reverse geocoding service here.
           // For now, we'll just fill in with placeholder data.
-          form.setValue('line1', '1600 Amphitheatre Parkway');
-          form.setValue('city', 'Mountain View');
-          form.setValue('state', 'CA');
-          form.setValue('zip', '94043');
-          setIsLocating(false);
-          toast({ title: "Location Filled", description: "Address details have been pre-filled." });
+          setTimeout(() => {
+            form.setValue('line1', '1600 Amphitheatre Parkway');
+            form.setValue('city', 'Mountain View');
+            form.setValue('state', 'CA');
+            form.setValue('zip', '94043');
+            setIsLocating(false);
+            toast({ title: "Location Filled", description: "Address details have been pre-filled." });
+          }, 1500); // Simulate network delay
         },
         (error) => {
           console.error("Geolocation error:", error);
@@ -106,11 +108,16 @@ export function AddressForm({ isOpen, onClose, onSave, address }: AddressFormPro
               <div className='space-y-4 p-4'>
                 <Button type="button" variant="outline" className="w-full" onClick={handleUseCurrentLocation} disabled={isLocating}>
                   {isLocating ? (
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Getting Location...
+                    </>
                   ) : (
-                    <LocateFixed className="mr-2 h-4 w-4" />
+                    <>
+                      <LocateFixed className="mr-2 h-4 w-4" />
+                      Use My Current Location
+                    </>
                   )}
-                  Use My Current Location
                 </Button>
                 <FormField
                   control={form.control}
