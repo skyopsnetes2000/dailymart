@@ -15,10 +15,13 @@ export type Category = {
   imageId: string;
 };
 
+export type OrderStatus = 'Pending' | 'Packed' | 'Out for Delivery' | 'Delivered' | 'Return Initiated' | 'Return Successful' | 'Refund Completed' | 'Cancelled';
+
+
 export type Order = {
   id: string;
   date: string;
-  status: 'Pending' | 'Packed' | 'Out for Delivery' | 'Delivered';
+  status: OrderStatus;
   total: number;
   items: { productName: string, quantity: number }[];
   trackingHistory: { status: string; date: string; }[];

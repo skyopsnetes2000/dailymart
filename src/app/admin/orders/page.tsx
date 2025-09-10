@@ -1,4 +1,6 @@
 
+'use client';
+
 import {
   Table,
   TableBody,
@@ -7,14 +9,55 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { orders } from '@/lib/data';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { Card, CardContent } from '@/components/ui/card';
+import { orders as initialOrders, Order, OrderStatus } from '@/lib/data';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Eye } from 'lucide-react';
 import Link from 'next/link';
+import { useState } from 'react';
+
+const statusColors: { [key in OrderStatus]: string } = {
+  Pending: 'bg-yellow-500',
+  Packed: 'bg-blue-500',
+  'Out for Delivery': 'bg-indigo-500',
+  Delivered: 'bg-green-500',
+  'Return Initiated': 'bg-purple-500',
+  'Return Successful': 'bg-pink-500',
+  'Refund Completed': 'bg-gray-500',
+  Cancelled: 'bg-red-500',
+};
+
 
 export default function AdminOrdersPage() {
+  const [orders, setOrders] = useState(initialOrders);
+
+  const handleStatusChange = (orderId: string, newStatus: OrderStatus) => {
+    setOrders(
+      orders.map((order) =>
+        order.id === orderId ? { ...order, status: newStatus } : order
+      )
+    );
+  };
+
+  const orderStatuses: OrderStatus[] = [
+    'Pending',
+    'Packed',
+    'Out for Delivery',
+    'Delivered',
+    'Return Initiated',
+    'Return Successful',
+    'Refund Completed',
+    'Cancelled',
+  ];
+
   return (
     <div className="space-y-6">
       <h1 className="text-3xl font-bold">Orders</h1>
@@ -41,7 +84,35 @@ export default function AdminOrdersPage() {
                   <TableCell>John Doe</TableCell>
                   <TableCell>${order.total.toFixed(2)}</TableCell>
                   <TableCell>
-                    <Badge variant={order.status === 'Delivered' ? 'default' : 'secondary'}>{order.status}</Badge>
+                    <Select
+                      value={order.status}
+                      onValueChange={(value) =>
+                        handleStatusChange(order.id, value as OrderStatus)
+                      }
+                    >
+                      <SelectTrigger className="w-48">
+                        <SelectValue>
+                           <Badge
+                              className={`${
+                                statusColors[order.status]
+                              } hover:${statusColors[order.status]}`}
+                            >
+                              {order.status}
+                            </Badge>
+                        </SelectValue>
+                      </SelectTrigger>
+                      <SelectContent>
+                        {orderStatuses.map((status) => (
+                          <SelectItem key={status} value={status}>
+                             <Badge
+                              className={`${statusColors[status]} hover:${statusColors[status]}`}
+                            >
+                              {status}
+                            </Badge>
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                   </TableCell>
                   <TableCell>
                     <Button asChild variant="outline" size="icon">
