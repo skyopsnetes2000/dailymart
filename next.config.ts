@@ -30,6 +30,13 @@ const nextConfig: NextConfig = {
       },
     ],
   },
+  // Allow cross-origin requests in development.
+  // This is a temporary workaround for a Next.js issue.
+  // In a real production environment, this should be configured more securely.
+  // We can track the issue here: https://github.com/vercel/next.js/issues/61498
+  experimental: {
+    allowedDevOrigins: ['*'],
+  },
 };
 
 export default nextConfig;
