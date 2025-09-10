@@ -153,11 +153,17 @@ export default function AdminOrdersPage() {
                          <TableCell colSpan={6} className='p-0'>
                             <div className='bg-muted/50 p-4'>
                                 <h4 className='font-semibold mb-2'>Shipping Details</h4>
-                                <p>{order.customerName}</p>
-                                <p>{order.shippingAddress.line1}</p>
-                                {order.shippingAddress.landmark && <p>{order.shippingAddress.landmark}</p>}
-                                <p>{order.shippingAddress.city}, {order.shippingAddress.state} {order.shippingAddress.zip}</p>
-                                <p>Mobile: {order.shippingAddress.mobile}</p>
+                                {order.shippingAddress ? (
+                                  <>
+                                    <p>{order.customerName}</p>
+                                    <p>{order.shippingAddress.line1}</p>
+                                    {order.shippingAddress.landmark && <p>{order.shippingAddress.landmark}</p>}
+                                    <p>{order.shippingAddress.city}, {order.shippingAddress.state} {order.shippingAddress.zip}</p>
+                                    <p>Mobile: {order.shippingAddress.mobile}</p>
+                                  </>
+                                ) : (
+                                  <p className="text-muted-foreground">Shipping address not available for this order.</p>
+                                )}
                                 <h4 className='font-semibold mt-4 mb-2'>Order Items</h4>
                                 <ul>
                                     {order.items.map((item, index) => (
