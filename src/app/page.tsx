@@ -68,6 +68,19 @@ export default function Home() {
             })}
           </div>
         </section>
+
+        <section className="space-y-4">
+          <div className="flex justify-between items-center">
+            <h2 className="font-headline text-xl font-bold">All Products</h2>
+            <Link href="/products" className="text-sm font-medium text-primary">See All</Link>
+          </div>
+          <div className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-4">
+            {products.slice(0, 8).map((product) => (
+              <ProductCard key={product.id} product={product} />
+            ))}
+          </div>
+        </section>
+
       </div>
     </>
   );
