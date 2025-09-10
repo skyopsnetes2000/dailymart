@@ -36,14 +36,14 @@ const ProductCard: FC<ProductCardProps> = ({ product }) => {
           )}
         </div>
       </CardHeader>
-      <CardContent className="flex-1 p-4">
-        <CardTitle className="mb-1 text-base font-medium">{product.name}</CardTitle>
-        <CardDescription>{product.weight}</CardDescription>
+      <CardContent className="flex-1 p-2 md:p-3">
+        <CardTitle className="mb-1 text-sm font-medium">{product.name}</CardTitle>
+        <CardDescription className="text-xs">{product.weight}</CardDescription>
       </CardContent>
-      <CardFooter className="flex items-center justify-between p-4 pt-0">
-        <p className="text-lg font-bold text-foreground">${product.price.toFixed(2)}</p>
-        <Button size="icon" style={{ backgroundColor: 'hsl(var(--accent))', color: 'hsl(var(--accent-foreground))' }}>
-          <Plus className="h-5 w-5" />
+      <CardFooter className="flex items-center justify-between p-2 pt-0 md:p-3">
+        <p className="text-base font-bold text-foreground">${product.price.toFixed(2)}</p>
+        <Button size="icon" className="h-8 w-8" style={{ backgroundColor: 'hsl(var(--accent))', color: 'hsl(var(--accent-foreground))' }}>
+          <Plus className="h-4 w-4" />
           <span className="sr-only">Add to cart</span>
         </Button>
       </CardFooter>
