@@ -54,7 +54,7 @@ export default function AllProductsPage() {
       </div>
 
       {filteredProducts.length > 0 ? (
-        <div className="grid grid-cols-2 gap-3 p-4 pt-0 sm:grid-cols-3 sm:p-6 md:grid-cols-4 lg:grid-cols-5">
+        <div className="grid grid-cols-3 gap-3 p-4 pt-0 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6">
           {filteredProducts.map((product) => (
             <ProductCard key={product.id} product={product} />
           ))}

@@ -116,7 +116,7 @@ export default function Home() {
             <h2 className="font-headline text-xl font-bold">Shop by Category</h2>
             <Link href="/categories" className="text-sm font-medium text-primary">See All</Link>
           </div>
-          <div className="grid grid-cols-3 gap-3 md:grid-cols-4">
+          <div className="grid grid-cols-4 gap-3 md:grid-cols-5 lg:grid-cols-6">
             {categories.map((category) => (
               <CategoryCard key={category.id} category={category} />
             ))}
@@ -159,7 +159,7 @@ export default function Home() {
             <Link href="/products" className="text-sm font-medium text-primary">See All</Link>
           </div>
           <div className="grid grid-cols-3 gap-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6">
-            {products.slice(0, 8).map((product) => (
+            {products.slice(0, 12).map((product) => (
               <ProductCard key={product.id} product={product} />
             ))}
           </div>
