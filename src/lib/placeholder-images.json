@@ -1,6 +1,9 @@
 {
   "placeholderImages": [
     { "id": "hero-bg", "description": "A background image showing fresh groceries.", "imageUrl": "https://picsum.photos/seed/101/1200/800", "imageHint": "fresh groceries" },
+    { "id": "ad-pharmacy", "description": "Pharmacy at your doorstep.", "imageUrl": "https://picsum.photos/seed/301/800/400", "imageHint": "pharmacy products" },
+    { "id": "ad-pet-care", "description": "Pet care supplies.", "imageUrl": "https://picsum.photos/seed/302/800/400", "imageHint": "pet supplies" },
+    { "id": "ad-baby-care", "description": "Baby care essentials.", "imageUrl": "https://picsum.photos/seed/303/800/400", "imageHint": "baby diapers" },
     { "id": "category-veg", "description": "An assortment of fresh vegetables.", "imageUrl": "https://picsum.photos/seed/102/400/300", "imageHint": "fresh vegetables" },
     { "id": "category-fruits", "description": "An assortment of fresh fruits.", "imageUrl": "https://picsum.photos/seed/103/400/300", "imageHint": "fresh fruit" },
     { "id": "category-dairy", "description": "Dairy products like milk and cheese.", "imageUrl": "https://picsum.photos/seed/104/400/300", "imageHint": "dairy products" },

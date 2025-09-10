@@ -19,15 +19,24 @@ import {
 } from '@/components/ui/carousel';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
 import Autoplay from "embla-carousel-autoplay";
+import { Button } from '@/components/ui/button';
+import { Card } from '@/components/ui/card';
 
 export default function Home() {
   const topCategories = categories.slice(0, 4);
   const heroImage = PlaceHolderImages.find((img) => img.id === 'hero-bg');
   const specialOffers = products.slice(0, 4);
   
-  const plugin = React.useRef(
+  const autoplayPlugin = React.useRef(
     Autoplay({ delay: 3000, stopOnInteraction: true })
   )
+
+  const ads = [
+    PlaceHolderImages.find(img => img.id === 'ad-pharmacy'),
+    PlaceHolderImages.find(img => img.id === 'ad-pet-care'),
+    PlaceHolderImages.find(img => img.id === 'ad-baby-care'),
+  ].filter(Boolean);
+
 
   return (
     <>
@@ -57,13 +66,40 @@ export default function Home() {
           </div>
         </section>
 
+        <section>
+          <Carousel
+            opts={{ align: 'start', loop: true }}
+            plugins={[autoplayPlugin.current]}
+            onMouseEnter={autoplayPlugin.current.stop}
+            onMouseLeave={autoplayPlugin.current.reset}
+          >
+            <CarouselContent className="-ml-2">
+              {ads.map((ad) => (
+                ad && <CarouselItem key={ad.id} className="basis-5/6 sm:basis-2/3 md:basis-1/2 pl-2">
+                  <Card className="overflow-hidden relative aspect-video">
+                     <Image
+                        src={ad.imageUrl}
+                        alt={ad.description}
+                        fill
+                        className="object-cover"
+                        data-ai-hint={ad.imageHint}
+                      />
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
+                      <div className="absolute bottom-0 left-0 p-4 text-white">
+                        <h3 className="font-bold text-lg">{ad.description}</h3>
+                         <Button size="sm" variant="secondary" className="mt-2">Order Now</Button>
+                      </div>
+                  </Card>
+                </CarouselItem>
+              ))}
+            </CarouselContent>
+          </Carousel>
+        </section>
+
          <section className="space-y-4">
           <h2 className="font-headline text-xl font-bold">Special Offers</h2>
           <Carousel
             opts={{ align: 'start', loop: true }}
-            plugins={[plugin.current]}
-            onMouseEnter={plugin.current.stop}
-            onMouseLeave={plugin.current.reset}
           >
             <CarouselContent className="-ml-2">
               {specialOffers.map((product) => (
