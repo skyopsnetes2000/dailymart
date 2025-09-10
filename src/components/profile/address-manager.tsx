@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -8,13 +8,42 @@ import { Plus, Trash2, Edit } from 'lucide-react';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { AddressForm, AddressSchema } from './address-form';
 import type { z } from 'zod';
+import { user as staticUser } from '@/lib/data';
 
 type Address = z.infer<typeof AddressSchema> & { id: string };
 
+const STORAGE_KEY = 'user_addresses';
+
 export default function AddressManager({ addresses: initialAddresses }: { addresses: Address[] }) {
-  const [addresses, setAddresses] = useState(initialAddresses);
+  const [addresses, setAddresses] = useState<Address[]>([]);
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingAddress, setEditingAddress] = useState<Address | null>(null);
+
+  useEffect(() => {
+    try {
+      const storedAddresses = localStorage.getItem(STORAGE_KEY);
+      if (storedAddresses) {
+        setAddresses(JSON.parse(storedAddresses));
+      } else {
+        // If nothing in storage, initialize with static data and save it.
+        setAddresses(staticUser.addresses);
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(staticUser.addresses));
+      }
+    } catch (error) {
+        // If localStorage is not available, fall back to initial props
+        console.warn("Could not access localStorage. Using initial addresses.");
+        setAddresses(initialAddresses);
+    }
+  }, [initialAddresses]);
+
+  const updateAndPersistAddresses = (newAddresses: Address[]) => {
+    setAddresses(newAddresses);
+    try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(newAddresses));
+    } catch (error) {
+        console.warn("Could not save addresses to localStorage.");
+    }
+  };
 
   const handleAddNew = () => {
     if (addresses.length >= 6) {
@@ -31,28 +60,36 @@ export default function AddressManager({ addresses: initialAddresses }: { addres
   };
 
   const handleDelete = (addressId: string) => {
-    setAddresses(prev => prev.filter(addr => addr.id !== addressId));
+    const newAddresses = addresses.filter(addr => addr.id !== addressId);
+    updateAndPersistAddresses(newAddresses);
   };
   
   const handleSetDefault = (addressId: string) => {
-    setAddresses(prev => prev.map(addr => ({ ...addr, isDefault: addr.id === addressId })));
+    const newAddresses = addresses.map(addr => ({ ...addr, isDefault: addr.id === addressId }));
+    updateAndPersistAddresses(newAddresses);
   };
 
   const handleSaveAddress = (data: z.infer<typeof AddressSchema>) => {
+    let newAddresses;
+    let newAddressId = editingAddress ? editingAddress.id : Date.now().toString();
+
     if (editingAddress) {
       // Update existing address
-      setAddresses(prev => prev.map(addr => addr.id === editingAddress.id ? { ...addr, ...data } : addr));
+      newAddresses = addresses.map(addr => addr.id === editingAddress.id ? { ...addr, ...data } : addr);
     } else {
       // Add new address
       const newAddress: Address = {
-        id: (addresses.length + 1).toString(),
+        id: newAddressId,
         ...data,
       };
-      setAddresses(prev => [...prev, newAddress]);
+      newAddresses = [...addresses, newAddress];
     }
+    
     if (data.isDefault) {
-        handleSetDefault(editingAddress ? editingAddress.id : (addresses.length + 1).toString());
+        newAddresses = newAddresses.map(addr => ({ ...addr, isDefault: addr.id === newAddressId }));
     }
+
+    updateAndPersistAddresses(newAddresses);
     setIsFormOpen(false);
     setEditingAddress(null);
   };
