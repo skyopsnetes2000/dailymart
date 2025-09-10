@@ -67,30 +67,41 @@ export function AddressForm({ isOpen, onClose, onSave, address }: AddressFormPro
 
   const handleUseCurrentLocation = () => {
     setIsLocating(true);
-    if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(
-        (position) => {
-          // In a real app, you'd use a reverse geocoding service here.
-          // For now, we'll just fill in with placeholder data.
-          setTimeout(() => {
-            form.setValue('line1', '1600 Amphitheatre Parkway');
-            form.setValue('city', 'Mountain View');
-            form.setValue('state', 'CA');
-            form.setValue('zip', '94043');
-            setIsLocating(false);
-            toast({ title: "Location Filled", description: "Address details have been pre-filled." });
-          }, 1500); // Simulate network delay
-        },
-        (error) => {
-          console.error("Geolocation error:", error);
-          toast({ title: "Error", description: "Could not retrieve your location.", variant: "destructive" });
-          setIsLocating(false);
-        }
-      );
-    } else {
+    if (!navigator.geolocation) {
       toast({ title: "Error", description: "Geolocation is not supported by your browser.", variant: "destructive" });
       setIsLocating(false);
+      return;
     }
+
+    navigator.geolocation.getCurrentPosition(
+      async (position) => {
+        try {
+          const { latitude, longitude } = position.coords;
+          const response = await fetch(`/api/geocode?lat=${latitude}&lng=${longitude}`);
+          if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.error || 'Failed to fetch address.');
+          }
+          
+          const data = await response.json();
+
+          form.setValue('line1', `${data.street_number} ${data.route}`);
+          form.setValue('city', data.locality);
+          form.setValue('state', data.administrative_area_level_1);
+          form.setValue('zip', data.postal_code);
+          toast({ title: "Location Filled", description: "Address details have been pre-filled." });
+        } catch (error: any) {
+           toast({ title: "Error", description: error.message || "Could not retrieve your location.", variant: "destructive" });
+        } finally {
+          setIsLocating(false);
+        }
+      },
+      (error) => {
+        console.error("Geolocation error:", error);
+        toast({ title: "Error", description: "Could not retrieve your location.", variant: "destructive" });
+        setIsLocating(false);
+      }
+    );
   }
   
   return (
