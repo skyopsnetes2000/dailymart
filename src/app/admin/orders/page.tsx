@@ -17,12 +17,12 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Card, CardContent } from '@/components/ui/card';
-import { orders as initialOrders, Order, OrderStatus } from '@/lib/data';
+import { orders as staticOrders, Order, OrderStatus } from '@/lib/data';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Eye } from 'lucide-react';
 import Link from 'next/link';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { format } from 'date-fns';
 
 const statusColors: { [key in OrderStatus]: string } = {
@@ -36,16 +36,33 @@ const statusColors: { [key in OrderStatus]: string } = {
   Cancelled: 'bg-red-500',
 };
 
+const ORDERS_STORAGE_KEY = 'user_orders';
+
 
 export default function AdminOrdersPage() {
-  const [orders, setOrders] = useState(initialOrders);
+  const [orders, setOrders] = useState<Order[]>([]);
+
+  useEffect(() => {
+    try {
+        const storedOrdersRaw = localStorage.getItem(ORDERS_STORAGE_KEY);
+        const storedOrders = storedOrdersRaw ? JSON.parse(storedOrdersRaw) : staticOrders;
+        setOrders(storedOrders);
+    } catch (error) {
+        console.warn("Could not access localStorage. Using static orders.");
+        setOrders(staticOrders);
+    }
+  }, []);
 
   const handleStatusChange = (orderId: string, newStatus: OrderStatus) => {
-    setOrders(
-      orders.map((order) =>
-        order.id === orderId ? { ...order, status: newStatus } : order
-      )
+    const updatedOrders = orders.map((order) =>
+      order.id === orderId ? { ...order, status: newStatus } : order
     );
+    setOrders(updatedOrders);
+    try {
+      localStorage.setItem(ORDERS_STORAGE_KEY, JSON.stringify(updatedOrders));
+    } catch (error) {
+      console.warn("Could not update orders in localStorage.");
+    }
   };
 
   const orderStatuses: OrderStatus[] = [
