@@ -10,7 +10,7 @@ import { Button } from "@/components/ui/button";
 import { LogIn, Loader2, ChevronRight } from "lucide-react";
 import { useAuthState } from "react-firebase-hooks/auth";
 import { auth } from "@/lib/firebase";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -18,7 +18,8 @@ import { Badge } from "@/components/ui/badge";
 export default function ProfilePage() {
   const [user, loading] = useAuthState(auth);
   const router = useRouter();
-
+  const [activeTab, setActiveTab] = useState('profile');
+  
   useEffect(() => {
     // This could be extracted into a higher-order component or middleware
     if (!loading && !user) {
@@ -26,6 +27,19 @@ export default function ProfilePage() {
       // or redirect them. For now, we show the login prompt.
     }
   }, [user, loading, router]);
+
+  const getTitleForTab = (tab: string) => {
+    switch (tab) {
+        case 'profile':
+            return 'My Profile';
+        case 'addresses':
+            return 'My Addresses';
+        case 'orders':
+            return 'My Orders';
+        default:
+            return 'My Profile';
+    }
+  }
 
 
   if (loading) {
@@ -70,9 +84,9 @@ export default function ProfilePage() {
 
   return (
     <div>
-      <PageHeader title="My Profile" />
+      <PageHeader title={getTitleForTab(activeTab)} />
       <div className="p-4 sm:p-6">
-        <Tabs defaultValue="profile" className="w-full">
+        <Tabs defaultValue="profile" className="w-full" onValueChange={setActiveTab}>
           <TabsList className="grid w-full grid-cols-3">
             <TabsTrigger value="profile">Profile</TabsTrigger>
             <TabsTrigger value="addresses">Addresses</TabsTrigger>
