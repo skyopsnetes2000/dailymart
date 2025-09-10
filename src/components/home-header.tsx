@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { MapPin, ChevronDown, UtensilsCrossed } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
@@ -10,11 +10,33 @@ import {
   SheetTitle,
   SheetTrigger,
 } from '@/components/ui/sheet';
+import { user as staticUser, type Address } from '@/lib/data';
 
-const locations = ['Greenfield, CA', 'Spring Valley, CA', 'Northwood, CA'];
+const STORAGE_KEY = 'user_addresses';
 
 export default function HomeHeader() {
-  const [selectedLocation, setSelectedLocation] = useState(locations[0]);
+  const [addresses, setAddresses] = useState<Address[]>([]);
+  const [selectedAddress, setSelectedAddress] = useState<Address | null>(null);
+
+  useEffect(() => {
+    let storedAddresses: Address[] = [];
+    try {
+      const storedAddressesRaw = localStorage.getItem(STORAGE_KEY);
+      if (storedAddressesRaw) {
+        storedAddresses = JSON.parse(storedAddressesRaw);
+      } else {
+        storedAddresses = staticUser.addresses;
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(staticUser.addresses));
+      }
+    } catch (error) {
+      console.warn("Could not access localStorage. Using initial addresses.");
+      storedAddresses = staticUser.addresses;
+    }
+
+    setAddresses(storedAddresses);
+    const defaultAddress = storedAddresses.find(addr => addr.isDefault) || storedAddresses[0] || null;
+    setSelectedAddress(defaultAddress);
+  }, []);
 
   return (
     <header className="sticky top-0 z-40 bg-background/80 p-4 backdrop-blur-sm">
@@ -29,8 +51,14 @@ export default function HomeHeader() {
             <Button variant="ghost" className="flex items-center gap-2 text-sm">
               <MapPin className="h-4 w-4" />
               <span className="hidden sm:inline">Deliver to: </span>
-              <span className="font-semibold">{selectedLocation.split(',')[0]}</span>
-              <ChevronDown className="h-4 w-4 opacity-50" />
+              {selectedAddress ? (
+                <>
+                  <span className="font-semibold">{selectedAddress.city}</span>
+                  <ChevronDown className="h-4 w-4 opacity-50" />
+                </>
+              ) : (
+                <span className="font-semibold">Set Location</span>
+              )}
             </Button>
           </SheetTrigger>
           <SheetContent side="bottom" className="rounded-t-lg">
@@ -38,17 +66,23 @@ export default function HomeHeader() {
               <SheetTitle>Choose your location</SheetTitle>
             </SheetHeader>
             <div className="mt-4 flex flex-col gap-2">
-              {locations.map((location) => (
-                <SheetTrigger asChild key={location}>
+              {addresses.map((address) => (
+                <SheetTrigger asChild key={address.id}>
                   <Button
-                    variant={selectedLocation === location ? 'default' : 'outline'}
-                    onClick={() => setSelectedLocation(location)}
-                    className="justify-start p-4 text-left"
+                    variant={selectedAddress?.id === address.id ? 'default' : 'outline'}
+                    onClick={() => setSelectedAddress(address)}
+                    className="justify-start p-4 text-left h-auto"
                   >
-                    {location}
+                    <div className="flex flex-col">
+                      <span>{address.line1}</span>
+                      <span className="text-sm text-muted-foreground">{address.city}, {address.state}</span>
+                    </div>
                   </Button>
                 </SheetTrigger>
               ))}
+               {addresses.length === 0 && (
+                <p className="text-center text-muted-foreground p-4">You have no saved addresses. Please add one in your profile.</p>
+               )}
             </div>
           </SheetContent>
         </Sheet>
