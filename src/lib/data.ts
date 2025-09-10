@@ -1,4 +1,5 @@
 
+
 export type Offer = {
   type: 'percentage' | 'fixed';
   value: number;
@@ -14,6 +15,11 @@ export type Product = {
   categorySlug: string;
   offer?: Offer | null;
 };
+
+export type CartItem = {
+    product: Product;
+    quantity: number;
+}
 
 export type Category = {
   id: string;

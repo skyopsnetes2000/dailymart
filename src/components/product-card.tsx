@@ -14,6 +14,7 @@ import {
   CardTitle,
 } from '@/components/ui/card';
 import type { Product } from '@/lib/data';
+import useCart from '@/hooks/use-cart';
 
 type ProductCardProps = {
   product: Product;
@@ -35,6 +36,7 @@ function calculateDiscountedPrice(product: Product) {
 const ProductCard: FC<ProductCardProps> = ({ product }) => {
   const discountedPrice = calculateDiscountedPrice(product);
   const imageUrl = product.imageId;
+  const { addItem } = useCart();
 
   return (
     <Card className="flex h-full flex-col overflow-hidden">
@@ -65,7 +67,7 @@ const ProductCard: FC<ProductCardProps> = ({ product }) => {
                  <p className="text-base font-bold text-foreground">${product.price.toFixed(2)}</p>
             )}
         </div>
-        <Button size="icon" className="h-8 w-8" style={{ backgroundColor: 'hsl(var(--accent))', color: 'hsl(var(--accent-foreground))' }}>
+        <Button size="icon" className="h-8 w-8" style={{ backgroundColor: 'hsl(var(--accent))', color: 'hsl(var(--accent-foreground))' }} onClick={() => addItem(product)}>
           <Plus className="h-4 w-4" />
           <span className="sr-only">Add to cart</span>
         </Button>
