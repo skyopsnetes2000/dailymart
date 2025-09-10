@@ -2,17 +2,16 @@
 
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, use } from 'react';
 import ProductCard from '@/components/product-card';
 import PageHeader from '@/components/shared/page-header';
 import { type Category, type Product } from '@/lib/data';
 import { notFound } from 'next/navigation';
 import { Skeleton } from '@/components/ui/skeleton';
-import { PlaceHolderImages } from '@/lib/placeholder-images';
 import { getCategories, getProducts } from '@/lib/firestore';
 
-export default function CategoryProductsPage({ params }: { params: { slug: string } }) {
-  const { slug } = params;
+export default function CategoryProductsPage({ params }: { params: Promise<{ slug: string }> }) {
+  const { slug } = use(params);
   const [category, setCategory] = useState<Category | null | undefined>(undefined);
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
