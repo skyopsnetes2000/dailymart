@@ -24,7 +24,7 @@ export default function CategoryProductsPage({ params }: { params: Promise<{ slu
             setCategory(currentCategory);
 
             if (currentCategory) {
-                const categoryProducts = await getProducts(slug);
+                const categoryProducts = await getProducts(currentCategory.slug);
                 setProducts(categoryProducts);
             }
         } catch (error) {
@@ -40,7 +40,7 @@ export default function CategoryProductsPage({ params }: { params: Promise<{ slu
     return (
         <div>
             <PageHeader title={<Skeleton className="h-8 w-48" />} />
-            <div className="grid grid-cols-3 gap-3 p-4 pt-0 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6">
+            <div className="grid grid-cols-2 gap-4 p-4 pt-0 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
                 {Array.from({ length: 12 }).map((_, i) => (
                     <Skeleton key={i} className="h-48 w-full" />
                 ))}
@@ -62,7 +62,7 @@ export default function CategoryProductsPage({ params }: { params: Promise<{ slu
     <div>
       <PageHeader title={category.name} />
       {products.length > 0 ? (
-        <div className="grid grid-cols-3 gap-4 p-4 sm:p-6 md:grid-cols-4 lg:grid-cols-5">
+        <div className="grid grid-cols-2 gap-4 p-4 sm:p-6 md:grid-cols-3 lg:grid-cols-4">
           {products.map((product) => (
             <ProductCard key={product.id} product={product} />
           ))}
