@@ -156,24 +156,22 @@ export default function Home() {
           </Carousel>
         </section>
 
-         <section className="space-y-4">
-          <h2 className="font-headline text-xl font-bold">Special Offers</h2>
-          {specialOffers.length > 0 ? (
-          <Carousel
-            opts={{ align: 'start', loop: true }}
-          >
-            <CarouselContent className="-ml-2">
-              {specialOffers.map((product) => (
-                <CarouselItem key={product.id} className="basis-2/5 sm:basis-1/3 md:basis-1/4 lg:basis-1/5 pl-2">
-                  <ProductCard product={product} />
-                </CarouselItem>
-              ))}
-            </CarouselContent>
-          </Carousel>
-          ) : (
-            <p className="text-muted-foreground">No special offers at the moment.</p>
-          )}
-        </section>
+         {specialOffers.length > 0 && (
+            <section className="space-y-4">
+            <h2 className="font-headline text-xl font-bold">Special Offers</h2>
+            <Carousel
+                opts={{ align: 'start', loop: true }}
+            >
+                <CarouselContent className="-ml-2">
+                {specialOffers.map((product) => (
+                    <CarouselItem key={product.id} className="basis-2/5 sm:basis-1/3 md:basis-1/4 lg:basis-1/5 pl-2">
+                    <ProductCard product={product} />
+                    </CarouselItem>
+                ))}
+                </CarouselContent>
+            </Carousel>
+            </section>
+        )}
 
         <section className="space-y-4">
           <div className="flex justify-between items-center">
