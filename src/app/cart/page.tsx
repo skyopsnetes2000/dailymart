@@ -39,7 +39,7 @@ export default function CartPage() {
           <h2 className="text-xl font-semibold">Your cart is empty</h2>
           <p className="text-muted-foreground">Looks like you haven't added anything to your cart yet.</p>
           <Button asChild>
-            <Link href="/">Start Shopping</Link>
+            <Link href="/products">Start Shopping</Link>
           </Button>
         </div>
       </div>
