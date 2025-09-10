@@ -1,6 +1,7 @@
 
 'use client';
 
+import * as React from 'react';
 import {
   Table,
   TableBody,
@@ -20,7 +21,6 @@ import { Card, CardContent } from '@/components/ui/card';
 import { orders as staticOrders, Order, OrderStatus } from '@/lib/data';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import Link from 'next/link';
 import { useState, useEffect } from 'react';
 import { format } from 'date-fns';
 import { ChevronDown, ChevronUp } from 'lucide-react';
