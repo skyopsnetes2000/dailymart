@@ -66,22 +66,6 @@ export default function AdminDashboardPage() {
           </CardContent>
         </Card>
       </div>
-
-       <Card>
-        <CardHeader>
-            <CardTitle>Database Tools</CardTitle>
-            <CardDescription>
-                Use this to seed your Firestore database with initial product and category data.
-                This is useful for development and testing.
-            </CardDescription>
-        </CardHeader>
-        <CardFooter>
-            <Button onClick={handleSeedData}>
-                <Database className="mr-2 h-4 w-4" />
-                Seed Database
-            </Button>
-        </CardFooter>
-      </Card>
     </div>
   );
 }
