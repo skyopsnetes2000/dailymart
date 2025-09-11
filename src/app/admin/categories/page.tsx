@@ -31,7 +31,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { type Category } from '@/lib/data';
-import { Pencil, PlusCircle, Trash2 } from 'lucide-react';
+import { Pencil, PlusCircle, Search, Trash2 } from 'lucide-react';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
 import Image from 'next/image';
 import { useToast } from '@/hooks/use-toast';
@@ -55,6 +55,7 @@ export default function AdminCategoriesPage() {
   const [categories, setCategories] = useState<Category[]>([]);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingCategory, setEditingCategory] = useState<Category | null>(null);
+  const [searchTerm, setSearchTerm] = useState('');
   const { toast } = useToast();
 
   useEffect(() => {
@@ -139,6 +140,10 @@ export default function AdminCategoriesPage() {
     }
   };
 
+  const filteredCategories = categories.filter(category =>
+    category.name.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -147,6 +152,18 @@ export default function AdminCategoriesPage() {
           <PlusCircle className="mr-2 h-4 w-4" />
           Add New Category
         </Button>
+      </div>
+
+       <div className="flex gap-2">
+        <div className="relative flex-1">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+          <Input
+            placeholder="Search for categories..."
+            className="pl-10 h-10"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+          />
+        </div>
       </div>
 
       <Dialog
@@ -226,7 +243,7 @@ export default function AdminCategoriesPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {categories.map((category) => {
+              {filteredCategories.map((category) => {
                 return (
                   <TableRow key={category.id}>
                     <TableCell>
