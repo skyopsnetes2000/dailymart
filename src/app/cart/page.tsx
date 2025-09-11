@@ -26,6 +26,22 @@ export default function CartPage() {
     return total + price * item.quantity;
   }, 0);
 
+  const formatWeight = (weight: string, quantity: number): string => {
+    const match = weight.match(/([0-9.]+)\s*(\w+)/);
+    if (match) {
+        const value = parseFloat(match[1]);
+        const unit = match[2];
+        if (!isNaN(value)) {
+            const totalValue = value * quantity;
+            // Handle pluralization simply for 's'
+            const finalUnit = totalValue > 1 && !unit.endsWith('s') ? `${unit}s` : unit;
+            return `${totalValue}${finalUnit}`;
+        }
+    }
+    // If no parsable number-unit format, return the original weight
+    return weight;
+  };
+
   if (!isClient) {
     return null;
   }
@@ -68,7 +84,7 @@ export default function CartPage() {
                 />
                 <div className="flex-1 space-y-1">
                   <h3 className="font-semibold">{product.name}</h3>
-                  <p className="text-sm text-muted-foreground">{product.weight}</p>
+                  <p className="text-sm text-muted-foreground">{formatWeight(product.weight, quantity)}</p>
                   <div className="flex items-center gap-2">
                     <p className="font-bold">${finalPrice.toFixed(2)}</p>
                     {product.offer && <p className="text-sm text-muted-foreground line-through">${product.price.toFixed(2)}</p>}
