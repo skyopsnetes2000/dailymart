@@ -34,24 +34,15 @@ const ProductCard: FC<ProductCardProps> = ({ product }) => {
               className="object-cover transition-transform duration-300 group-hover:scale-105"
             />
           )}
-           <Button 
-                size="icon" 
-                className="absolute top-2 right-2 h-8 w-8 rounded-full shadow-lg transition-all scale-0 group-hover:scale-100" 
-                style={{ backgroundColor: 'hsl(var(--accent))', color: 'hsl(var(--accent-foreground))' }} 
-                onClick={(e) => { e.preventDefault(); addItem(product); }}
-                aria-label={`Add ${product.name} to cart`}
-            >
-                <Plus className="h-4 w-4" />
-            </Button>
         </div>
       <CardContent className="flex-1 p-2 md:p-3 flex flex-col justify-between">
         <div>
             <h3 className="mb-1 text-sm font-medium leading-tight line-clamp-2">{product.name}</h3>
             <p className="text-xs text-muted-foreground">{product.weight}</p>
         </div>
-        <div className="mt-2 flex justify-between items-end">
+        <div className="mt-2 flex justify-between items-center">
             {discountedPrice !== null && discountedPrice < product.price ? (
-                <div className="flex items-baseline gap-1.5">
+                <div className="flex flex-col items-start gap-0">
                     <p className="text-base font-bold text-foreground">₹{discountedPrice.toFixed(2)}</p>
                     <p className="text-xs font-medium text-muted-foreground line-through">₹{product.price.toFixed(2)}</p>
                 </div>
@@ -60,7 +51,7 @@ const ProductCard: FC<ProductCardProps> = ({ product }) => {
             )}
              <Button 
                 size="icon" 
-                className="h-8 w-8 rounded-full shadow-lg transition-all scale-100 group-hover:scale-0" 
+                className="h-8 w-8 rounded-full shadow-md" 
                 style={{ backgroundColor: 'hsl(var(--accent))', color: 'hsl(var(--accent-foreground))' }} 
                 onClick={(e) => { e.preventDefault(); addItem(product); }}
                 aria-label={`Add ${product.name} to cart`}
