@@ -132,14 +132,14 @@ export default function Home() {
             <section>
             <Carousel
                 opts={{ align: 'start', loop: true }}
-                plugins={[autoplayPlugin.current]}
+                plugins={ads.length > 4 ? [autoplayPlugin.current] : []}
                 onMouseEnter={autoplayPlugin.current.stop}
                 onMouseLeave={autoplayPlugin.current.reset}
             >
                 <CarouselContent className="-ml-2">
                 {ads.map((ad) => (
                     ad.imageUrl && <CarouselItem key={ad.id} className="pl-2 basis-auto">
-                    <Card className="overflow-hidden relative aspect-video w-48">
+                    <Card className="overflow-hidden relative aspect-video w-64">
                         
                         <Image
                             src={ad.imageUrl}
@@ -149,9 +149,9 @@ export default function Home() {
                         />
                         
                         <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
-                        <div className="absolute bottom-0 left-0 p-1 md:p-2">
-                            {ad.description && <h3 className="font-bold text-xs md:text-sm text-white">{ad.description}</h3>}
-                            <Button asChild size="sm" variant="secondary" className="mt-1 h-6 text-xs md:h-7">
+                        <div className="absolute bottom-0 left-0 p-2 md:p-3">
+                            {ad.description && <h3 className="font-bold text-sm md:text-base text-white">{ad.description}</h3>}
+                            <Button asChild size="sm" variant="secondary" className="mt-1 h-7 text-sm md:h-8">
                                <Link href={ad.categorySlug ? `/categories/${ad.categorySlug}` : '/products'}>Order Now</Link>
                             </Button>
                         </div>

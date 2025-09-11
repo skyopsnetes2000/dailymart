@@ -261,7 +261,7 @@ export default function AdminAppearancePage() {
                                     <FormControl>
                                         <SelectTrigger>
                                             <SelectValue placeholder="Select a category" />
-                                        </SelectTrigger>
+                                        </Trigger>
                                     </FormControl>
                                     <SelectContent>
                                         <SelectItem value="_none_">None</SelectItem>
