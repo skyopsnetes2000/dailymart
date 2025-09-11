@@ -21,6 +21,7 @@ interface CartStore {
 }
 
 const getLocalCart = (): CartItem[] => {
+    if (typeof window === 'undefined') return [];
     try {
         const localData = localStorage.getItem('local-cart');
         return localData ? JSON.parse(localData) : [];
@@ -30,6 +31,7 @@ const getLocalCart = (): CartItem[] => {
 }
 
 const setLocalCart = (items: CartItem[]) => {
+    if (typeof window === 'undefined') return;
     localStorage.setItem('local-cart', JSON.stringify(items));
 }
 
@@ -40,8 +42,8 @@ const useCart = create<CartStore>((set, get) => ({
   isInitialized: false,
   userId: null,
 
-  initializeCart: (user) => {
-    if (get().isInitialized) return;
+  initializeCart: async (user) => {
+    if (get().isInitialized && get().userId === user?.uid) return;
 
     if (firestoreUnsubscribe) {
         firestoreUnsubscribe();
@@ -49,13 +51,12 @@ const useCart = create<CartStore>((set, get) => ({
     }
     
     if (user) {
-        set({ userId: user.uid });
+        set({ userId: user.uid, isInitialized: false });
         const localCart = getLocalCart();
         
         if (localCart.length > 0) {
-            mergeLocalCart(user.uid, localCart).then(() => {
-                localStorage.removeItem('local-cart');
-            });
+            await mergeLocalCart(user.uid, localCart);
+            localStorage.removeItem('local-cart');
         }
         
         firestoreUnsubscribe = getCart(user.uid, (items) => {
@@ -111,22 +112,25 @@ const useCart = create<CartStore>((set, get) => ({
     if (userId) {
         await updateCartItemQuantity(userId, productId, quantity);
     } else {
-        if (quantity === 0) {
-            const newItems = items.filter((item) => item.product.id !== productId);
-            set({ items: newItems });
-            setLocalCart(newItems);
+        let newItems;
+        if (quantity <= 0) {
+            newItems = items.filter((item) => item.product.id !== productId);
         } else {
-            const newItems = items.map((item) =>
+            newItems = items.map((item) =>
                 item.product.id === productId ? { ...item, quantity } : item
             );
-            set({ items: newItems });
-            setLocalCart(newItems);
         }
+        set({ items: newItems });
+        setLocalCart(newItems);
     }
   },
 
   clearCart: async () => {
     const { userId } = get();
+    toast({
+        title: 'Cart Cleared',
+        description: 'Your shopping cart has been emptied.',
+    });
     if (userId) {
         await clearFirestoreCart(userId);
     } else {

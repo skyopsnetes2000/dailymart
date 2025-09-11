@@ -1,32 +1,14 @@
 
 
-import { initializeApp, getApp, getApps, deleteApp } from 'firebase/app';
+import { initializeApp, getApp, getApps } from 'firebase/app';
 import { getFirestore, collection, getDocs, doc, addDoc, updateDoc, deleteDoc, query, where, writeBatch, orderBy, getDoc, setDoc, onSnapshot, runTransaction } from 'firebase/firestore';
 import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
-import { Product, Category, Offer, Order, products as initialProducts, categories as initialCategories, AppearanceSettings, OrderStatus, Address, CartItem } from './data';
-import { PlaceHolderImages } from './placeholder-images';
-import { firebaseConfig } from './firebase'; // Assuming firebaseConfig is exported from firebase.ts
+import { Product, Category, Offer, Order, OrderStatus, Address, CartItem } from './data';
+import { firebaseConfig } from './firebase';
 
-// --- Authenticated Firestore Instance (for Admin/User actions) ---
-const mainApp = !getApps().some(app => app.name === '[DEFAULT]')
-  ? initializeApp(firebaseConfig)
-  : getApp('[DEFAULT]');
-
-export const db = getFirestore(mainApp);
-export const storage = getStorage(mainApp);
-
-
-// --- Unauthenticated Firestore Instance for Public Data ---
-const publicAppName = 'public-unauthenticated';
-let publicDb;
-
-try {
-    publicDb = getFirestore(getApp(publicAppName));
-} catch {
-    const publicApp = initializeApp(firebaseConfig, publicAppName);
-    publicDb = getFirestore(publicApp);
-}
-
+const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
+export const db = getFirestore(app);
+export const storage = getStorage(app);
 
 function generateOrderId(): string {
   const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
@@ -42,15 +24,14 @@ function generateOrderId(): string {
   return `${charPart}${numPart}`;
 }
 
-// --- Category Functions (Public) ---
+// --- Category Functions ---
 
 export async function getCategories(): Promise<Category[]> {
-  const categoriesCol = collection(publicDb, 'categories');
+  const categoriesCol = collection(db, 'categories');
   const categorySnapshot = await getDocs(categoriesCol);
   return categorySnapshot.docs.map(doc => ({ ...doc.data(), id: doc.id } as Category));
 }
 
-// --- Admin-only Category Functions ---
 export async function addCategory(category: Omit<Category, 'id'>): Promise<string> {
   const categoriesCol = collection(db, 'categories');
   const docRef = await addDoc(categoriesCol, category);
@@ -68,24 +49,23 @@ export async function deleteCategory(id: string): Promise<void> {
 }
 
 
-// --- Product Functions (Public) ---
+// --- Product Functions ---
 
 export async function getProducts(categorySlug?: string): Promise<Product[]> {
-  let productsQuery = query(collection(publicDb, 'products'));
+  let productsQuery = query(collection(db, 'products'));
   if (categorySlug) {
-    productsQuery = query(collection(publicDb, 'products'), where('categorySlug', '==', categorySlug));
+    productsQuery = query(collection(db, 'products'), where('categorySlug', '==', categorySlug));
   }
   const productSnapshot = await getDocs(productsQuery);
   return productSnapshot.docs.map(doc => ({ ...doc.data(), id: doc.id } as Product));
 }
 
 export async function getSpecialOfferProducts(): Promise<Product[]> {
-    const productsQuery = query(collection(publicDb, 'products'), where('offer.value', '>', 0));
+    const productsQuery = query(collection(db, 'products'), where('offer.value', '>', 0));
     const productSnapshot = await getDocs(productsQuery);
     return productSnapshot.docs.map(doc => ({ ...doc.data(), id: doc.id } as Product));
 }
 
-// --- Admin-only Product Functions ---
 export async function addProduct(product: Omit<Product, 'id'>): Promise<string> {
   const productsCol = collection(db, 'products');
   const docRef = await addDoc(productsCol, product);
@@ -215,11 +195,11 @@ export async function deleteAddress(userId: string, addressId: string): Promise<
 }
 
 
-// --- Appearance Settings (Public read, admin write) ---
+// --- Appearance Settings ---
 const APPEARANCE_DOC_ID = 'homepage';
 
 export async function getAppearanceSettings(): Promise<AppearanceSettings | null> {
-    const docRef = doc(publicDb, 'appearance', APPEARANCE_DOC_ID);
+    const docRef = doc(db, 'appearance', APPEARANCE_DOC_ID);
     const docSnap = await getDoc(docRef);
     if (docSnap.exists()) {
         return docSnap.data() as AppearanceSettings;
@@ -249,6 +229,8 @@ export function getCart(userId: string, onUpdate: (items: CartItem[]) => void): 
     return onSnapshot(cartRef, (doc) => {
         const data = doc.data();
         onUpdate(data?.items || []);
+    }, (error) => {
+        console.error("Cart snapshot error: ", error);
     });
 }
 
@@ -273,7 +255,7 @@ export async function addToCart(userId: string, product: Product) {
 
 export async function updateCartItemQuantity(userId: string, productId: string, quantity: number) {
     const cartRef = doc(db, 'carts', userId);
-    if (quantity === 0) {
+    if (quantity <= 0) {
         await removeCartItem(userId, productId);
         return;
     }
@@ -305,7 +287,7 @@ export async function removeCartItem(userId: string, productId: string) {
 
 export async function clearCart(userId: string) {
     const cartRef = doc(db, 'carts', userId);
-    await updateDoc(cartRef, { items: [] });
+    await setDoc(cartRef, { items: [] });
 }
 
 export async function mergeLocalCart(userId: string, localItems: CartItem[]) {
@@ -323,7 +305,6 @@ export async function mergeLocalCart(userId: string, localItems: CartItem[]) {
         localItems.forEach(localItem => {
             const serverItemIndex = serverItems.findIndex(serverItem => serverItem.product.id === localItem.product.id);
             if (serverItemIndex > -1) {
-                // If item exists, add quantities. Or you might decide to take the max, or server's, or local's. Adding is a common strategy.
                 serverItems[serverItemIndex].quantity += localItem.quantity;
             } else {
                 serverItems.push(localItem);
@@ -332,48 +313,4 @@ export async function mergeLocalCart(userId: string, localItems: CartItem[]) {
 
         transaction.set(cartRef, { items: serverItems });
     });
-}
-
-// --- Data Seeding ---
-export async function seedInitialData() {
-  const productsCol = collection(db, 'products');
-  const categoriesCol = collection(db, 'categories');
-  
-  const productsSnapshot = await getDocs(productsCol);
-  const categoriesSnapshot = await getDocs(categoriesCol);
-  
-  const batch = writeBatch(db);
-
-  let seeded = false;
-
-  if (categoriesSnapshot.empty) {
-    console.log("Seeding categories...");
-    initialCategories.forEach(category => {
-      const docRef = doc(categoriesCol); // Auto-generate ID
-      const placeholder = PlaceHolderImages.find(p => p.id === category.imageId);
-      // We set the imageId to the actual placeholder URL now
-      batch.set(docRef, { ...category, id: docRef.id, imageId: placeholder?.imageUrl || '' });
-    });
-    seeded = true;
-  }
-  
-  if (productsSnapshot.empty) {
-    console.log("Seeding products...");
-    initialProducts.forEach(product => {
-        const docRef = doc(productsCol); // Auto-generate ID for products
-        const placeholder = PlaceHolderImages.find(p => p.id === product.imageUrls[0]);
-        // We set the imageId to the actual placeholder URL now
-        batch.set(docRef, { ...product, id: docRef.id, imageUrls: [placeholder?.imageUrl || ''] });
-    });
-    seeded = true;
-  }
-  
-  if (seeded) {
-    await batch.commit();
-    console.log("Seeding complete.");
-    return { success: true, message: "Database has been seeded." };
-  } else {
-    console.log("Database already contains data. Seeding skipped.");
-    return { success: false, message: "Database already contains data." };
-  }
 }
