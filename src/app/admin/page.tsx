@@ -71,22 +71,26 @@ export default function AdminDashboardPage() {
                     }, 0);
                 };
 
-                const grossRevenueOrders = orders.filter(o => 
+                // Gross revenue is the total of all orders that have been successfully delivered.
+                const deliveredOrders = orders.filter(o => 
                     ['Delivered', 'Return Requested', 'Return Initiated', 'Return Successful', 'Refund Completed'].includes(o.status)
                 );
                 
-                const totalGrossRevenue = grossRevenueOrders.reduce((sum, order) => sum + order.total, 0);
+                const totalGrossRevenue = deliveredOrders.reduce((sum, order) => sum + order.total, 0);
+                
+                // Total refunds is the sum of money returned to customers.
                 const totalRefunds = orders.reduce((sum, order) => sum + getRefundAmount(order), 0);
+                
+                // Net revenue is gross revenue minus refunds.
                 const totalRevenue = Math.max(0, totalGrossRevenue - totalRefunds);
                 
                 const calculateNetRevenueForPeriod = (start: Date, end: Date) => {
-                    const periodGrossOrders = grossRevenueOrders.filter(o => isWithinInterval(new Date(o.date), { start, end }));
+                    const periodDeliveredOrders = deliveredOrders.filter(o => isWithinInterval(new Date(o.date), { start, end }));
                     const periodRefundOrders = orders.filter(o => {
-                        // Only consider orders that could have refunds within the period
-                        return ['Return Successful', 'Refund Completed'].includes(o.status) && isWithinInterval(new Date(o.date), { start, end })
+                        return ['Return Successful', 'Refund Completed'].includes(o.status) && o.returnRequest?.date && isWithinInterval(new Date(o.returnRequest.date), { start, end })
                     });
                     
-                    const gross = periodGrossOrders.reduce((sum, order) => sum + order.total, 0);
+                    const gross = periodDeliveredOrders.reduce((sum, order) => sum + order.total, 0);
                     const refunds = periodRefundOrders.reduce((sum, order) => sum + getRefundAmount(order), 0);
                     
                     return Math.max(0, gross - refunds);
