@@ -1,23 +1,34 @@
 
 
-import { db } from './firebase';
-import {
-  collection,
-  getDocs,
-  doc,
-  addDoc,
-  updateDoc,
-  deleteDoc,
-  query,
-  where,
-  writeBatch,
-  orderBy,
-  getDoc,
-  setDoc,
-} from 'firebase/firestore';
+import { initializeApp, getApp, getApps, deleteApp } from 'firebase/app';
+import { getFirestore, collection, getDocs, doc, addDoc, updateDoc, deleteDoc, query, where, writeBatch, orderBy, getDoc, setDoc } from 'firebase/firestore';
 import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
-import { Product, Category, Offer, Order, products as initialProducts, categories as initialCategories, AppearanceSettings } from './data';
+import { Product, Category, Offer, Order, products as initialProducts, categories as initialCategories, AppearanceSettings, OrderStatus } from './data';
 import { PlaceHolderImages } from './placeholder-images';
+import { firebaseConfig } from './firebase'; // Assuming firebaseConfig is exported from firebase.ts
+
+// --- Authenticated Firestore Instance (for Admin/User actions) ---
+const mainApp = !getApps().some(app => app.name === '[DEFAULT]')
+  ? initializeApp(firebaseConfig)
+  : getApp('[DEFAULT]');
+
+export const db = getFirestore(mainApp);
+export const storage = getStorage(mainApp);
+
+
+// --- Unauthenticated Firestore Instance for Public Data ---
+// This prevents server-side queries for public data from using admin/user credentials
+// and resolves the "Missing or insufficient permissions" error.
+const publicAppName = 'public-unauthenticated';
+let publicDb;
+
+if (!getApps().some(app => app.name === publicAppName)) {
+    const publicApp = initializeApp(firebaseConfig, publicAppName);
+    publicDb = getFirestore(publicApp);
+} else {
+    publicDb = getFirestore(getApp(publicAppName));
+}
+
 
 function generateOrderId(): string {
   const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
@@ -33,14 +44,15 @@ function generateOrderId(): string {
   return `${charPart}${numPart}`;
 }
 
-// --- Category Functions ---
+// --- Category Functions (Public) ---
 
 export async function getCategories(): Promise<Category[]> {
-  const categoriesCol = collection(db, 'categories');
+  const categoriesCol = collection(publicDb, 'categories');
   const categorySnapshot = await getDocs(categoriesCol);
   return categorySnapshot.docs.map(doc => ({ ...doc.data(), id: doc.id } as Category));
 }
 
+// --- Admin-only Category Functions ---
 export async function addCategory(category: Omit<Category, 'id'>): Promise<string> {
   const categoriesCol = collection(db, 'categories');
   const docRef = await addDoc(categoriesCol, category);
@@ -58,23 +70,24 @@ export async function deleteCategory(id: string): Promise<void> {
 }
 
 
-// --- Product Functions ---
+// --- Product Functions (Public) ---
 
 export async function getProducts(categorySlug?: string): Promise<Product[]> {
-  let productsQuery = query(collection(db, 'products'));
+  let productsQuery = query(collection(publicDb, 'products'));
   if (categorySlug) {
-    productsQuery = query(collection(db, 'products'), where('categorySlug', '==', categorySlug));
+    productsQuery = query(collection(publicDb, 'products'), where('categorySlug', '==', categorySlug));
   }
   const productSnapshot = await getDocs(productsQuery);
   return productSnapshot.docs.map(doc => ({ ...doc.data(), id: doc.id } as Product));
 }
 
 export async function getSpecialOfferProducts(): Promise<Product[]> {
-    const productsQuery = query(collection(db, 'products'), where('offer.value', '>', 0));
+    const productsQuery = query(collection(publicDb, 'products'), where('offer.value', '>', 0));
     const productSnapshot = await getDocs(productsQuery);
     return productSnapshot.docs.map(doc => ({ ...doc.data(), id: doc.id } as Product));
 }
 
+// --- Admin-only Product Functions ---
 export async function addProduct(product: Omit<Product, 'id'>): Promise<string> {
   const productsCol = collection(db, 'products');
   const docRef = await addDoc(productsCol, product);
@@ -97,7 +110,7 @@ export async function deleteProduct(id: string): Promise<void> {
 }
 
 
-// --- Order Functions ---
+// --- Order Functions (Authenticated) ---
 
 export async function addOrder(order: Omit<Order, 'id'>): Promise<string> {
     const newOrderId = generateOrderId();
@@ -108,18 +121,13 @@ export async function addOrder(order: Omit<Order, 'id'>): Promise<string> {
 }
 
 export async function getOrders(userId?: string): Promise<Order[]> {
-    // This query previously tried to filter by userId and sort by date,
-    // which requires a composite index in Firestore. To avoid the error
-    // when that index is missing, we fetch all orders sorted by date and
-    // then filter by userId on the client-side if a userId is provided.
-    const ordersQuery = query(collection(db, 'orders'), orderBy('date', 'desc'));
+    let ordersQuery = query(collection(db, 'orders'), orderBy('date', 'desc'));
+    if (userId) {
+        ordersQuery = query(collection(db, 'orders'), where('userId', '==', userId), orderBy('date', 'desc'));
+    }
     
     const orderSnapshot = await getDocs(ordersQuery);
     const allOrders = orderSnapshot.docs.map(doc => ({ ...doc.data() as Order, id: doc.id }));
-    
-    if (userId) {
-        return allOrders.filter(order => order.userId === userId);
-    }
     
     return allOrders;
 }
@@ -132,20 +140,27 @@ export async function updateOrderStatus(orderId: string, status: Order['status']
 export async function submitReturnRequest(orderId: string, request: Order['returnRequest']): Promise<void> {
   const orderDoc = doc(db, 'orders', orderId);
   const newStatus: OrderStatus = 'Return Requested';
-  const newTrackingHistory = { status: newStatus, date: new Date().toISOString() };
+  
+  const orderSnap = await getDoc(orderDoc);
+  if (!orderSnap.exists()) {
+      throw new Error("Order not found");
+  }
+  const currentHistory = orderSnap.data().trackingHistory || [];
+
+  const newTrackingHistoryEntry = { status: newStatus, date: new Date().toISOString() };
   await updateDoc(orderDoc, {
     status: newStatus,
     returnRequest: request,
-    trackingHistory: [...((await getDoc(orderDoc)).data()?.trackingHistory || []), newTrackingHistory]
+    trackingHistory: [...currentHistory, newTrackingHistoryEntry]
   });
 }
 
 
-// --- Appearance Settings ---
+// --- Appearance Settings (Public read, admin write) ---
 const APPEARANCE_DOC_ID = 'homepage';
 
 export async function getAppearanceSettings(): Promise<AppearanceSettings | null> {
-    const docRef = doc(db, 'appearance', APPEARANCE_DOC_ID);
+    const docRef = doc(publicDb, 'appearance', APPEARANCE_DOC_ID);
     const docSnap = await getDoc(docRef);
     if (docSnap.exists()) {
         return docSnap.data() as AppearanceSettings;
@@ -162,7 +177,6 @@ export async function saveAppearanceSettings(settings: Partial<AppearanceSetting
 // --- Image Upload ---
 
 export async function uploadImage(file: File, path: string): Promise<{ url: string }> {
-  const storage = getStorage();
   const storageRef = ref(storage, `${path}/${Date.now()}_${file.name}`);
   await uploadBytes(storageRef, file);
   const downloadURL = await getDownloadURL(storageRef);
