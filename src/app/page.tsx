@@ -19,7 +19,7 @@ import { PlaceHolderImages } from '@/lib/placeholder-images';
 import Autoplay from "embla-carousel-autoplay";
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { Product, Category, AppearanceSettings } from '@/lib/data';
+import { Product, Category, AppearanceSettings, AdBanner } from '@/lib/data';
 import { Skeleton } from '@/components/ui/skeleton';
 import { getCategories, getProducts, getSpecialOfferProducts, getAppearanceSettings } from '@/lib/firestore';
 
@@ -87,10 +87,10 @@ export default function Home() {
   )
 
   const ads = [
-    { id: 'ad1', url: appearance?.ad1ImageUrl, description: 'New Deals' },
-    { id: 'ad2', url: appearance?.ad2ImageUrl, description: 'Fresh Arrivals' },
-    { id: 'ad3', url: appearance?.ad3ImageUrl, description: 'Seasonal Picks' },
-  ].filter(ad => ad.url);
+    { id: 'ad1', ...appearance?.ad1 },
+    { id: 'ad2', ...appearance?.ad2 },
+    { id: 'ad3', ...appearance?.ad3 },
+  ].filter(ad => ad.imageUrl);
 
   if (loading) {
       return (
@@ -142,20 +142,22 @@ export default function Home() {
             >
                 <CarouselContent className="-ml-2">
                 {ads.map((ad) => (
-                    ad && <CarouselItem key={ad.id} className="pl-2 basis-auto">
+                    ad.imageUrl && <CarouselItem key={ad.id} className="pl-2 basis-auto">
                     <Card className="overflow-hidden relative aspect-video w-48">
-                        {ad.url && 
-                            <Image
-                                src={ad.url}
-                                alt={ad.description}
-                                fill
-                                className="object-cover"
-                            />
-                        }
+                        
+                        <Image
+                            src={ad.imageUrl}
+                            alt={ad.description || 'Advertisement'}
+                            fill
+                            className="object-cover"
+                        />
+                        
                         <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
                         <div className="absolute bottom-0 left-0 p-1 md:p-2">
-                            <h3 className="font-bold text-xs md:text-sm text-white">{ad.description}</h3>
-                            <Button size="sm" variant="secondary" className="mt-1 h-6 text-xs md:h-7">Order Now</Button>
+                            {ad.description && <h3 className="font-bold text-xs md:text-sm text-white">{ad.description}</h3>}
+                            <Button asChild size="sm" variant="secondary" className="mt-1 h-6 text-xs md:h-7">
+                               <Link href={ad.categorySlug ? `/categories/${ad.categorySlug}` : '/products'}>Order Now</Link>
+                            </Button>
                         </div>
                     </Card>
                     </CarouselItem>

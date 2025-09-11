@@ -54,13 +54,19 @@ export type Address = {
     isDefault: boolean;
 }
 
+export type AdBanner = {
+    imageUrl?: string;
+    description?: string;
+    categorySlug?: string;
+}
+
 export type AppearanceSettings = {
     heroTitle: string;
     heroSubtitle: string;
     heroImageUrl?: string;
-    ad1ImageUrl?: string;
-    ad2ImageUrl?: string;
-    ad3ImageUrl?: string;
+    ad1?: AdBanner;
+    ad2?: AdBanner;
+    ad3?: AdBanner;
 }
 
 export const categories: Category[] = [
