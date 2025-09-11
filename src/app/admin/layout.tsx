@@ -7,7 +7,7 @@ import { useAuthState } from 'react-firebase-hooks/auth';
 import { auth } from '@/lib/firebase';
 import AdminSidebar from '@/components/admin/admin-sidebar';
 import { Loader2, PanelLeft } from 'lucide-react';
-import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
 
 const ADMIN_EMAIL = 'dhandesaurav52@gmail.com';
@@ -52,6 +52,9 @@ export default function AdminLayout({
                   </Button>
                 </SheetTrigger>
                 <SheetContent side="left" className="sm:max-w-xs p-0">
+                  <SheetHeader className='p-4'>
+                    <SheetTitle className="sr-only">Menu</SheetTitle>
+                  </SheetHeader>
                   <AdminSidebar isMobile={true} />
                 </SheetContent>
               </Sheet>
