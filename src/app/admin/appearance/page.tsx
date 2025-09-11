@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import {
@@ -261,7 +260,7 @@ export default function AdminAppearancePage() {
                                     <FormControl>
                                         <SelectTrigger>
                                             <SelectValue placeholder="Select a category" />
-                                        </Trigger>
+                                        </SelectTrigger>
                                     </FormControl>
                                     <SelectContent>
                                         <SelectItem value="_none_">None</SelectItem>
