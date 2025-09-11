@@ -33,7 +33,7 @@ type MonthlySales = {
   total: number;
 }
 
-type TopProduct = {
+type TopItem = {
   name: string;
   sales: number;
 }
@@ -41,7 +41,8 @@ type TopProduct = {
 export default function AdminDashboardPage() {
     const [stats, setStats] = useState<DashboardStats | null>(null);
     const [monthlySales, setMonthlySales] = useState<MonthlySales[]>([]);
-    const [topProducts, setTopProducts] = useState<TopProduct[]>([]);
+    const [topProducts, setTopProducts] = useState<TopItem[]>([]);
+    const [topCategories, setTopCategories] = useState<TopItem[]>([]);
     const [loading, setLoading] = useState(true);
     const { toast } = useToast();
 
@@ -63,6 +64,10 @@ export default function AdminDashboardPage() {
                 
                 const salesByMonth: { [key: string]: number } = {};
                 const salesByProduct: { [key: string]: number } = {};
+                const salesByCategory: { [key: string]: number } = {};
+
+                const productToCategoryMap = new Map(products.map(p => [p.name, p.categorySlug]));
+                const categorySlugToNameMap = new Map(categories.map(c => [c.slug, c.name]));
                 
                 orders.forEach(order => {
                     const orderDate = new Date(order.date);
@@ -71,12 +76,18 @@ export default function AdminDashboardPage() {
                     if (order.status === 'Delivered') {
                         totalRevenue += order.total;
                         
-                        // Monthly Sales
                         salesByMonth[monthKey] = (salesByMonth[monthKey] || 0) + order.total;
                         
-                        // Top Products
                         order.items.forEach(item => {
-                            salesByProduct[item.productName] = (salesByProduct[item.productName] || 0) + 1;
+                            // Top Products
+                            salesByProduct[item.productName] = (salesByProduct[item.productName] || 0) + item.quantity;
+                            
+                            // Top Categories
+                            const categorySlug = productToCategoryMap.get(item.productName);
+                            if (categorySlug) {
+                                const categoryName = categorySlugToNameMap.get(categorySlug) || categorySlug;
+                                salesByCategory[categoryName] = (salesByCategory[categoryName] || 0) + item.quantity;
+                            }
                         });
                     }
 
@@ -108,6 +119,13 @@ export default function AdminDashboardPage() {
                     .slice(0, 5)
                     .map(([name, sales]) => ({ name, sales }));
                 setTopProducts(sortedProducts);
+                
+                // Prepare top categories data
+                const sortedCategories = Object.entries(salesByCategory)
+                    .sort(([, a], [, b]) => b - a)
+                    .slice(0, 5)
+                    .map(([name, sales]) => ({ name, sales }));
+                setTopCategories(sortedCategories);
 
 
                 const revenueChange = lastMonthRevenue > 0
@@ -245,36 +263,68 @@ export default function AdminDashboardPage() {
             </ResponsiveContainer>
           </CardContent>
         </Card>
-        <Card className="col-span-4 lg:col-span-3">
-          <CardHeader>
-            <CardTitle>Top Selling Products</CardTitle>
-            <CardDescription>
-              The most sold products this month.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-             <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Product</TableHead>
-                    <TableHead className="text-right">Sales Count</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {topProducts.length > 0 ? topProducts.map((product) => (
-                    <TableRow key={product.name}>
-                      <TableCell className="font-medium">{product.name}</TableCell>
-                      <TableCell className="text-right">{product.sales}</TableCell>
+        <div className="col-span-4 lg:col-span-3 space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>Top Selling Products</CardTitle>
+              <CardDescription>
+                The most sold products this month.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+               <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Product</TableHead>
+                      <TableHead className="text-right">Sales</TableHead>
                     </TableRow>
-                  )) : (
-                     <TableRow>
-                        <TableCell colSpan={2} className="text-center">No sales data available.</TableCell>
+                  </TableHeader>
+                  <TableBody>
+                    {topProducts.length > 0 ? topProducts.map((product) => (
+                      <TableRow key={product.name}>
+                        <TableCell className="font-medium">{product.name}</TableCell>
+                        <TableCell className="text-right">{product.sales}</TableCell>
+                      </TableRow>
+                    )) : (
+                       <TableRow>
+                          <TableCell colSpan={2} className="text-center">No sales data available.</TableCell>
+                      </TableRow>
+                    )}
+                  </TableBody>
+              </Table>
+            </CardContent>
+          </Card>
+           <Card>
+            <CardHeader>
+              <CardTitle>Top Selling Categories</CardTitle>
+              <CardDescription>
+                The most popular categories this month.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+               <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Category</TableHead>
+                      <TableHead className="text-right">Sales</TableHead>
                     </TableRow>
-                  )}
-                </TableBody>
-            </Table>
-          </CardContent>
-        </Card>
+                  </TableHeader>
+                  <TableBody>
+                    {topCategories.length > 0 ? topCategories.map((category) => (
+                      <TableRow key={category.name}>
+                        <TableCell className="font-medium">{category.name}</TableCell>
+                        <TableCell className="text-right">{category.sales}</TableCell>
+                      </TableRow>
+                    )) : (
+                       <TableRow>
+                          <TableCell colSpan={2} className="text-center">No sales data available.</TableCell>
+                      </TableRow>
+                    )}
+                  </TableBody>
+              </Table>
+            </CardContent>
+          </Card>
+        </div>
       </div>
     </div>
   );
