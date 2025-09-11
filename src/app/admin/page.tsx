@@ -67,6 +67,9 @@ export default function AdminDashboardPage() {
                 const productToCategoryMap = new Map(products.map(p => [p.name, p.categorySlug]));
                 const categorySlugToNameMap = new Map(categories.map(c => [c.slug, c.name]));
                 
+                const deliveredOrders = orders.filter(o => ['Delivered', 'Return Requested', 'Return Initiated', 'Return Successful', 'Refund Completed'].includes(o.status));
+                const returnedOrders = orders.filter(o => ['Return Successful', 'Refund Completed'].includes(o.status));
+                
                 orders.forEach(order => {
                     const orderDate = new Date(order.date);
                     const monthKey = format(orderDate, 'MMM yyyy');
@@ -74,19 +77,17 @@ export default function AdminDashboardPage() {
                         salesByMonth[monthKey] = { sales: 0, refunds: 0 };
                     }
 
-                    if (order.status === 'Delivered') {
+                    if (['Delivered', 'Return Requested', 'Return Initiated', 'Return Successful', 'Refund Completed'].includes(order.status)) {
                         salesByMonth[monthKey].sales += order.total;
-                    } else if (order.status === 'Return Successful' || order.status === 'Refund Completed') {
+                    }
+                    if (['Return Successful', 'Refund Completed'].includes(order.status)) {
                         salesByMonth[monthKey].refunds += order.total;
                     }
                 });
 
-                const deliveredOrders = orders.filter(o => o.status === 'Delivered');
-                const returnedOrders = orders.filter(o => o.status === 'Return Successful' || o.status === 'Refund Completed');
-
                 const totalGrossRevenue = deliveredOrders.reduce((sum, order) => sum + order.total, 0);
                 const totalRefunds = returnedOrders.reduce((sum, order) => sum + order.total, 0);
-                totalRevenue = Math.max(0, totalGrossRevenue - totalRefunds);
+                totalRevenue = totalGrossRevenue - totalRefunds;
 
                 const currentMonthGross = deliveredOrders
                     .filter(o => isWithinInterval(new Date(o.date), { start: currentMonthStart, end: now }))
@@ -94,7 +95,7 @@ export default function AdminDashboardPage() {
                 const currentMonthRefunds = returnedOrders
                     .filter(o => isWithinInterval(new Date(o.date), { start: currentMonthStart, end: now }))
                     .reduce((sum, order) => sum + order.total, 0);
-                currentMonthRevenue = Math.max(0, currentMonthGross - currentMonthRefunds);
+                currentMonthRevenue = currentMonthGross - currentMonthRefunds;
 
                 const lastMonthGross = deliveredOrders
                     .filter(o => isWithinInterval(new Date(o.date), { start: lastMonthStart, end: lastMonthEnd }))
@@ -102,12 +103,12 @@ export default function AdminDashboardPage() {
                 const lastMonthRefunds = returnedOrders
                     .filter(o => isWithinInterval(new Date(o.date), { start: lastMonthStart, end: lastMonthEnd }))
                     .reduce((sum, order) => sum + order.total, 0);
-                lastMonthRevenue = Math.max(0, lastMonthGross - lastMonthRefunds);
+                lastMonthRevenue = lastMonthGross - lastMonthRefunds;
                 
                 const currentMonthOrdersCount = orders.filter(o => isWithinInterval(new Date(o.date), { start: currentMonthStart, end: now })).length;
                 const lastMonthOrdersCount = orders.filter(o => isWithinInterval(new Date(o.date), { start: lastMonthStart, end: lastMonthEnd })).length;
 
-                deliveredOrders.forEach(order => {
+                orders.filter(o => o.status === 'Delivered').forEach(order => {
                     order.items.forEach(item => {
                         salesByProduct[item.productName] = (salesByProduct[item.productName] || 0) + item.quantity;
                         
@@ -125,7 +126,7 @@ export default function AdminDashboardPage() {
                     const date = subMonths(now, i);
                     const monthKey = format(date, 'MMM yyyy');
                     const monthData = salesByMonth[monthKey] || { sales: 0, refunds: 0 };
-                    last6Months.push({ month: format(date, 'MMM'), total: Math.max(0, monthData.sales - monthData.refunds) });
+                    last6Months.push({ month: format(date, 'MMM'), total: monthData.sales - monthData.refunds });
                 }
                 setMonthlySales(last6Months);
 
@@ -343,5 +344,7 @@ export default function AdminDashboardPage() {
     </div>
   );
 }
+
+    
 
     
