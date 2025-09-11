@@ -59,8 +59,6 @@ export default function AdminDashboardPage() {
                 let totalRevenue = 0;
                 let currentMonthRevenue = 0;
                 let lastMonthRevenue = 0;
-                let currentMonthOrders = 0;
-                let lastMonthOrders = 0;
                 
                 const salesByMonth: { [key: string]: number } = {};
                 const salesByProduct: { [key: string]: number } = {};
@@ -69,48 +67,59 @@ export default function AdminDashboardPage() {
                 const productToCategoryMap = new Map(products.map(p => [p.name, p.categorySlug]));
                 const categorySlugToNameMap = new Map(categories.map(c => [c.slug, c.name]));
                 
+                // Calculate sales and refunds for monthly chart
                 orders.forEach(order => {
                     const orderDate = new Date(order.date);
                     const monthKey = format(orderDate, 'MMM yyyy');
-                    
-                    let revenueFromOrder = 0;
+                    salesByMonth[monthKey] = salesByMonth[monthKey] || 0;
+
                     if (order.status === 'Delivered') {
-                        revenueFromOrder = order.total;
+                        salesByMonth[monthKey] += order.total;
                     } else if (order.status === 'Return Successful' || order.status === 'Refund Completed') {
-                        revenueFromOrder = -order.total;
-                    }
-                    
-                    totalRevenue += revenueFromOrder;
-                    if (revenueFromOrder !== 0) {
-                         salesByMonth[monthKey] = (salesByMonth[monthKey] || 0) + revenueFromOrder;
-                    }
-
-
-                    // We only count sales from delivered orders for top products/categories
-                    if (order.status === 'Delivered') {
-                        order.items.forEach(item => {
-                            salesByProduct[item.productName] = (salesByProduct[item.productName] || 0) + item.quantity;
-                            
-                            const categorySlug = productToCategoryMap.get(item.productName);
-                            if (categorySlug) {
-                                const categoryName = categorySlugToNameMap.get(categorySlug) || categorySlug;
-                                salesByCategory[categoryName] = (salesByCategory[categoryName] || 0) + item.quantity;
-                            }
-                        });
-                    }
-
-                    if (isWithinInterval(orderDate, { start: currentMonthStart, end: now })) {
-                        currentMonthOrders++;
-                        if (revenueFromOrder !== 0) {
-                            currentMonthRevenue += revenueFromOrder;
-                        }
-                    } else if (isWithinInterval(orderDate, { start: lastMonthStart, end: lastMonthEnd })) {
-                        lastMonthOrders++;
-                         if (revenueFromOrder !== 0) {
-                            lastMonthRevenue += revenueFromOrder;
-                        }
+                        salesByMonth[monthKey] -= order.total;
                     }
                 });
+
+
+                const deliveredOrders = orders.filter(o => o.status === 'Delivered');
+                const returnedOrders = orders.filter(o => o.status === 'Return Successful' || o.status === 'Refund Completed');
+
+                const totalGrossRevenue = deliveredOrders.reduce((sum, order) => sum + order.total, 0);
+                const totalRefunds = returnedOrders.reduce((sum, order) => sum + order.total, 0);
+                totalRevenue = totalGrossRevenue - totalRefunds;
+
+                const currentMonthGross = deliveredOrders
+                    .filter(o => isWithinInterval(new Date(o.date), { start: currentMonthStart, end: now }))
+                    .reduce((sum, order) => sum + order.total, 0);
+                const currentMonthRefunds = returnedOrders
+                    .filter(o => isWithinInterval(new Date(o.date), { start: currentMonthStart, end: now }))
+                    .reduce((sum, order) => sum + order.total, 0);
+                currentMonthRevenue = currentMonthGross - currentMonthRefunds;
+
+                const lastMonthGross = deliveredOrders
+                    .filter(o => isWithinInterval(new Date(o.date), { start: lastMonthStart, end: lastMonthEnd }))
+                    .reduce((sum, order) => sum + order.total, 0);
+                const lastMonthRefunds = returnedOrders
+                    .filter(o => isWithinInterval(new Date(o.date), { start: lastMonthStart, end: lastMonthEnd }))
+                    .reduce((sum, order) => sum + order.total, 0);
+                lastMonthRevenue = lastMonthGross - lastMonthRefunds;
+                
+                const currentMonthOrdersCount = orders.filter(o => isWithinInterval(new Date(o.date), { start: currentMonthStart, end: now })).length;
+                const lastMonthOrdersCount = orders.filter(o => isWithinInterval(new Date(o.date), { start: lastMonthStart, end: lastMonthEnd })).length;
+
+                // Calculate top products and categories from delivered orders only
+                deliveredOrders.forEach(order => {
+                    order.items.forEach(item => {
+                        salesByProduct[item.productName] = (salesByProduct[item.productName] || 0) + item.quantity;
+                        
+                        const categorySlug = productToCategoryMap.get(item.productName);
+                        if (categorySlug) {
+                            const categoryName = categorySlugToNameMap.get(categorySlug) || categorySlug;
+                            salesByCategory[categoryName] = (salesByCategory[categoryName] || 0) + item.quantity;
+                        }
+                    });
+                });
+
 
                 // Prepare monthly sales data for chart (last 6 months)
                 const last6Months: MonthlySales[] = [];
@@ -136,13 +145,13 @@ export default function AdminDashboardPage() {
                 setTopCategories(sortedCategories);
 
 
-                const revenueChange = lastMonthRevenue > 0
-                    ? ((currentMonthRevenue - lastMonthRevenue) / lastMonthRevenue) * 100
+                const revenueChange = lastMonthRevenue !== 0
+                    ? ((currentMonthRevenue - lastMonthRevenue) / Math.abs(lastMonthRevenue)) * 100
                     : currentMonthRevenue > 0 ? 100 : 0;
                 
-                const ordersChange = lastMonthOrders > 0
-                    ? ((currentMonthOrders - lastMonthOrders) / lastMonthOrders) * 100
-                    : currentMonthOrders > 0 ? 100 : 0;
+                const ordersChange = lastMonthOrdersCount > 0
+                    ? ((currentMonthOrdersCount - lastMonthOrdersCount) / lastMonthOrdersCount) * 100
+                    : currentMonthOrdersCount > 0 ? 100 : 0;
 
                 setStats({
                     totalRevenue,
