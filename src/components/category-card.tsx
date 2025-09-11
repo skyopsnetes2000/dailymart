@@ -15,14 +15,14 @@ const CategoryCard: FC<CategoryCardProps> = ({ category }) => {
 
   return (
     <Link href={`/categories/${category.slug}`} className="group block">
-      <Card className="overflow-hidden transition-all duration-300 group-hover:shadow-lg group-hover:shadow-primary/20">
+      <Card className="overflow-hidden transition-all duration-300 group-hover:shadow-lg group-hover:shadow-primary/20 group-hover:-translate-y-1">
         <div className="relative aspect-square">
           {category.imageId && (
             <Image
               src={category.imageId}
               alt={category.name}
               fill
-              className="object-cover"
+              className="object-cover transition-transform duration-300 group-hover:scale-105"
             />
           )}
           <div className="absolute inset-0 bg-black/40 transition-colors duration-300 group-hover:bg-black/20" />

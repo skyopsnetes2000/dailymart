@@ -24,21 +24,21 @@ const ProductCard: FC<ProductCardProps> = ({ product }) => {
   const { addItem } = useCart();
 
   return (
-    <Card className="flex h-full flex-col overflow-hidden">
-        <div className="relative aspect-[3/4] w-full">
+    <Card className="group flex h-full flex-col overflow-hidden transition-all duration-300 hover:shadow-lg hover:-translate-y-1">
+        <div className="relative aspect-[3/4] w-full overflow-hidden">
           {imageUrl && (
             <Image
               src={imageUrl}
               alt={product.name}
               fill
-              className="object-cover"
+              className="object-cover transition-transform duration-300 group-hover:scale-105"
             />
           )}
            <Button 
                 size="icon" 
-                className="absolute top-2 right-2 h-8 w-8 rounded-full shadow-lg" 
+                className="absolute top-2 right-2 h-8 w-8 rounded-full shadow-lg transition-all scale-0 group-hover:scale-100" 
                 style={{ backgroundColor: 'hsl(var(--accent))', color: 'hsl(var(--accent-foreground))' }} 
-                onClick={() => addItem(product)}
+                onClick={(e) => { e.preventDefault(); addItem(product); }}
                 aria-label={`Add ${product.name} to cart`}
             >
                 <Plus className="h-4 w-4" />
@@ -49,7 +49,7 @@ const ProductCard: FC<ProductCardProps> = ({ product }) => {
             <h3 className="mb-1 text-sm font-medium leading-tight line-clamp-2">{product.name}</h3>
             <p className="text-xs text-muted-foreground">{product.weight}</p>
         </div>
-        <div className="mt-2">
+        <div className="mt-2 flex justify-between items-end">
             {discountedPrice !== null && discountedPrice < product.price ? (
                 <div className="flex items-baseline gap-1.5">
                     <p className="text-base font-bold text-foreground">₹{discountedPrice.toFixed(2)}</p>
@@ -58,6 +58,15 @@ const ProductCard: FC<ProductCardProps> = ({ product }) => {
             ) : (
                  <p className="text-base font-bold text-foreground">₹{product.price.toFixed(2)}</p>
             )}
+             <Button 
+                size="icon" 
+                className="h-8 w-8 rounded-full shadow-lg transition-all scale-100 group-hover:scale-0" 
+                style={{ backgroundColor: 'hsl(var(--accent))', color: 'hsl(var(--accent-foreground))' }} 
+                onClick={(e) => { e.preventDefault(); addItem(product); }}
+                aria-label={`Add ${product.name} to cart`}
+            >
+                <Plus className="h-4 w-4" />
+            </Button>
         </div>
       </CardContent>
     </Card>

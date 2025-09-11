@@ -1,0 +1,114 @@
+
+'use client';
+
+import { useState, useEffect } from 'react';
+import ProductCard from '@/components/product-card';
+import { type Product, type Category } from '@/lib/data';
+import { Input } from '@/components/ui/input';
+import { Search } from 'lucide-react';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { Skeleton } from '@/components/ui/skeleton';
+import { getCategories, getProducts } from '@/lib/firestore';
+import PageHeader from '@/components/shared/page-header';
+
+
+export default function AllProductsPage() {
+  const [allProducts, setAllProducts] = useState<Product[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  const [searchTerm, setSearchTerm] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState('all');
+
+  useEffect(() => {
+    const fetchData = async () => {
+        try {
+            const [productsData, categoriesData] = await Promise.all([
+                getProducts(),
+                getCategories()
+            ]);
+            setAllProducts(productsData);
+            setCategories(categoriesData);
+        } catch (error) {
+            console.error("Could not fetch data from Firestore.", error);
+        } finally {
+            setLoading(false);
+        }
+    }
+    fetchData();
+  }, []);
+
+  const filteredProducts = allProducts.filter((product) => {
+    const matchesCategory =
+      selectedCategory === 'all' || product.categorySlug === selectedCategory;
+    const matchesSearch = product.name
+      .toLowerCase()
+      .includes(searchTerm.toLowerCase());
+    return matchesCategory && matchesSearch;
+  });
+  
+  if (loading) {
+    return (
+      <div>
+        <PageHeader title="All Products" />
+        <div className="flex gap-2 p-4 sm:p-6">
+          <Skeleton className="h-12 flex-1" />
+          <Skeleton className="h-12 w-[150px]" />
+        </div>
+        <div className="grid grid-cols-3 gap-3 p-4 pt-0 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6">
+            {Array.from({ length: 18 }).map((_, i) => (
+                <Skeleton key={i} className="h-48 w-full" />
+            ))}
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <div>
+      <PageHeader title="All Products" />
+      <div className="flex gap-2 p-4 sm:p-6">
+        <div className="relative flex-1">
+          <Search className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-muted-foreground" />
+          <Input
+            placeholder="Search for products..."
+            className="h-12 pl-10"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+          />
+        </div>
+        <Select onValueChange={setSelectedCategory} defaultValue="all">
+          <SelectTrigger className="w-[150px] h-12">
+            <SelectValue placeholder="Category" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All Categories</SelectItem>
+            {categories.map((category) => (
+              <SelectItem key={category.id} value={category.slug}>
+                {category.name}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+
+      {filteredProducts.length > 0 ? (
+        <div className="grid grid-cols-3 gap-3 p-4 pt-0 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6">
+          {filteredProducts.map((product) => (
+            <ProductCard key={product.id} product={product} />
+          ))}
+        </div>
+      ) : (
+        <p className="p-4 pt-0 text-center text-muted-foreground sm:p-6">
+          No products found. Try adjusting your search or filters.
+        </p>
+      )}
+    </div>
+  );
+}

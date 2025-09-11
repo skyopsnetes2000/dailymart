@@ -5,8 +5,6 @@ import React, { useState, useEffect } from 'react';
 import HomeHeader from '@/components/home-header';
 import CategoryCard from '@/components/category-card';
 import ProductCard from '@/components/product-card';
-import { Input } from '@/components/ui/input';
-import { Search } from 'lucide-react';
 import Link from 'next/link';
 import {
   Carousel,
@@ -17,6 +15,7 @@ import { Product, Category, AppearanceSettings } from '@/lib/data';
 import { getCategories, getProducts, getSpecialOfferProducts, getAppearanceSettings } from '@/lib/firestore';
 import AdCarousel from '@/components/ad-carousel';
 import { Skeleton } from '@/components/ui/skeleton';
+import SearchBar from '@/components/shared/search-bar';
 
 export default function Home() {
   const [products, setProducts] = useState<Product[]>([]);
@@ -95,10 +94,7 @@ export default function Home() {
         </section>
 
         <section className="-mt-16 space-y-4">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-            <Input placeholder="Search for products..." className="pl-10 h-12 shadow-lg" />
-          </div>
+          <SearchBar />
         </section>
 
         <AdCarousel ads={appearance?.ads || []} />
