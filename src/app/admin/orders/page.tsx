@@ -36,6 +36,7 @@ const statusColors: { [key in OrderStatus]: string } = {
   'Return Successful': 'bg-pink-500',
   'Refund Completed': 'bg-gray-500',
   Cancelled: 'bg-red-500',
+  'Return Requested': 'bg-orange-500',
 };
 
 
@@ -91,6 +92,7 @@ export default function AdminOrdersPage() {
     'Packed',
     'Out for Delivery',
     'Delivered',
+    'Return Requested',
     'Return Initiated',
     'Return Successful',
     'Refund Completed',
@@ -196,6 +198,13 @@ export default function AdminOrdersPage() {
                        <TableRow>
                          <TableCell colSpan={6} className='p-0'>
                             <div className='bg-muted/50 p-4'>
+                                {order.returnRequest && (
+                                    <div className="mb-4 rounded-md border border-yellow-300 bg-yellow-50 p-3">
+                                        <h5 className="font-semibold text-yellow-800">Return Request</h5>
+                                        <p className="text-sm text-yellow-700"><strong>Items:</strong> {order.returnRequest.items.join(', ')}</p>
+                                        <p className="text-sm text-yellow-700"><strong>Reason:</strong> {order.returnRequest.reason}</p>
+                                    </div>
+                                )}
                                 <h4 className='font-semibold mb-2'>Shipping Details</h4>
                                 {order.shippingAddress ? (
                                   <>

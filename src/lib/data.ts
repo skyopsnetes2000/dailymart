@@ -28,7 +28,7 @@ export type Category = {
   imageId: string;
 };
 
-export type OrderStatus = 'Pending' | 'Packed' | 'Out for Delivery' | 'Delivered' | 'Return Initiated' | 'Return Successful' | 'Refund Completed' | 'Cancelled';
+export type OrderStatus = 'Pending' | 'Packed' | 'Out for Delivery' | 'Delivered' | 'Return Initiated' | 'Return Successful' | 'Refund Completed' | 'Cancelled' | 'Return Requested';
 
 
 export type Order = {
@@ -41,6 +41,11 @@ export type Order = {
   trackingHistory: { status: string; date: string; }[];
   customerName: string;
   shippingAddress?: Address;
+  returnRequest?: {
+    items: string[];
+    reason: string;
+    date: string;
+  }
 };
 
 export type Address = {
