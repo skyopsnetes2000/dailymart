@@ -2,41 +2,58 @@
 'use client';
 
 import PageHeader from "@/components/shared/page-header";
-import { type Order } from "@/lib/data";
+import { type Order, type ReturnRequestItem } from "@/lib/data";
 import { notFound, useParams } from "next/navigation";
 import OrderTracker from "@/components/order-tracker";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { format } from "date-fns";
 import { useEffect, useState } from "react";
-import { Loader2, MessageSquareWarning } from "lucide-react";
-import { doc, getDoc, onSnapshot } from "firebase/firestore";
+import { Loader2, MessageSquareWarning, Minus, Plus } from "lucide-react";
+import { doc, onSnapshot } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
-import { Checkbox } from "@/components/ui/checkbox";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { submitReturnRequest } from "@/lib/firestore";
 
 
 function ReturnRequestDialog({ order, onReturnSuccess }: { order: Order, onReturnSuccess: () => void }) {
-    const [selectedItems, setSelectedItems] = useState<string[]>([]);
+    const [selectedItems, setSelectedItems] = useState<ReturnRequestItem[]>([]);
     const [reason, setReason] = useState('');
     const [isSubmitting, setIsSubmitting] = useState(false);
     const { toast } = useToast();
 
-    const handleItemToggle = (productName: string) => {
-        setSelectedItems(prev =>
-            prev.includes(productName)
-                ? prev.filter(item => item !== productName)
-                : [...prev, productName]
-        );
+    useEffect(() => {
+        // Initialize selectedItems with quantity 0 for all order items
+        setSelectedItems(order.items.map(item => ({ productName: item.productName, quantity: 0 })));
+    }, [order.items]);
+    
+
+    const handleQuantityChange = (productName: string, change: number) => {
+        setSelectedItems(prev => {
+            const itemToUpdate = prev.find(item => item.productName === productName);
+            const originalItem = order.items.find(item => item.productName === productName);
+            if (!itemToUpdate || !originalItem) return prev;
+            
+            const newQuantity = itemToUpdate.quantity + change;
+            if (newQuantity >= 0 && newQuantity <= originalItem.quantity) {
+                return prev.map(item =>
+                    item.productName === productName
+                        ? { ...item, quantity: newQuantity }
+                        : item
+                );
+            }
+            return prev;
+        });
     };
     
     const handleSubmit = async () => {
-      if (selectedItems.length === 0) {
-        toast({ title: "No items selected", description: "Please select at least one item to return.", variant: "destructive" });
+      const itemsToReturn = selectedItems.filter(item => item.quantity > 0);
+
+      if (itemsToReturn.length === 0) {
+        toast({ title: "No items selected", description: "Please select a quantity for at least one item to return.", variant: "destructive" });
         return;
       }
       if (!reason.trim()) {
@@ -46,7 +63,7 @@ function ReturnRequestDialog({ order, onReturnSuccess }: { order: Order, onRetur
       setIsSubmitting(true);
       try {
         const returnRequest = {
-            items: selectedItems,
+            items: itemsToReturn,
             reason,
             date: new Date().toISOString()
         }
@@ -77,17 +94,25 @@ function ReturnRequestDialog({ order, onReturnSuccess }: { order: Order, onRetur
                 <div className="space-y-4 py-4">
                     <div className="space-y-2">
                         <Label>Which items are you having issues with?</Label>
-                        {order.items.map(item => (
-                            <div key={item.productName} className="flex items-center space-x-2">
-                                <Checkbox
-                                    id={item.productName}
-                                    onCheckedChange={() => handleItemToggle(item.productName)}
-                                />
-                                <label htmlFor={item.productName} className="text-sm font-medium leading-none">
-                                    {item.productName} (x{item.quantity})
-                                </label>
-                            </div>
-                        ))}
+                        {order.items.map(item => {
+                             const selectedItem = selectedItems.find(si => si.productName === item.productName);
+                            return (
+                                <div key={item.productName} className="flex items-center justify-between space-x-2 rounded-md border p-3">
+                                    <label htmlFor={item.productName} className="text-sm font-medium leading-none">
+                                        {item.productName} <span className="text-xs text-muted-foreground">(Ordered: {item.quantity})</span>
+                                    </label>
+                                     <div className="flex items-center gap-2">
+                                        <Button size="icon" variant="outline" className="h-6 w-6" onClick={() => handleQuantityChange(item.productName, -1)} disabled={selectedItem?.quantity === 0}>
+                                            <Minus className="h-4 w-4" />
+                                        </Button>
+                                        <span className="w-4 text-center">{selectedItem?.quantity || 0}</span>
+                                        <Button size="icon" variant="outline" className="h-6 w-6" onClick={() => handleQuantityChange(item.productName, 1)} disabled={selectedItem?.quantity === item.quantity}>
+                                            <Plus className="h-4 w-4" />
+                                        </Button>
+                                    </div>
+                                </div>
+                            )
+                        })}
                     </div>
                     <div className="space-y-2">
                         <Label htmlFor="reason">Please describe the issue</Label>
@@ -188,7 +213,7 @@ export default function OrderDetailsPage() {
                         <CardContent>
                             <p className="font-semibold">Items Requested:</p>
                              <ul className="list-disc list-inside text-muted-foreground">
-                                {order.returnRequest.items.map(item => <li key={item}>{item}</li>)}
+                                {order.returnRequest.items.map(item => <li key={item.productName}>{item.productName} (x{item.quantity})</li>)}
                             </ul>
                             <p className="font-semibold mt-2">Reason:</p>
                             <p className="text-muted-foreground">{order.returnRequest.reason}</p>

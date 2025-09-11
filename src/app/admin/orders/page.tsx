@@ -201,7 +201,10 @@ export default function AdminOrdersPage() {
                                 {order.returnRequest && (
                                     <div className="mb-4 rounded-md border border-yellow-300 bg-yellow-50 p-3">
                                         <h5 className="font-semibold text-yellow-800">Return Request</h5>
-                                        <p className="text-sm text-yellow-700"><strong>Items:</strong> {order.returnRequest.items.join(', ')}</p>
+                                        <p className="text-sm text-yellow-700">
+                                            <strong>Items:</strong> 
+                                            {order.returnRequest.items.map(item => `${item.productName} (x${item.quantity})`).join(', ')}
+                                        </p>
                                         <p className="text-sm text-yellow-700"><strong>Reason:</strong> {order.returnRequest.reason}</p>
                                     </div>
                                 )}

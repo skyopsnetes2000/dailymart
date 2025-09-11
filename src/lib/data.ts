@@ -30,6 +30,10 @@ export type Category = {
 
 export type OrderStatus = 'Pending' | 'Packed' | 'Out for Delivery' | 'Delivered' | 'Return Initiated' | 'Return Successful' | 'Refund Completed' | 'Cancelled' | 'Return Requested';
 
+export type ReturnRequestItem = {
+  productName: string;
+  quantity: number;
+}
 
 export type Order = {
   id: string;
@@ -42,7 +46,7 @@ export type Order = {
   customerName: string;
   shippingAddress?: Address;
   returnRequest?: {
-    items: string[];
+    items: ReturnRequestItem[];
     reason: string;
     date: string;
   }
