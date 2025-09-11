@@ -65,24 +65,20 @@ export default function AdminDashboardPage() {
                     return order.returnRequest.items.reduce((sum, item) => {
                         const product = productPriceMap.get(item.productName);
                         if (product) {
-                            const originalOrderItem = order.items.find(i => i.productName === item.productName);
-                            if (originalOrderItem) {
-                               const totalQuantity = order.items.reduce((acc, i) => acc + i.quantity, 0);
-                               const pricePerItem = totalQuantity > 0 ? (order.total / totalQuantity) : 0;
-                               const originalProduct = products.find(p => p.name === item.productName);
-                               const discountedPrice = originalProduct ? (calculateDiscountedPrice(originalProduct) ?? originalProduct.price) : pricePerItem;
-
-                                return sum + (discountedPrice * item.quantity);
-                            }
+                           const price = calculateDiscountedPrice(product) ?? product.price;
+                           return sum + (price * item.quantity);
                         }
-                        const totalItemsInOrder = order.items.length || 1;
-                        return sum + (order.total / totalItemsInOrder) * item.quantity;
+                        // Fallback if product not found (should be rare)
+                        const totalQuantity = order.items.reduce((acc, i) => acc + i.quantity, 0);
+                        const pricePerItem = totalQuantity > 0 ? (order.total / totalQuantity) : 0;
+                        return sum + (pricePerItem * item.quantity);
                     }, 0);
                 };
-
+                
                 const grossRevenueOrders = orders.filter(o => 
                     ['Delivered', 'Return Requested', 'Return Initiated', 'Return Successful', 'Refund Completed'].includes(o.status)
                 );
+                
                 const refundedOrders = orders.filter(o => 
                     ['Return Successful', 'Refund Completed'].includes(o.status)
                 );
