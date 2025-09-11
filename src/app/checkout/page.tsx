@@ -8,7 +8,7 @@ import { useAuthState } from 'react-firebase-hooks/auth';
 import { auth } from '@/lib/firebase';
 import useCart from '@/hooks/use-cart';
 import { useToast } from '@/hooks/use-toast';
-import { user as staticUser, type Order } from '@/lib/data';
+import { type Order, type Address } from '@/lib/data';
 import type { z } from 'zod';
 
 import PageHeader from '@/components/shared/page-header';
@@ -21,11 +21,7 @@ import { Loader2, Plus, LogIn } from 'lucide-react';
 import { AddressForm, AddressSchema } from '@/components/profile/address-form';
 import { calculateDiscountedPrice } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
-import { addOrder } from '@/lib/firestore';
-
-
-type Address = z.infer<typeof AddressSchema> & { id: string };
-const ADDRESS_STORAGE_KEY = 'user_addresses';
+import { addOrder, getAddresses, addAddress } from '@/lib/firestore';
 
 
 export default function CheckoutPage() {
@@ -52,45 +48,30 @@ export default function CheckoutPage() {
   }, [items, router, isPlacingOrder]);
 
   useEffect(() => {
-    try {
-      const storedAddressesRaw = localStorage.getItem(ADDRESS_STORAGE_KEY);
-      const storedAddresses = storedAddressesRaw ? JSON.parse(storedAddressesRaw) : staticUser.addresses;
-      setAddresses(storedAddresses);
-
-      const defaultAddress = storedAddresses.find((addr: Address) => addr.isDefault) || storedAddresses[0];
-      if (defaultAddress) {
-        setSelectedAddressId(defaultAddress.id);
-      }
-    } catch (error) {
-      console.warn("Could not access localStorage. Using initial addresses.");
-      setAddresses(staticUser.addresses);
-      const defaultAddress = staticUser.addresses.find(addr => addr.isDefault) || staticUser.addresses[0];
-      if (defaultAddress) {
-        setSelectedAddressId(defaultAddress.id);
-      }
+    async function fetchAddresses() {
+        if (user) {
+            const userAddresses = await getAddresses(user.uid);
+            setAddresses(userAddresses);
+            const defaultAddress = userAddresses.find(addr => addr.isDefault) || userAddresses[0];
+            if (defaultAddress) {
+                setSelectedAddressId(defaultAddress.id);
+            }
+        }
     }
-  }, []);
+    fetchAddresses();
+  }, [user]);
 
-  const updateAndPersistAddresses = (newAddresses: Address[]) => {
-    setAddresses(newAddresses);
-    try {
-        localStorage.setItem(ADDRESS_STORAGE_KEY, JSON.stringify(newAddresses));
-    } catch (error) {
-        console.warn("Could not save addresses to localStorage.");
-    }
-  };
-
-  const handleSaveAddress = (data: z.infer<typeof AddressSchema>) => {
-      const newAddress: Address = { id: Date.now().toString(), ...data };
-      const newAddresses = [...addresses, newAddress];
-      if (data.isDefault) {
-        const finalAddresses = newAddresses.map(addr => ({...addr, isDefault: addr.id === newAddress.id }));
-        updateAndPersistAddresses(finalAddresses);
-        setSelectedAddressId(newAddress.id);
-      } else {
-        updateAndPersistAddresses(newAddresses);
-        setSelectedAddressId(newAddress.id);
+  const handleSaveAddress = async (data: z.infer<typeof AddressSchema>) => {
+      if (!user) return;
+      const newAddressId = await addAddress(user.uid, data);
+      const newAddress: Address = { id: newAddressId, ...data };
+      
+      let updatedAddresses = [...addresses, newAddress];
+       if (data.isDefault) {
+        updatedAddresses = updatedAddresses.map(addr => ({...addr, isDefault: addr.id === newAddress.id }));
       }
+      setAddresses(updatedAddresses);
+      setSelectedAddressId(newAddress.id);
       setIsFormOpen(false);
   };
 

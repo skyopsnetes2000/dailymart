@@ -152,7 +152,7 @@ export default function ProfilePage() {
               <ProfileForm user={profileData} />
             </TabsContent>
             <TabsContent value="addresses" className="mt-6">
-              <AddressManager addresses={staticUser.addresses} />
+              <AddressManager />
             </TabsContent>
             <TabsContent value="orders" className="mt-6">
               <div className="space-y-4">
@@ -174,7 +174,7 @@ export default function ProfilePage() {
                               </div>
                           </CardHeader>
                           <CardContent>
-                              <p className="font-semibold text-base">${order.total.toFixed(2)}</p>
+                              <p className="font-semibold text-lg">₹{order.total.toFixed(2)}</p>
                           </CardContent>
                           <CardFooter>
                               <Button asChild variant="outline" size="sm" className="w-full sm:w-auto">

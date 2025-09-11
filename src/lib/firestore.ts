@@ -3,7 +3,7 @@
 import { initializeApp, getApp, getApps, deleteApp } from 'firebase/app';
 import { getFirestore, collection, getDocs, doc, addDoc, updateDoc, deleteDoc, query, where, writeBatch, orderBy, getDoc, setDoc } from 'firebase/firestore';
 import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
-import { Product, Category, Offer, Order, products as initialProducts, categories as initialCategories, AppearanceSettings, OrderStatus } from './data';
+import { Product, Category, Offer, Order, products as initialProducts, categories as initialCategories, AppearanceSettings, OrderStatus, Address } from './data';
 import { PlaceHolderImages } from './placeholder-images';
 import { firebaseConfig } from './firebase'; // Assuming firebaseConfig is exported from firebase.ts
 
@@ -175,6 +175,51 @@ export async function submitReturnRequest(orderId: string, request: Order['retur
   });
 }
 
+// --- Address Functions (Authenticated) ---
+
+export async function getAddresses(userId: string): Promise<Address[]> {
+    const addressesCol = collection(db, 'users', userId, 'addresses');
+    const addressSnapshot = await getDocs(addressesCol);
+    return addressSnapshot.docs.map(doc => ({ ...doc.data(), id: doc.id } as Address));
+}
+
+export async function addAddress(userId: string, address: Omit<Address, 'id'>): Promise<string> {
+    const addressesCol = collection(db, 'users', userId, 'addresses');
+    const docRef = await addDoc(addressesCol, address);
+    
+    if (address.isDefault) {
+        const batch = writeBatch(db);
+        const q = query(addressesCol, where('id', '!=', docRef.id));
+        const snapshot = await getDocs(q);
+        snapshot.forEach(d => {
+            batch.update(d.ref, { isDefault: false });
+        });
+        await batch.commit();
+    }
+    return docRef.id;
+}
+
+export async function updateAddress(userId: string, addressId: string, address: Partial<Omit<Address, 'id'>>): Promise<void> {
+    const addressDoc = doc(db, 'users', userId, 'addresses', addressId);
+    await updateDoc(addressDoc, address);
+
+    if (address.isDefault) {
+        const addressesCol = collection(db, 'users', userId, 'addresses');
+        const batch = writeBatch(db);
+        const q = query(addressesCol, where('__name__', '!=', addressId));
+        const snapshot = await getDocs(q);
+        snapshot.forEach(d => {
+            batch.update(d.ref, { isDefault: false });
+        });
+        await batch.commit();
+    }
+}
+
+export async function deleteAddress(userId: string, addressId: string): Promise<void> {
+    const addressDoc = doc(db, 'users', userId, 'addresses', addressId);
+    await deleteDoc(addressDoc);
+}
+
 
 // --- Appearance Settings (Public read, admin write) ---
 const APPEARANCE_DOC_ID = 'homepage';
@@ -246,5 +291,3 @@ export async function seedInitialData() {
     return { success: false, message: "Database already contains data." };
   }
 }
-
-    

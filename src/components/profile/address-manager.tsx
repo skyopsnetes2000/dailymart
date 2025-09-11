@@ -1,6 +1,9 @@
+
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useAuthState } from 'react-firebase-hooks/auth';
+import { auth } from '@/lib/firebase';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -8,42 +11,24 @@ import { Plus, Trash2, Edit } from 'lucide-react';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { AddressForm, AddressSchema } from './address-form';
 import type { z } from 'zod';
-import { user as staticUser } from '@/lib/data';
+import { type Address } from '@/lib/data';
+import { getAddresses, addAddress, updateAddress, deleteAddress } from '@/lib/firestore';
 
-type Address = z.infer<typeof AddressSchema> & { id: string };
-
-const STORAGE_KEY = 'user_addresses';
-
-export default function AddressManager({ addresses: initialAddresses }: { addresses: Address[] }) {
+export default function AddressManager() {
+  const [user] = useAuthState(auth);
   const [addresses, setAddresses] = useState<Address[]>([]);
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingAddress, setEditingAddress] = useState<Address | null>(null);
 
   useEffect(() => {
-    try {
-      const storedAddresses = localStorage.getItem(STORAGE_KEY);
-      if (storedAddresses) {
-        setAddresses(JSON.parse(storedAddresses));
-      } else {
-        // If nothing in storage, initialize with static data and save it.
-        setAddresses(staticUser.addresses);
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(staticUser.addresses));
-      }
-    } catch (error) {
-        // If localStorage is not available, fall back to initial props
-        console.warn("Could not access localStorage. Using initial addresses.");
-        setAddresses(initialAddresses);
-    }
-  }, [initialAddresses]);
-
-  const updateAndPersistAddresses = (newAddresses: Address[]) => {
-    setAddresses(newAddresses);
-    try {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(newAddresses));
-    } catch (error) {
-        console.warn("Could not save addresses to localStorage.");
-    }
-  };
+    const fetchAddresses = async () => {
+        if (user) {
+            const userAddresses = await getAddresses(user.uid);
+            setAddresses(userAddresses);
+        }
+    };
+    fetchAddresses();
+  }, [user]);
 
   const handleAddNew = () => {
     if (addresses.length >= 6) {
@@ -59,37 +44,36 @@ export default function AddressManager({ addresses: initialAddresses }: { addres
     setIsFormOpen(true);
   };
 
-  const handleDelete = (addressId: string) => {
-    const newAddresses = addresses.filter(addr => addr.id !== addressId);
-    updateAndPersistAddresses(newAddresses);
-  };
-  
-  const handleSetDefault = (addressId: string) => {
-    const newAddresses = addresses.map(addr => ({ ...addr, isDefault: addr.id === addressId }));
-    updateAndPersistAddresses(newAddresses);
+  const handleDelete = async (addressId: string) => {
+    if (!user) return;
+    await deleteAddress(user.uid, addressId);
+    setAddresses(addresses.filter(addr => addr.id !== addressId));
   };
 
-  const handleSaveAddress = (data: z.infer<typeof AddressSchema>) => {
-    let newAddresses;
-    let newAddressId = editingAddress ? editingAddress.id : Date.now().toString();
+  const handleSaveAddress = async (data: z.infer<typeof AddressSchema>) => {
+    if (!user) return;
 
     if (editingAddress) {
       // Update existing address
-      newAddresses = addresses.map(addr => addr.id === editingAddress.id ? { ...addr, ...data } : addr);
+      await updateAddress(user.uid, editingAddress.id, data);
+      const updatedAddresses = addresses.map(addr => addr.id === editingAddress.id ? { ...addr, ...data } : addr);
+       if (data.isDefault) {
+           setAddresses(updatedAddresses.map(addr => ({ ...addr, isDefault: addr.id === editingAddress.id })));
+       } else {
+           setAddresses(updatedAddresses);
+       }
     } else {
       // Add new address
-      const newAddress: Address = {
-        id: newAddressId,
-        ...data,
-      };
-      newAddresses = [...addresses, newAddress];
+      const newId = await addAddress(user.uid, data);
+      const newAddress: Address = { id: newId, ...data };
+      const newAddresses = [...addresses, newAddress];
+       if (data.isDefault) {
+           setAddresses(newAddresses.map(addr => ({ ...addr, isDefault: addr.id === newId })));
+       } else {
+           setAddresses(newAddresses);
+       }
     }
     
-    if (data.isDefault) {
-        newAddresses = newAddresses.map(addr => ({ ...addr, isDefault: addr.id === newAddressId }));
-    }
-
-    updateAndPersistAddresses(newAddresses);
     setIsFormOpen(false);
     setEditingAddress(null);
   };
@@ -138,7 +122,7 @@ export default function AddressManager({ addresses: initialAddresses }: { addres
               </AlertDialogContent>
             </AlertDialog>
             {!address.isDefault && (
-                <Button variant="ghost" size="sm" onClick={() => handleSetDefault(address.id)}>Set as Default</Button>
+                <Button variant="ghost" size="sm" onClick={() => handleSaveAddress({ ...address, isDefault: true })}>Set as Default</Button>
             )}
           </CardContent>
         </Card>
