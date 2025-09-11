@@ -23,9 +23,9 @@ import { Input } from '@/components/ui/input';
 import { Product, Category, Offer } from '@/lib/data';
 import { useToast } from '@/hooks/use-toast';
 import Image from 'next/image';
-import { PlaceHolderImages } from '@/lib/placeholder-images';
-import { Trash2 } from 'lucide-react';
-import { getCategories, getProducts, updateProductOffer } from '@/lib/firestore';
+import { Loader2, Trash2 } from 'lucide-react';
+import { getCategories, getProducts, updateProductOffer, updateMultipleProductOffers } from '@/lib/firestore';
+import { Checkbox } from '@/components/ui/checkbox';
 
 type OfferInput = {
   type: 'percentage' | 'fixed';
@@ -37,6 +37,9 @@ export default function AdminOffersPage() {
   const [categories, setCategories] = useState<Category[]>([]);
   const [selectedCategory, setSelectedCategory] = useState<string>('');
   const [offerInputs, setOfferInputs] = useState<{ [productId: string]: Partial<OfferInput> }>({});
+  const [selectedProducts, setSelectedProducts] = useState<string[]>([]);
+  const [bulkOffer, setBulkOffer] = useState<OfferInput>({ type: 'percentage', value: '' });
+  const [isBulkSubmitting, setIsBulkSubmitting] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -56,6 +59,7 @@ export default function AdminOffersPage() {
         }
         const productsData = await getProducts(selectedCategory);
         setProducts(productsData);
+        setSelectedProducts([]);
 
         const initialInputs: { [productId: string]: Partial<OfferInput> } = {};
         productsData.forEach((p: Product) => {
@@ -133,16 +137,72 @@ export default function AdminOffersPage() {
          toast({ title: 'Error', description: 'Could not remove the offer.', variant: 'destructive'});
       }
   }
+  
+  const handleSelectProduct = (productId: string, checked: boolean) => {
+    setSelectedProducts(prev => 
+        checked ? [...prev, productId] : prev.filter(id => id !== productId)
+    );
+  };
+  
+  const handleSelectAll = (checked: boolean) => {
+    setSelectedProducts(checked ? products.map(p => p.id) : []);
+  };
+  
+  const handleApplyBulkOffer = async () => {
+    if (!bulkOffer.value || !bulkOffer.type) {
+        toast({ title: 'Invalid Input', description: 'Please provide a valid bulk offer type and value.', variant: 'destructive'});
+        return;
+    }
+    const value = parseFloat(bulkOffer.value);
+    if (isNaN(value) || value <= 0) {
+       toast({ title: 'Invalid Value', description: 'Please enter a positive number for the bulk offer.', variant: 'destructive'});
+       return;
+    }
+
+    setIsBulkSubmitting(true);
+    const newOffer: Offer = { type: bulkOffer.type, value };
+    
+    try {
+        await updateMultipleProductOffers(selectedProducts, newOffer);
+        const updatedProducts = products.map(p => 
+            selectedProducts.includes(p.id) ? { ...p, offer: newOffer } : p
+        );
+        setProducts(updatedProducts);
+        toast({ title: 'Success', description: `Offer applied to ${selectedProducts.length} products.` });
+        setSelectedProducts([]);
+    } catch (error) {
+        toast({ title: 'Error', description: 'Could not apply bulk offer.', variant: 'destructive' });
+    } finally {
+        setIsBulkSubmitting(false);
+    }
+  };
+  
+  const handleRemoveBulkOffer = async () => {
+    setIsBulkSubmitting(true);
+    try {
+        await updateMultipleProductOffers(selectedProducts, null);
+        const updatedProducts = products.map(p => 
+            selectedProducts.includes(p.id) ? { ...p, offer: undefined } : p
+        );
+        setProducts(updatedProducts);
+        toast({ title: 'Success', description: `Offers removed from ${selectedProducts.length} products.` });
+        setSelectedProducts([]);
+    } catch (error) {
+        toast({ title: 'Error', description: 'Could not remove bulk offers.', variant: 'destructive' });
+    } finally {
+        setIsBulkSubmitting(false);
+    }
+  };
 
   const getProductImage = (product: Product) => {
     if (product.imageUrls && product.imageUrls.length > 0) {
       return product.imageUrls[0];
     }
-    // Fallback to a generic placeholder if no image is available
     return 'https://placehold.co/40';
   }
 
   const filteredProducts = products;
+  const isAllSelected = filteredProducts.length > 0 && selectedProducts.length === filteredProducts.length;
 
   return (
     <div className="space-y-6">
@@ -165,9 +225,58 @@ export default function AdminOffersPage() {
           </Select>
         </CardHeader>
         <CardContent>
+          {selectedProducts.length > 0 && (
+            <Card className="mb-6 bg-muted/50">
+              <CardHeader>
+                <CardTitle className='text-lg'>{selectedProducts.length} Product(s) Selected</CardTitle>
+              </CardHeader>
+              <CardContent className="flex flex-wrap items-end gap-4">
+                 <div className="grid gap-2">
+                    <label>Offer Type</label>
+                    <Select value={bulkOffer.type} onValueChange={value => setBulkOffer(prev => ({...prev, type: value as 'percentage' | 'fixed'}))}>
+                        <SelectTrigger className="w-[150px]">
+                            <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="percentage">Percentage (%)</SelectItem>
+                            <SelectItem value="fixed">Fixed ($)</SelectItem>
+                        </SelectContent>
+                    </Select>
+                 </div>
+                 <div className="grid gap-2">
+                    <label>Value</label>
+                    <Input 
+                        type="number" 
+                        placeholder="e.g., 15" 
+                        className="w-[120px]" 
+                        value={bulkOffer.value}
+                        onChange={e => setBulkOffer(prev => ({...prev, value: e.target.value}))}
+                    />
+                 </div>
+                 <div className="flex gap-2">
+                    <Button onClick={handleApplyBulkOffer} disabled={isBulkSubmitting}>
+                        {isBulkSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                        Apply Offer
+                    </Button>
+                    <Button variant="destructive" onClick={handleRemoveBulkOffer} disabled={isBulkSubmitting}>
+                        {isBulkSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                        <Trash2 className="h-4 w-4" />
+                    </Button>
+                 </div>
+              </CardContent>
+            </Card>
+          )}
+
           <Table>
             <TableHeader>
               <TableRow>
+                <TableHead className='w-12'>
+                    <Checkbox
+                        checked={isAllSelected}
+                        onCheckedChange={(checked) => handleSelectAll(Boolean(checked))}
+                        aria-label="Select all"
+                    />
+                </TableHead>
                 <TableHead>Image</TableHead>
                 <TableHead>Product Name</TableHead>
                 <TableHead>Price</TableHead>
@@ -183,6 +292,13 @@ export default function AdminOffersPage() {
                     const hasOffer = currentOffer && currentOffer.value > 0;
                     return (
                     <TableRow key={product.id}>
+                      <TableCell>
+                        <Checkbox 
+                            checked={selectedProducts.includes(product.id)}
+                            onCheckedChange={(checked) => handleSelectProduct(product.id, Boolean(checked))}
+                            aria-label={`Select ${product.name}`}
+                        />
+                      </TableCell>
                       <TableCell>
                         <Image
                             src={getProductImage(product)}
@@ -234,7 +350,7 @@ export default function AdminOffersPage() {
                 )})
               ) : (
                 <TableRow>
-                  <TableCell colSpan={6} className="text-center">
+                  <TableCell colSpan={7} className="text-center">
                     {selectedCategory ? 'No products in this category.' : 'Please select a category to see products.'}
                   </TableCell>
                 </TableRow>
@@ -246,3 +362,5 @@ export default function AdminOffersPage() {
     </div>
   );
 }
+
+    

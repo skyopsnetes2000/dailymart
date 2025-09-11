@@ -22,11 +22,11 @@ export const storage = getStorage(mainApp);
 const publicAppName = 'public-unauthenticated';
 let publicDb;
 
-if (!getApps().some(app => app.name === publicAppName)) {
+try {
+    publicDb = getFirestore(getApp(publicAppName));
+} catch {
     const publicApp = initializeApp(firebaseConfig, publicAppName);
     publicDb = getFirestore(publicApp);
-} else {
-    publicDb = getFirestore(getApp(publicAppName));
 }
 
 
@@ -104,6 +104,16 @@ export async function updateProductOffer(id: string, offer: Offer | null): Promi
   await updateDoc(productDoc, { offer });
 }
 
+export async function updateMultipleProductOffers(productIds: string[], offer: Offer | null): Promise<void> {
+    const batch = writeBatch(db);
+    productIds.forEach(id => {
+        const productRef = doc(db, 'products', id);
+        batch.update(productRef, { offer });
+    });
+    await batch.commit();
+}
+
+
 export async function deleteProduct(id: string): Promise<void> {
   const productDoc = doc(db, 'products', id);
   await deleteDoc(productDoc);
@@ -124,19 +134,13 @@ export async function getOrders(userId?: string): Promise<Order[]> {
     let ordersQuery;
     if (userId) {
         // This query requires a composite index on userId (asc) and date (desc).
-        // Temporarily removing orderBy to prevent app crash until index is created.
-        ordersQuery = query(collection(db, 'orders'), where('userId', '==', userId));
+        ordersQuery = query(collection(db, 'orders'), where('userId', '==', userId), orderBy('date', 'desc'));
     } else {
         ordersQuery = query(collection(db, 'orders'), orderBy('date', 'desc'));
     }
     
     const orderSnapshot = await getDocs(ordersQuery);
     const allOrders = orderSnapshot.docs.map(doc => ({ ...doc.data() as Order, id: doc.id }));
-
-    // Manual sort for user-specific orders since we removed orderBy from the query
-    if (userId) {
-        allOrders.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-    }
     
     return allOrders;
 }
@@ -235,3 +239,5 @@ export async function seedInitialData() {
     return { success: false, message: "Database already contains data." };
   }
 }
+
+    
