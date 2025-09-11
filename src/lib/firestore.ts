@@ -133,14 +133,21 @@ export async function addOrder(order: Omit<Order, 'id'>): Promise<string> {
 export async function getOrders(userId?: string): Promise<Order[]> {
     let ordersQuery;
     if (userId) {
-        // This query requires a composite index on userId (asc) and date (desc).
-        ordersQuery = query(collection(db, 'orders'), where('userId', '==', userId), orderBy('date', 'desc'));
+        // This query would require a composite index. By removing the orderBy,
+        // we avoid the need for the index and can sort on the client.
+        ordersQuery = query(collection(db, 'orders'), where('userId', '==', userId));
     } else {
+        // This query is for the admin panel and is sorted by date.
         ordersQuery = query(collection(db, 'orders'), orderBy('date', 'desc'));
     }
     
     const orderSnapshot = await getDocs(ordersQuery);
     const allOrders = orderSnapshot.docs.map(doc => ({ ...doc.data() as Order, id: doc.id }));
+    
+    // If it was a user-specific query, sort client-side.
+    if (userId) {
+        allOrders.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+    }
     
     return allOrders;
 }
