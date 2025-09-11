@@ -58,7 +58,7 @@ export default function AdminDashboardPage() {
                 const currentMonthStart = startOfMonth(now);
                 
                 const productMap = new Map(products.map(p => [p.name, p]));
-                
+
                 const getRefundAmount = (order: Order): number => {
                     if (!order.returnRequest || !['Return Successful', 'Refund Completed'].includes(order.status)) {
                         return 0;
@@ -66,7 +66,6 @@ export default function AdminDashboardPage() {
                     return order.returnRequest.items.reduce((sum, item) => {
                         const product = productMap.get(item.productName);
                         if (!product) return sum;
-                        
                         const price = calculateDiscountedPrice(product) ?? product.price;
                         return sum + (price * item.quantity);
                     }, 0);
@@ -82,8 +81,11 @@ export default function AdminDashboardPage() {
                 
                 const calculateNetRevenueForPeriod = (start: Date, end: Date) => {
                     const periodGrossOrders = grossRevenueOrders.filter(o => isWithinInterval(new Date(o.date), { start, end }));
-                    const periodRefundOrders = orders.filter(o => isWithinInterval(new Date(o.date), { start, end }));
-
+                    const periodRefundOrders = orders.filter(o => {
+                        // Only consider orders that could have refunds within the period
+                        return ['Return Successful', 'Refund Completed'].includes(o.status) && isWithinInterval(new Date(o.date), { start, end })
+                    });
+                    
                     const gross = periodGrossOrders.reduce((sum, order) => sum + order.total, 0);
                     const refunds = periodRefundOrders.reduce((sum, order) => sum + getRefundAmount(order), 0);
                     
@@ -134,7 +136,7 @@ export default function AdminDashboardPage() {
                     .slice(0, 5)
                     .map(([name, sales]) => ({ name, sales }));
                 setTopCategories(sortedCategories);
-
+                
                 const revenueChange = lastMonthRevenue > 0
                     ? ((currentMonthRevenue - lastMonthRevenue) / lastMonthRevenue) * 100
                     : currentMonthRevenue > 0 ? 100 : 0;
@@ -194,9 +196,9 @@ export default function AdminDashboardPage() {
             <DollarSign className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">${(0).toFixed(2)}</div>
+            <div className="text-2xl font-bold">${stats.totalRevenue.toFixed(2)}</div>
             <p className="text-xs text-muted-foreground">
-              {formatPercentage(0)} from last month
+              {formatPercentage(stats.revenueChange)} from last month
             </p>
           </CardContent>
         </Card>
