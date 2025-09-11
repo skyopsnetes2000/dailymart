@@ -39,7 +39,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { type Product, type Category } from '@/lib/data';
-import { Pencil, PlusCircle, Search, Trash2 } from 'lucide-react';
+import { Loader2, Pencil, PlusCircle, Search, Trash2 } from 'lucide-react';
 import Image from 'next/image';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -63,6 +63,7 @@ export default function AdminProductsPage() {
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -109,6 +110,7 @@ export default function AdminProductsPage() {
   };
 
   const onSubmit = async (data: z.infer<typeof productSchema>) => {
+    setIsSubmitting(true);
     try {
       let imageUrl: string | undefined = editingProduct?.imageId;
 
@@ -145,6 +147,8 @@ export default function AdminProductsPage() {
     } catch (error) {
        console.error("Failed to save product:", error);
        toast({ title: "Error", description: "An error occurred while saving the product.", variant: "destructive" });
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -309,7 +313,8 @@ export default function AdminProductsPage() {
                  </div>
               </ScrollArea>
               <div className="flex justify-end px-4">
-                 <Button type="submit">
+                 <Button type="submit" disabled={isSubmitting}>
+                    {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                     {editingProduct ? 'Save Changes' : 'Create Product'}
                   </Button>
               </div>
@@ -373,5 +378,3 @@ export default function AdminProductsPage() {
       </Card>
     </div>
   );
-
-    
