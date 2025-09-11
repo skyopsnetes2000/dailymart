@@ -71,21 +71,21 @@ export default function AdminDashboardPage() {
                     }, 0);
                 };
 
-                // Gross revenue is the total of all orders that have been successfully delivered.
-                const deliveredOrders = orders.filter(o => 
+                // Gross revenue is the total of all orders that have been successfully delivered or are in a post-delivery state.
+                const deliveredAndReturnedOrders = orders.filter(o => 
                     ['Delivered', 'Return Requested', 'Return Initiated', 'Return Successful', 'Refund Completed'].includes(o.status)
                 );
                 
-                const totalGrossRevenue = deliveredOrders.reduce((sum, order) => sum + order.total, 0);
+                const totalGrossRevenue = deliveredAndReturnedOrders.reduce((sum, order) => sum + order.total, 0);
                 
-                // Total refunds is the sum of money returned to customers.
+                // Total refunds is the sum of money returned to customers for successfully returned items.
                 const totalRefunds = orders.reduce((sum, order) => sum + getRefundAmount(order), 0);
                 
                 // Net revenue is gross revenue minus refunds.
                 const totalRevenue = Math.max(0, totalGrossRevenue - totalRefunds);
                 
                 const calculateNetRevenueForPeriod = (start: Date, end: Date) => {
-                    const periodDeliveredOrders = deliveredOrders.filter(o => isWithinInterval(new Date(o.date), { start, end }));
+                    const periodDeliveredOrders = deliveredAndReturnedOrders.filter(o => isWithinInterval(new Date(o.date), { start, end }));
                     const periodRefundOrders = orders.filter(o => {
                         return ['Return Successful', 'Refund Completed'].includes(o.status) && o.returnRequest?.date && isWithinInterval(new Date(o.returnRequest.date), { start, end })
                     });
@@ -190,155 +190,155 @@ export default function AdminDashboardPage() {
         return `${sign}${change.toFixed(1)}%`;
     }
 
-  return (
-    <div className="space-y-6">
-      <h1 className="text-3xl font-bold">Dashboard</h1>
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Revenue</CardTitle>
-            <DollarSign className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">${stats.totalRevenue.toFixed(2)}</div>
-            <p className="text-xs text-muted-foreground">
-              {formatPercentage(stats.revenueChange)} from last month
-            </p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Orders</CardTitle>
-            <ShoppingCart className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">+{stats.totalOrders}</div>
-             <p className="text-xs text-muted-foreground">
-              {formatPercentage(stats.ordersChange)} from last month
-            </p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Products</CardTitle>
-            <Package className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{stats.totalProducts}</div>
-            <p className="text-xs text-muted-foreground">
-              Total products in store
-            </p>
-          </CardContent>
-        </Card>
-         <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Categories</CardTitle>
-            <LayoutGrid className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{stats.totalCategories}</div>
-            <p className="text-xs text-muted-foreground">
-              Total categories available
-            </p>
-          </CardContent>
-        </Card>
-      </div>
-
-       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
-        <Card className="col-span-4">
-          <CardHeader>
-            <CardTitle>Overview</CardTitle>
-             <CardDescription>Monthly revenue overview.</CardDescription>
-          </CardHeader>
-          <CardContent className="pl-2">
-            <ResponsiveContainer width="100%" height={350}>
-              <BarChart data={monthlySales}>
-                <XAxis
-                  dataKey="month"
-                  stroke="#888888"
-                  fontSize={12}
-                  tickLine={false}
-                  axisLine={false}
-                />
-                <YAxis
-                  stroke="#888888"
-                  fontSize={12}
-                  tickLine={false}
-                  axisLine={false}
-                  tickFormatter={(value) => `$${value}`}
-                />
-                <Bar
-                  dataKey="total"
-                  fill="hsl(var(--primary))"
-                  radius={[4, 4, 0, 0]}
-                />
-              </BarChart>
-            </ResponsiveContainer>
-          </CardContent>
-        </Card>
-        <div className="col-span-4 lg:col-span-3 space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>Top Selling Products</CardTitle>
-              <CardDescription>
-                The most sold products this month.
-              </CardDescription>
+    return (
+        <div className="space-y-6">
+        <h1 className="text-3xl font-bold">Dashboard</h1>
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+            <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Total Revenue</CardTitle>
+                <DollarSign className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-               <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Product</TableHead>
-                      <TableHead className="text-right">Sales</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {topProducts.length > 0 ? topProducts.map((product) => (
-                      <TableRow key={product.name}>
-                        <TableCell className="font-medium">{product.name}</TableCell>
-                        <TableCell className="text-right">{product.sales}</TableCell>
-                      </TableRow>
-                    )) : (
-                       <TableRow>
-                          <TableCell colSpan={2} className="text-center">No sales data available.</TableCell>
-                      </TableRow>
-                    )}
-                  </TableBody>
-              </Table>
+                <div className="text-2xl font-bold">${stats.totalRevenue.toFixed(2)}</div>
+                <p className="text-xs text-muted-foreground">
+                {formatPercentage(stats.revenueChange)} from last month
+                </p>
             </CardContent>
-          </Card>
-           <Card>
-            <CardHeader>
-              <CardTitle>Top Selling Categories</CardTitle>
-              <CardDescription>
-                The most popular categories this month.
-              </CardDescription>
+            </Card>
+            <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Orders</CardTitle>
+                <ShoppingCart className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-               <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Category</TableHead>
-                      <TableHead className="text-right">Sales</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {topCategories.length > 0 ? topCategories.map((category) => (
-                      <TableRow key={category.name}>
-                        <TableCell className="font-medium">{category.name}</TableCell>
-                        <TableCell className="text-right">{category.sales}</TableCell>
-                      </TableRow>
-                    )) : (
-                       <TableRow>
-                          <TableCell colSpan={2} className="text-center">No sales data available.</TableCell>
-                      </TableRow>
-                    )}
-                  </TableBody>
-              </Table>
+                <div className="text-2xl font-bold">+{stats.totalOrders}</div>
+                <p className="text-xs text-muted-foreground">
+                {formatPercentage(stats.ordersChange)} from last month
+                </p>
             </CardContent>
-          </Card>
+            </Card>
+            <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Products</CardTitle>
+                <Package className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+                <div className="text-2xl font-bold">{stats.totalProducts}</div>
+                <p className="text-xs text-muted-foreground">
+                Total products in store
+                </p>
+            </CardContent>
+            </Card>
+            <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Categories</CardTitle>
+                <LayoutGrid className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+                <div className="text-2xl font-bold">{stats.totalCategories}</div>
+                <p className="text-xs text-muted-foreground">
+                Total categories available
+                </p>
+            </CardContent>
+            </Card>
         </div>
-      </div>
-    </div>
-  );
+
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
+            <Card className="col-span-4">
+            <CardHeader>
+                <CardTitle>Overview</CardTitle>
+                <CardDescription>Monthly revenue overview.</CardDescription>
+            </CardHeader>
+            <CardContent className="pl-2">
+                <ResponsiveContainer width="100%" height={350}>
+                <BarChart data={monthlySales}>
+                    <XAxis
+                    dataKey="month"
+                    stroke="#888888"
+                    fontSize={12}
+                    tickLine={false}
+                    axisLine={false}
+                    />
+                    <YAxis
+                    stroke="#888888"
+                    fontSize={12}
+                    tickLine={false}
+                    axisLine={false}
+                    tickFormatter={(value) => `$${value}`}
+                    />
+                    <Bar
+                    dataKey="total"
+                    fill="hsl(var(--primary))"
+                    radius={[4, 4, 0, 0]}
+                    />
+                </BarChart>
+                </ResponsiveContainer>
+            </CardContent>
+            </Card>
+            <div className="col-span-4 lg:col-span-3 space-y-4">
+            <Card>
+                <CardHeader>
+                <CardTitle>Top Selling Products</CardTitle>
+                <CardDescription>
+                    The most sold products this month.
+                </CardDescription>
+                </CardHeader>
+                <CardContent>
+                <Table>
+                    <TableHeader>
+                        <TableRow>
+                        <TableHead>Product</TableHead>
+                        <TableHead className="text-right">Sales</TableHead>
+                        </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                        {topProducts.length > 0 ? topProducts.map((product) => (
+                        <TableRow key={product.name}>
+                            <TableCell className="font-medium">{product.name}</TableCell>
+                            <TableCell className="text-right">{product.sales}</TableCell>
+                        </TableRow>
+                        )) : (
+                        <TableRow>
+                            <TableCell colSpan={2} className="text-center">No sales data available.</TableCell>
+                        </TableRow>
+                        )}
+                    </TableBody>
+                </Table>
+                </CardContent>
+            </Card>
+            <Card>
+                <CardHeader>
+                <CardTitle>Top Selling Categories</CardTitle>
+                <CardDescription>
+                    The most popular categories this month.
+                </CardDescription>
+                </CardHeader>
+                <CardContent>
+                <Table>
+                    <TableHeader>
+                        <TableRow>
+                        <TableHead>Category</TableHead>
+                        <TableHead className="text-right">Sales</TableHead>
+                        </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                        {topCategories.length > 0 ? topCategories.map((category) => (
+                        <TableRow key={category.name}>
+                            <TableCell className="font-medium">{category.name}</TableCell>
+                            <TableCell className="text-right">{category.sales}</TableCell>
+                        </TableRow>
+                        )) : (
+                        <TableRow>
+                            <TableCell colSpan={2} className="text-center">No sales data available.</TableCell>
+                        </TableRow>
+                        )}
+                    </TableBody>
+                </Table>
+                </CardContent>
+            </Card>
+            </div>
+        </div>
+        </div>
+    );
 }
