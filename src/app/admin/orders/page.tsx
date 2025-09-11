@@ -167,7 +167,7 @@ export default function AdminOrdersPage() {
                         {format(new Date(order.date), 'MM/dd/yyyy')}
                       </TableCell>
                       <TableCell>{order.customerName}</TableCell>
-                      <TableCell>${order.total.toFixed(2)}</TableCell>
+                      <TableCell>₹{order.total.toFixed(2)}</TableCell>
                       <TableCell>
                         <Select
                           value={order.status}

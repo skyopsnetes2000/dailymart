@@ -239,7 +239,7 @@ export default function AdminOffersPage() {
                         </SelectTrigger>
                         <SelectContent>
                             <SelectItem value="percentage">Percentage (%)</SelectItem>
-                            <SelectItem value="fixed">Fixed ($)</SelectItem>
+                            <SelectItem value="fixed">Fixed (₹)</SelectItem>
                         </SelectContent>
                     </Select>
                  </div>
@@ -309,7 +309,7 @@ export default function AdminOffersPage() {
                         />
                       </TableCell>
                     <TableCell className="font-medium">{product.name}</TableCell>
-                    <TableCell>${product.price.toFixed(2)}</TableCell>
+                    <TableCell>₹{product.price.toFixed(2)}</TableCell>
                     <TableCell>
                        <Select
                          value={offerInputs[product.id]?.type || 'percentage'}
@@ -320,7 +320,7 @@ export default function AdminOffersPage() {
                             </SelectTrigger>
                             <SelectContent>
                                 <SelectItem value="percentage">Percentage (%)</SelectItem>
-                                <SelectItem value="fixed">Fixed ($)</SelectItem>
+                                <SelectItem value="fixed">Fixed (₹)</SelectItem>
                             </SelectContent>
                         </Select>
                     </TableCell>

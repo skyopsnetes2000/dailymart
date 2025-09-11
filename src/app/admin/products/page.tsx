@@ -393,7 +393,7 @@ export default function AdminProductsPage() {
                       )}
                     </TableCell>
                     <TableCell className="font-medium">{product.name}</TableCell>
-                    <TableCell>${product.price.toFixed(2)}</TableCell>
+                    <TableCell>₹{product.price.toFixed(2)}</TableCell>
                     <TableCell>
                       <div className="flex gap-2">
                         <Button

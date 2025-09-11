@@ -82,7 +82,7 @@ export default function OrdersPage() {
                                 </div>
                             </CardHeader>
                             <CardContent>
-                                <p className="font-semibold text-lg">${order.total.toFixed(2)}</p>
+                                <p className="font-semibold text-lg">₹{order.total.toFixed(2)}</p>
                             </CardContent>
                             <CardFooter>
                                 <Button asChild variant="outline" className="w-full sm:w-auto">

@@ -212,20 +212,20 @@ export default function CheckoutPage() {
               <CardContent className="space-y-4">
                   <div className="flex justify-between">
                       <span>Subtotal</span>
-                      <span className="font-semibold">${subtotal.toFixed(2)}</span>
+                      <span className="font-semibold">₹{subtotal.toFixed(2)}</span>
                   </div>
                   <div className="flex justify-between text-muted-foreground">
                       <span>Taxes & Fees</span>
-                      <span>$0.00</span>
+                      <span>₹0.00</span>
                   </div>
                   <div className="flex justify-between text-muted-foreground">
                       <span>Shipping</span>
-                      <span>$0.00</span>
+                      <span>₹0.00</span>
                   </div>
                   <Separator />
                   <div className="flex justify-between text-lg font-bold">
                       <span>Total</span>
-                      <span>${subtotal.toFixed(2)}</span>
+                      <span>₹{subtotal.toFixed(2)}</span>
                   </div>
               </CardContent>
               <CardFooter className="flex-col gap-2">

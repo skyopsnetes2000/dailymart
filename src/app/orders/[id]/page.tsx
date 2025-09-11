@@ -219,7 +219,7 @@ export default function OrderDetailsPage() {
                 <Card>
                     <CardHeader>
                         <CardTitle>Order #{order.id}</CardTitle>
-                        <CardDescription>Placed on {format(new Date(order.date), 'MM/dd/yyyy')} &bull; Total: ${order.total.toFixed(2)}</CardDescription>
+                        <CardDescription>Placed on {format(new Date(order.date), 'MM/dd/yyyy')} &bull; Total: ₹{order.total.toFixed(2)}</CardDescription>
                     </CardHeader>
                     <CardContent>
                         <h4 className="font-semibold mb-2">Items</h4>

@@ -52,11 +52,11 @@ const ProductCard: FC<ProductCardProps> = ({ product }) => {
         <div className="mt-2">
             {discountedPrice !== null && discountedPrice < product.price ? (
                 <div className="flex items-baseline gap-1.5">
-                    <p className="text-base font-bold text-foreground">${discountedPrice.toFixed(2)}</p>
-                    <p className="text-xs font-medium text-muted-foreground line-through">${product.price.toFixed(2)}</p>
+                    <p className="text-base font-bold text-foreground">₹{discountedPrice.toFixed(2)}</p>
+                    <p className="text-xs font-medium text-muted-foreground line-through">₹{product.price.toFixed(2)}</p>
                 </div>
             ) : (
-                 <p className="text-base font-bold text-foreground">${product.price.toFixed(2)}</p>
+                 <p className="text-base font-bold text-foreground">₹{product.price.toFixed(2)}</p>
             )}
         </div>
       </CardContent>
