@@ -135,8 +135,11 @@ export default function AdminOffersPage() {
   }
 
   const getProductImage = (product: Product) => {
-    const placeholder = PlaceHolderImages.find((img) => img.id === product.imageId);
-    return product.imageId.startsWith('https') ? product.imageId : placeholder?.imageUrl;
+    if (product.imageUrls && product.imageUrls.length > 0) {
+      return product.imageUrls[0];
+    }
+    // Fallback to a generic placeholder if no image is available
+    return 'https://placehold.co/40';
   }
 
   const filteredProducts = products;
@@ -182,7 +185,7 @@ export default function AdminOffersPage() {
                     <TableRow key={product.id}>
                       <TableCell>
                         <Image
-                            src={getProductImage(product) || 'https://placehold.co/40'}
+                            src={getProductImage(product)}
                             alt={product.name}
                             width={40}
                             height={40}
