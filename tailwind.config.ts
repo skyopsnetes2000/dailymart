@@ -97,7 +97,7 @@ export default {
       animation: {
         'accordion-down': 'accordion-down 0.2s ease-out',
         'accordion-up': 'accordion-up 0.2s ease-out',
-        'marquee-normal': 'marquee-normal 20s linear infinite',
+        'marquee-normal': 'marquee-normal 10s linear infinite',
       },
     },
   },
