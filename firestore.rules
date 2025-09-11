@@ -2,18 +2,29 @@ rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Public collections can be read by anyone, but only written by authenticated users.
-    match /(products|categories|appearance)/{document=**} {
-      allow read: if true;
-      allow write: if request.auth != null;
+    
+    function isAdmin() {
+      return request.auth != null && request.auth.token.email == 'dhandesaurav52@gmail.com';
     }
 
-    // Orders
+    match /products/{productId} {
+      allow get, list: if true;
+      allow write: if isAdmin();
+    }
+
+    match /categories/{categoryId} {
+      allow get, list: if true;
+      allow write: if isAdmin();
+    }
+    
+    match /appearance/{docId} {
+      allow get, list: if true;
+      allow write: if isAdmin();
+    }
+
     match /orders/{orderId} {
-      // Users can only create orders for themselves.
-      allow create: if request.auth != null && request.auth.uid == request.resource.data.userId;
-      // Users can only read, update, or delete their own orders.
-      allow read, update, delete: if request.auth != null && request.auth.uid == resource.data.userId;
+      allow read, update, delete: if request.auth != null && (resource.data.userId == request.auth.uid || isAdmin());
+      allow create: if request.auth != null && request.resource.data.userId == request.auth.uid;
     }
   }
 }
