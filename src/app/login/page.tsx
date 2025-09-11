@@ -11,8 +11,9 @@ import { useSearchParams } from 'next/navigation';
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
-import { auth } from '@/lib/firebase';
+import { auth, db } from '@/lib/firebase';
 import { createUserWithEmailAndPassword, sendEmailVerification, signInWithEmailAndPassword, updateProfile } from 'firebase/auth';
+import { doc, setDoc } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
 
@@ -33,6 +34,7 @@ const signupSchema = z
     path: ['confirmPassword'],
   });
 
+const ADMIN_EMAIL = 'dhandesaurav52@gmail.com';
 
 export default function LoginPage() {
   const searchParams = useSearchParams();
@@ -86,6 +88,17 @@ export default function LoginPage() {
     try {
       const userCredential = await createUserWithEmailAndPassword(auth, data.email, data.password);
       await updateProfile(userCredential.user, { displayName: data.name });
+
+      // Create a document in the 'users' collection
+      const userDocRef = doc(db, 'users', userCredential.user.uid);
+      await setDoc(userDocRef, {
+        uid: userCredential.user.uid,
+        email: data.email,
+        name: data.name,
+        isAdmin: data.email === ADMIN_EMAIL,
+        createdAt: new Date().toISOString(),
+      });
+      
       await sendEmailVerification(userCredential.user);
       toast({
         title: "Verification Sent",
