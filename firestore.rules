@@ -3,50 +3,46 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // --- Admin-only collections ---
-    // Admins can write, all authenticated users can read.
-    function isAdmin() {
-      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isAdmin == true;
-    }
-    
-    match /products/{productId} {
-      allow read: if request.auth != null;
-      allow write: if isAdmin();
+    function isUserAdmin(userId) {
+      return exists(/databases/$(database)/documents/users/$(userId)) && get(/databases/$(database)/documents/users/$(userId)).data.isAdmin == true;
     }
 
+    // --- Public Collections ---
     match /categories/{categoryId} {
-      allow read: if request.auth != null;
-      allow write: if isAdmin();
+      allow read: if true;
+      allow write: if isUserAdmin(request.auth.uid);
+    }
+
+    match /products/{productId} {
+      allow read: if true;
+      allow write: if isUserAdmin(request.auth.uid);
     }
 
     match /appearance/{docId} {
-      allow read: if request.auth != null;
-      allow write: if isAdmin();
+      allow read: if true;
+      allow write: if isUserAdmin(request.auth.uid);
     }
-    
-    // --- User-specific collections ---
 
-    // Users can manage their own user document
+    // --- User-specific Collections ---
     match /users/{userId} {
       allow read, update: if request.auth.uid == userId;
       allow create: if request.auth.uid != null;
     }
     
-    // Users can manage their own addresses.
+    // Addresses are a subcollection of users
     match /users/{userId}/addresses/{addressId} {
-        allow read, write, delete: if request.auth.uid == userId;
+      allow read, write: if request.auth.uid == userId;
     }
 
-    // Users can only access their own cart.
     match /carts/{userId} {
       allow read, write: if request.auth.uid == userId;
     }
 
-    // Users can create and read their own orders. Admins can manage all orders.
+    // --- Orders Collection ---
     match /orders/{orderId} {
-      allow read: if request.auth.uid == resource.data.userId || isAdmin();
+      allow read: if request.auth.uid == resource.data.userId || isUserAdmin(request.auth.uid);
       allow create: if request.auth.uid == request.resource.data.userId;
-      allow update: if isAdmin();
+      allow update: if isUserAdmin(request.auth.uid);
     }
   }
 }
