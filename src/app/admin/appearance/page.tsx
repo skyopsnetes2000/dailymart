@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import {
@@ -134,7 +135,11 @@ export default function AdminAppearancePage() {
         if (newSettings.heroImageUrl) updatedInitialData.heroImageUrl = newSettings.heroImageUrl;
         updatedInitialData.ads = newSettings.ads || [];
         setInitialData(updatedInitialData);
-        form.reset(data); // reset form with current data to clear file inputs
+        form.reset({
+            ...data,
+            heroImage: null, // Clear file input
+            ads: updatedAds.map(ad => ({...ad, imageFile: null})) // Clear file inputs
+        });
 
         toast({
             title: 'Success!',
@@ -272,20 +277,23 @@ export default function AdminAppearancePage() {
                     <FormField
                         control={form.control}
                         name={`ads.${index}.imageFile`}
-                        render={({ field }) => (
-                            <FormItem>
-                                <FormLabel>Image</FormLabel>
-                                {initialData?.ads[index]?.imageUrl && (
-                                    <div className="relative aspect-video w-48 rounded-md overflow-hidden">
-                                        <Image src={initialData.ads[index].imageUrl!} alt={`Ad ${index + 1}`} fill className="object-cover" />
-                                    </div>
-                                )}
-                                <FormControl>
-                                    <Input type="file" onChange={(e) => field.onChange(e.target.files)} />
-                                </FormControl>
-                                <FormMessage />
-                            </FormItem>
-                        )}
+                        render={({ field: fileField }) => {
+                             const adField = form.getValues(`ads.${index}`);
+                             return (
+                                <FormItem>
+                                    <FormLabel>Image</FormLabel>
+                                    {adField?.imageUrl && (
+                                        <div className="relative aspect-video w-48 rounded-md overflow-hidden">
+                                            <Image src={adField.imageUrl} alt={`Ad ${index + 1}`} fill className="object-cover" />
+                                        </div>
+                                    )}
+                                    <FormControl>
+                                        <Input type="file" onChange={(e) => fileField.onChange(e.target.files)} />
+                                    </FormControl>
+                                    <FormMessage />
+                                </FormItem>
+                            )
+                        }}
                     />
                 </div>
               ))}
