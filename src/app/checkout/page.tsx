@@ -227,10 +227,13 @@ export default function CheckoutPage() {
                     <span>${subtotal.toFixed(2)}</span>
                 </div>
             </CardContent>
-            <CardFooter>
+            <CardFooter className="flex-col gap-2">
                  <Button className="w-full" onClick={handlePlaceOrder} disabled={isPlacingOrder || items.length === 0}>
                     {isPlacingOrder && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                    Place Order
+                    COD
+                </Button>
+                <Button variant="outline" className="w-full" disabled={true}>
+                    Pay Online
                 </Button>
             </CardFooter>
         </Card>
