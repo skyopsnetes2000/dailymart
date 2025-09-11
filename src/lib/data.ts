@@ -54,6 +54,15 @@ export type Address = {
     isDefault: boolean;
 }
 
+export type AppearanceSettings = {
+    heroTitle: string;
+    heroSubtitle: string;
+    heroImageUrl?: string;
+    ad1ImageUrl?: string;
+    ad2ImageUrl?: string;
+    ad3ImageUrl?: string;
+}
+
 export const categories: Category[] = [
   { id: '1', name: 'Vegetables', slug: 'vegetables', imageId: 'category-veg' },
   { id: '2', name: 'Fruits', slug: 'fruits', imageId: 'category-fruits' },

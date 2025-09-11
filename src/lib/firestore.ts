@@ -12,9 +12,11 @@ import {
   where,
   writeBatch,
   orderBy,
+  getDoc,
+  setDoc,
 } from 'firebase/firestore';
 import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
-import { Product, Category, Offer, Order, products as initialProducts, categories as initialCategories } from './data';
+import { Product, Category, Offer, Order, products as initialProducts, categories as initialCategories, AppearanceSettings } from './data';
 import { PlaceHolderImages } from './placeholder-images';
 
 // --- Category Functions ---
@@ -84,14 +86,22 @@ export async function deleteProduct(id: string): Promise<void> {
 // --- Order Functions ---
 
 export async function addOrder(order: Omit<Order, 'id'>): Promise<string> {
-    const ordersCol = collection(db, 'orders');
-    const docRef = await addDoc(ordersCol, { ...order, id: `ORD-${Date.now().toString().slice(-6)}` });
-    await updateDoc(docRef, { id: docRef.id }); // Add the document ID as a field
-    return docRef.id;
+    const newOrderRef = doc(collection(db, "orders"));
+    const newOrder = { ...order, id: newOrderRef.id };
+    await setDoc(newOrderRef, newOrder);
+    return newOrderRef.id;
 }
 
 export async function getOrders(userId?: string): Promise<Order[]> {
-    const ordersQuery = query(collection(db, 'orders'), orderBy('date', 'desc'));
+    let ordersQuery;
+    if (userId) {
+        // This query requires a composite index on userId and date.
+        // As a workaround if the index doesn't exist, we can fetch all and filter client-side.
+        ordersQuery = query(collection(db, 'orders'), orderBy('date', 'desc'));
+    } else {
+        ordersQuery = query(collection(db, 'orders'), orderBy('date', 'desc'));
+    }
+
     const orderSnapshot = await getDocs(ordersQuery);
     const allOrders = orderSnapshot.docs.map(doc => ({ ...doc.data() as Order, id: doc.id }));
     
@@ -106,6 +116,24 @@ export async function updateOrderStatus(orderId: string, status: Order['status']
     const orderDoc = doc(db, 'orders', orderId);
     await updateDoc(orderDoc, { status, trackingHistory });
 }
+
+// --- Appearance Settings ---
+const APPEARANCE_DOC_ID = 'homepage';
+
+export async function getAppearanceSettings(): Promise<AppearanceSettings | null> {
+    const docRef = doc(db, 'appearance', APPEARANCE_DOC_ID);
+    const docSnap = await getDoc(docRef);
+    if (docSnap.exists()) {
+        return docSnap.data() as AppearanceSettings;
+    }
+    return null;
+}
+
+export async function saveAppearanceSettings(settings: Partial<AppearanceSettings>): Promise<void> {
+    const docRef = doc(db, 'appearance', APPEARANCE_DOC_ID);
+    await setDoc(docRef, settings, { merge: true });
+}
+
 
 // --- Image Upload ---
 

@@ -19,9 +19,9 @@ import { PlaceHolderImages } from '@/lib/placeholder-images';
 import Autoplay from "embla-carousel-autoplay";
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { Product, Category } from '@/lib/data';
+import { Product, Category, AppearanceSettings } from '@/lib/data';
 import { Skeleton } from '@/components/ui/skeleton';
-import { getCategories, getProducts, getSpecialOfferProducts } from '@/lib/firestore';
+import { getCategories, getProducts, getSpecialOfferProducts, getAppearanceSettings } from '@/lib/firestore';
 
 function LoadingSkeletons() {
     return (
@@ -54,19 +54,22 @@ export default function Home() {
   const [products, setProducts] = useState<Product[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [specialOffers, setSpecialOffers] = useState<Product[]>([]);
+  const [appearance, setAppearance] = useState<AppearanceSettings | null>(null);
   const [loading, setLoading] = useState(true);
   
   useEffect(() => {
     const fetchData = async () => {
         try {
-            const [productsData, categoriesData, specialOffersData] = await Promise.all([
+            const [productsData, categoriesData, specialOffersData, appearanceData] = await Promise.all([
                 getProducts(),
                 getCategories(),
                 getSpecialOfferProducts(),
+                getAppearanceSettings(),
             ]);
             setProducts(productsData);
             setCategories(categoriesData);
             setSpecialOffers(specialOffersData);
+            setAppearance(appearanceData);
         } catch (error) {
             console.error("Error fetching data from Firestore", error);
         } finally {
@@ -77,17 +80,17 @@ export default function Home() {
   }, []);
   
   const topCategories = categories.slice(0, 4);
-  const heroImage = PlaceHolderImages.find((img) => img.id === 'hero-bg');
+  const placeholderHero = PlaceHolderImages.find((img) => img.id === 'hero-bg');
   
   const autoplayPlugin = React.useRef(
     Autoplay({ delay: 3000, stopOnInteraction: true })
   )
 
   const ads = [
-    PlaceHolderImages.find(img => img.id === 'ad-pharmacy'),
-    PlaceHolderImages.find(img => img.id === 'ad-pet-care'),
-    PlaceHolderImages.find(img => img.id === 'ad-baby-care'),
-  ].filter(Boolean);
+    { id: 'ad1', url: appearance?.ad1ImageUrl, description: 'New Deals' },
+    { id: 'ad2', url: appearance?.ad2ImageUrl, description: 'Fresh Arrivals' },
+    { id: 'ad3', url: appearance?.ad3ImageUrl, description: 'Seasonal Picks' },
+  ].filter(ad => ad.url);
 
   if (loading) {
       return (
@@ -98,24 +101,27 @@ export default function Home() {
       )
   }
 
+  const heroTitle = appearance?.heroTitle || "Freshness at Your Fingertips";
+  const heroSubtitle = appearance?.heroSubtitle || "The best groceries, delivered fresh to your door daily.";
+  const heroImageUrl = appearance?.heroImageUrl || placeholderHero?.imageUrl;
+
   return (
     <>
       <HomeHeader />
       <div className="space-y-8 p-4 pt-0 sm:p-6 sm:pt-0">
         <section className="relative -mx-4 -mt-4 sm:-mx-6 sm:-mt-6 h-64 w-auto overflow-hidden rounded-b-2xl">
-            {heroImage && (
+            {heroImageUrl && (
               <Image
-                src={heroImage.imageUrl}
-                alt={heroImage.description}
+                src={heroImageUrl}
+                alt="Hero background"
                 fill
                 className="object-cover"
-                data-ai-hint={heroImage.imageHint}
               />
             )}
             <div className="absolute inset-0 bg-black/50" />
             <div className="absolute inset-0 flex flex-col items-center justify-center text-center text-white p-4">
-              <h1 className="font-headline text-3xl font-bold md:text-4xl">Freshness at Your Fingertips</h1>
-              <p className="mt-2 max-w-md text-base text-white/90">The best groceries, delivered fresh to your door daily.</p>
+              <h1 className="font-headline text-3xl font-bold md:text-4xl">{heroTitle}</h1>
+              <p className="mt-2 max-w-md text-base text-white/90">{heroSubtitle}</p>
             </div>
         </section>
 
@@ -126,41 +132,44 @@ export default function Home() {
           </div>
         </section>
 
-        <section>
-          <Carousel
-            opts={{ align: 'start', loop: true }}
-            plugins={[autoplayPlugin.current]}
-            onMouseEnter={autoplayPlugin.current.stop}
-            onMouseLeave={autoplayPlugin.current.reset}
-          >
-            <CarouselContent className="-ml-2">
-              {ads.map((ad) => (
-                ad && <CarouselItem key={ad.id} className="pl-2 basis-auto">
-                  <Card className="overflow-hidden relative aspect-video w-48">
-                     <Image
-                        src={ad.imageUrl}
-                        alt={ad.description}
-                        fill
-                        className="object-cover"
-                        data-ai-hint={ad.imageHint}
-                      />
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
-                      <div className="absolute bottom-0 left-0 p-1 md:p-2">
-                        <h3 className="font-bold text-xs md:text-sm">{ad.description}</h3>
-                         <Button size="sm" variant="secondary" className="mt-1 h-6 text-xs md:h-7">Order Now</Button>
-                      </div>
-                  </Card>
-                </CarouselItem>
-              ))}
-            </CarouselContent>
-          </Carousel>
-        </section>
+        {ads.length > 0 &&
+            <section>
+            <Carousel
+                opts={{ align: 'start', loop: true }}
+                plugins={[autoplayPlugin.current]}
+                onMouseEnter={autoplayPlugin.current.stop}
+                onMouseLeave={autoplayPlugin.current.reset}
+            >
+                <CarouselContent className="-ml-2">
+                {ads.map((ad) => (
+                    ad && <CarouselItem key={ad.id} className="pl-2 basis-auto">
+                    <Card className="overflow-hidden relative aspect-video w-48">
+                        {ad.url && 
+                            <Image
+                                src={ad.url}
+                                alt={ad.description}
+                                fill
+                                className="object-cover"
+                            />
+                        }
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
+                        <div className="absolute bottom-0 left-0 p-1 md:p-2">
+                            <h3 className="font-bold text-xs md:text-sm text-white">{ad.description}</h3>
+                            <Button size="sm" variant="secondary" className="mt-1 h-6 text-xs md:h-7">Order Now</Button>
+                        </div>
+                    </Card>
+                    </CarouselItem>
+                ))}
+                </CarouselContent>
+            </Carousel>
+            </section>
+        }
 
          {specialOffers.length > 0 && (
             <section className="space-y-4">
             <h2 className="font-headline text-xl font-bold">Special Offers</h2>
             <Carousel
-                opts={{ align: 'start', loop: true }}
+                opts={{ align: 'start', loop: specialOffers.length > 3 }}
             >
                 <CarouselContent className="-ml-2">
                 {specialOffers.map((product) => (
