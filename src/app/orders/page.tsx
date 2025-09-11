@@ -42,21 +42,23 @@ export default function OrdersPage() {
         return (
              <div>
                 <PageHeader title="My Orders" />
-                <div className="p-4 sm:p-6 space-y-4">
-                    {Array.from({length: 3}).map((_, i) => (
-                        <Card key={i}>
-                            <CardHeader>
-                                <Skeleton className="h-6 w-1/2" />
-                                <Skeleton className="h-4 w-1/4" />
-                            </CardHeader>
-                            <CardContent>
-                                <Skeleton className="h-6 w-1/3" />
-                            </CardContent>
-                            <CardFooter>
-                                <Skeleton className="h-10 w-full sm:w-32" />
-                            </CardFooter>
-                        </Card>
-                    ))}
+                <div className="p-4 sm:p-6">
+                  <div className="mx-auto max-w-3xl space-y-4">
+                      {Array.from({length: 3}).map((_, i) => (
+                          <Card key={i}>
+                              <CardHeader>
+                                  <Skeleton className="h-6 w-1/2" />
+                                  <Skeleton className="h-4 w-1/4" />
+                              </CardHeader>
+                              <CardContent>
+                                  <Skeleton className="h-6 w-1/3" />
+                              </CardContent>
+                              <CardFooter>
+                                  <Skeleton className="h-10 w-full sm:w-32" />
+                              </CardFooter>
+                          </Card>
+                      ))}
+                  </div>
                 </div>
             </div>
         )
@@ -66,7 +68,8 @@ export default function OrdersPage() {
         <div>
             <PageHeader title="My Orders" />
              {orders.length > 0 ? (
-                <div className="p-4 sm:p-6 space-y-4">
+                <div className="p-4 sm:p-6">
+                  <div className="mx-auto max-w-3xl space-y-4">
                     {orders.map(order => (
                         <Card key={order.id}>
                             <CardHeader>
@@ -90,6 +93,7 @@ export default function OrdersPage() {
                             </CardFooter>
                         </Card>
                     ))}
+                  </div>
                 </div>
              ) : (
                 <div className="flex h-[60vh] flex-col items-center justify-center gap-4 text-center">

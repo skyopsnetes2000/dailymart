@@ -169,74 +169,76 @@ export default function CheckoutPage() {
   return (
     <div>
       <PageHeader title="Checkout" />
-      <div className="p-4 sm:p-6 space-y-6">
-        <Card>
-          <CardHeader>
-            <CardTitle>Shipping Address</CardTitle>
-            <CardDescription>Select where you'd like your order delivered.</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <RadioGroup value={selectedAddressId || ''} onValueChange={setSelectedAddressId} className="space-y-4">
-              {addresses.map(address => (
-                <Label key={address.id} htmlFor={address.id} className="flex items-start gap-4 rounded-md border p-4 cursor-pointer hover:bg-accent/50 has-[[data-state=checked]]:border-primary has-[[data-state=checked]]:bg-accent/80">
-                   <RadioGroupItem value={address.id} id={address.id} />
-                   <div className="flex-1 text-sm">
-                        <div className="flex justify-between">
-                            <p className="font-semibold">{address.line1}</p>
-                            {address.isDefault && <Badge variant="outline">Default</Badge>}
-                        </div>
-                        <p className="text-muted-foreground">{address.city}, {address.state} {address.zip}</p>
-                        <p className="text-muted-foreground">{address.mobile}</p>
-                   </div>
-                </Label>
-              ))}
-            </RadioGroup>
-             <Button variant="outline" className="w-full mt-4" onClick={() => setIsFormOpen(true)}>
-                <Plus className="mr-2 h-4 w-4" /> Add New Address
-            </Button>
-          </CardContent>
-        </Card>
-        
-        <AddressForm 
-            isOpen={isFormOpen}
-            onClose={() => setIsFormOpen(false)}
-            onSave={handleSaveAddress}
-            address={null}
-        />
-
-        <Card>
+      <div className="p-4 sm:p-6">
+        <div className="mx-auto max-w-3xl space-y-6">
+          <Card>
             <CardHeader>
-                <CardTitle>Order Summary</CardTitle>
+              <CardTitle>Shipping Address</CardTitle>
+              <CardDescription>Select where you'd like your order delivered.</CardDescription>
             </CardHeader>
-            <CardContent className="space-y-4">
-                <div className="flex justify-between">
-                    <span>Subtotal</span>
-                    <span className="font-semibold">${subtotal.toFixed(2)}</span>
-                </div>
-                <div className="flex justify-between text-muted-foreground">
-                    <span>Taxes & Fees</span>
-                    <span>$0.00</span>
-                </div>
-                <div className="flex justify-between text-muted-foreground">
-                    <span>Shipping</span>
-                    <span>$0.00</span>
-                </div>
-                <Separator />
-                <div className="flex justify-between text-lg font-bold">
-                    <span>Total</span>
-                    <span>${subtotal.toFixed(2)}</span>
-                </div>
+            <CardContent>
+              <RadioGroup value={selectedAddressId || ''} onValueChange={setSelectedAddressId} className="space-y-4">
+                {addresses.map(address => (
+                  <Label key={address.id} htmlFor={address.id} className="flex items-start gap-4 rounded-md border p-4 cursor-pointer hover:bg-accent/50 has-[[data-state=checked]]:border-primary has-[[data-state=checked]]:bg-accent/80">
+                    <RadioGroupItem value={address.id} id={address.id} />
+                    <div className="flex-1 text-sm">
+                          <div className="flex justify-between">
+                              <p className="font-semibold">{address.line1}</p>
+                              {address.isDefault && <Badge variant="outline">Default</Badge>}
+                          </div>
+                          <p className="text-muted-foreground">{address.city}, {address.state} {address.zip}</p>
+                          <p className="text-muted-foreground">{address.mobile}</p>
+                    </div>
+                  </Label>
+                ))}
+              </RadioGroup>
+              <Button variant="outline" className="w-full mt-4" onClick={() => setIsFormOpen(true)}>
+                  <Plus className="mr-2 h-4 w-4" /> Add New Address
+              </Button>
             </CardContent>
-            <CardFooter className="flex-col gap-2">
-                 <Button className="w-full" onClick={handlePlaceOrder} disabled={isPlacingOrder || items.length === 0}>
-                    {isPlacingOrder && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                    COD
-                </Button>
-                <Button variant="outline" className="w-full" disabled={true}>
-                    Pay Online
-                </Button>
-            </CardFooter>
-        </Card>
+          </Card>
+          
+          <AddressForm 
+              isOpen={isFormOpen}
+              onClose={() => setIsFormOpen(false)}
+              onSave={handleSaveAddress}
+              address={null}
+          />
+
+          <Card>
+              <CardHeader>
+                  <CardTitle>Order Summary</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                  <div className="flex justify-between">
+                      <span>Subtotal</span>
+                      <span className="font-semibold">${subtotal.toFixed(2)}</span>
+                  </div>
+                  <div className="flex justify-between text-muted-foreground">
+                      <span>Taxes & Fees</span>
+                      <span>$0.00</span>
+                  </div>
+                  <div className="flex justify-between text-muted-foreground">
+                      <span>Shipping</span>
+                      <span>$0.00</span>
+                  </div>
+                  <Separator />
+                  <div className="flex justify-between text-lg font-bold">
+                      <span>Total</span>
+                      <span>${subtotal.toFixed(2)}</span>
+                  </div>
+              </CardContent>
+              <CardFooter className="flex-col gap-2">
+                  <Button className="w-full" onClick={handlePlaceOrder} disabled={isPlacingOrder || items.length === 0}>
+                      {isPlacingOrder && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                      COD
+                  </Button>
+                  <Button variant="outline" className="w-full" disabled={true}>
+                      Pay Online
+                  </Button>
+              </CardFooter>
+          </Card>
+        </div>
       </div>
     </div>
   );

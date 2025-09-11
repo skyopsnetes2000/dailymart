@@ -214,7 +214,8 @@ export default function OrderDetailsPage() {
     return (
         <div>
             <PageHeader title="Order Details" />
-            <div className="p-4 sm:p-6 space-y-6">
+            <div className="p-4 sm:p-6">
+              <div className="mx-auto max-w-3xl space-y-6">
                 <Card>
                     <CardHeader>
                         <CardTitle>Order #{order.id}</CardTitle>
@@ -283,6 +284,7 @@ export default function OrderDetailsPage() {
                         </CardContent>
                     </Card>
                 )}
+              </div>
             </div>
         </div>
     )

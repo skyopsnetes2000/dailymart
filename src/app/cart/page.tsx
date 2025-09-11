@@ -70,7 +70,7 @@ export default function CartPage() {
         </Button>
       </PageHeader>
       <div className="p-4 sm:p-6">
-        <div className="space-y-4">
+        <div className="mx-auto max-w-3xl space-y-4">
           {items.map(({ product, quantity }) => {
             const finalPrice = calculateDiscountedPrice(product) ?? product.price;
             return (
@@ -105,7 +105,6 @@ export default function CartPage() {
               </Card>
             )
           })}
-        </div>
         
         <Card className="mt-6">
           <CardContent className="p-6 space-y-4">
@@ -133,6 +132,7 @@ export default function CartPage() {
             </Button>
           </CardFooter>
         </Card>
+        </div>
       </div>
     </div>
   );

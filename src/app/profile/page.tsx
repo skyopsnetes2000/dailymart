@@ -124,80 +124,82 @@ export default function ProfilePage() {
     <div>
       <PageHeader title={getTitleForTab(activeTab)} />
       <div className="p-4 sm:p-6">
-        {isAdmin && (
-          <Card className="mb-6">
-            <CardHeader>
-              <CardTitle>Admin Access</CardTitle>
-              <CardDescription>You have administrative privileges.</CardDescription>
-            </CardHeader>
-            <CardFooter>
-              <Button asChild>
-                <Link href="/admin">
-                  <UserCog className="mr-2 h-4 w-4" />
-                  Go to Admin Panel
-                </Link>
-              </Button>
-            </CardFooter>
-          </Card>
-        )}
-        <Tabs defaultValue="profile" className="w-full" onValueChange={setActiveTab}>
-          <TabsList className="grid w-full grid-cols-4">
-            <TabsTrigger value="profile">Profile</TabsTrigger>
-            <TabsTrigger value="addresses">Addresses</TabsTrigger>
-            <TabsTrigger value="orders">Orders</TabsTrigger>
-            <TabsTrigger value="settings">Settings</TabsTrigger>
-          </TabsList>
-          <TabsContent value="profile" className="mt-6">
-            <ProfileForm user={profileData} />
-          </TabsContent>
-          <TabsContent value="addresses" className="mt-6">
-            <AddressManager addresses={staticUser.addresses} />
-          </TabsContent>
-          <TabsContent value="orders" className="mt-6">
-             <div className="space-y-4">
-                <div className="flex justify-between items-center mb-4">
-                    <h3 className="text-lg font-semibold">My Recent Orders</h3>
-                    <Button asChild variant="link">
-                        <Link href="/orders">View All</Link>
-                    </Button>
-                </div>
-                {recentOrders.length > 0 ? recentOrders.map(order => (
-                    <Card key={order.id}>
-                        <CardHeader>
-                            <div className='flex justify-between items-center'>
-                                <div>
-                                    <CardTitle className="text-base">{order.id}</CardTitle>
-                                    <CardDescription>Placed on {format(new Date(order.date), 'MM/dd/yyyy')}</CardDescription>
-                                </div>
-                                <Badge variant={order.status === 'Delivered' ? 'default' : 'secondary'}>{order.status}</Badge>
-                            </div>
-                        </CardHeader>
-                        <CardContent>
-                            <p className="font-semibold text-base">${order.total.toFixed(2)}</p>
-                        </CardContent>
-                         <CardFooter>
-                            <Button asChild variant="outline" size="sm" className="w-full sm:w-auto">
-                                <Link href={`/orders/${order.id}`}>
-                                    View Details <ChevronRight className="ml-2 h-4 w-4" />
-                                </Link>
-                            </Button>
-                        </CardFooter>
-                    </Card>
-                )) : (
-                  <p className='text-center text-muted-foreground'>No recent orders to show.</p>
-                )}
-            </div>
-          </TabsContent>
-          <TabsContent value="settings" className="mt-6">
-              <AccountSettings />
-          </TabsContent>
-        </Tabs>
+        <div className="mx-auto max-w-3xl">
+          {isAdmin && (
+            <Card className="mb-6">
+              <CardHeader>
+                <CardTitle>Admin Access</CardTitle>
+                <CardDescription>You have administrative privileges.</CardDescription>
+              </CardHeader>
+              <CardFooter>
+                <Button asChild>
+                  <Link href="/admin">
+                    <UserCog className="mr-2 h-4 w-4" />
+                    Go to Admin Panel
+                  </Link>
+                </Button>
+              </CardFooter>
+            </Card>
+          )}
+          <Tabs defaultValue="profile" className="w-full" onValueChange={setActiveTab}>
+            <TabsList className="grid w-full grid-cols-4">
+              <TabsTrigger value="profile">Profile</TabsTrigger>
+              <TabsTrigger value="addresses">Addresses</TabsTrigger>
+              <TabsTrigger value="orders">Orders</TabsTrigger>
+              <TabsTrigger value="settings">Settings</TabsTrigger>
+            </TabsList>
+            <TabsContent value="profile" className="mt-6">
+              <ProfileForm user={profileData} />
+            </TabsContent>
+            <TabsContent value="addresses" className="mt-6">
+              <AddressManager addresses={staticUser.addresses} />
+            </TabsContent>
+            <TabsContent value="orders" className="mt-6">
+              <div className="space-y-4">
+                  <div className="flex justify-between items-center mb-4">
+                      <h3 className="text-lg font-semibold">My Recent Orders</h3>
+                      <Button asChild variant="link">
+                          <Link href="/orders">View All</Link>
+                      </Button>
+                  </div>
+                  {recentOrders.length > 0 ? recentOrders.map(order => (
+                      <Card key={order.id}>
+                          <CardHeader>
+                              <div className='flex justify-between items-center'>
+                                  <div>
+                                      <CardTitle className="text-base">{order.id}</CardTitle>
+                                      <CardDescription>Placed on {format(new Date(order.date), 'MM/dd/yyyy')}</CardDescription>
+                                  </div>
+                                  <Badge variant={order.status === 'Delivered' ? 'default' : 'secondary'}>{order.status}</Badge>
+                              </div>
+                          </CardHeader>
+                          <CardContent>
+                              <p className="font-semibold text-base">${order.total.toFixed(2)}</p>
+                          </CardContent>
+                          <CardFooter>
+                              <Button asChild variant="outline" size="sm" className="w-full sm:w-auto">
+                                  <Link href={`/orders/${order.id}`}>
+                                      View Details <ChevronRight className="ml-2 h-4 w-4" />
+                                  </Link>
+                              </Button>
+                          </CardFooter>
+                      </Card>
+                  )) : (
+                    <p className='text-center text-muted-foreground'>No recent orders to show.</p>
+                  )}
+              </div>
+            </TabsContent>
+            <TabsContent value="settings" className="mt-6">
+                <AccountSettings />
+            </TabsContent>
+          </Tabs>
 
-        <div className="mt-8">
-            <Button variant="destructive" className="w-full" onClick={handleLogout}>
-                <LogOut className="mr-2 h-4 w-4" />
-                Logout
-            </Button>
+          <div className="mt-8">
+              <Button variant="destructive" className="w-full" onClick={handleLogout}>
+                  <LogOut className="mr-2 h-4 w-4" />
+                  Logout
+              </Button>
+          </div>
         </div>
       </div>
     </div>
