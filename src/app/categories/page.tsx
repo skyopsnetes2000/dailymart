@@ -2,6 +2,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import CategoryCard from "@/components/category-card";
 import PageHeader from "@/components/shared/page-header";
 import { type Category } from "@/lib/data";
@@ -9,12 +10,20 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { getCategories } from '@/lib/firestore';
 import { Input } from '@/components/ui/input';
 import { Search } from 'lucide-react';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 
 
 export default function CategoriesPage() {
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
+  const router = useRouter();
 
   useEffect(() => {
     const fetchCategories = async () => {
@@ -34,11 +43,17 @@ export default function CategoriesPage() {
     category.name.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
+  const handleCategorySelect = (slug: string) => {
+    if (slug) {
+        router.push(`/categories/${slug}`);
+    }
+  }
+
   return (
     <div>
       <PageHeader title="All Categories" />
-      <div className="px-4 sm:px-6 mb-4">
-        <div className="relative">
+      <div className="flex gap-2 p-4 sm:p-6 mb-4">
+        <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
           <Input
             placeholder="Search for categories..."
@@ -47,6 +62,18 @@ export default function CategoriesPage() {
             onChange={(e) => setSearchTerm(e.target.value)}
           />
         </div>
+        <Select onValueChange={handleCategorySelect}>
+            <SelectTrigger className="w-[180px] h-12">
+                <SelectValue placeholder="Quick Select" />
+            </SelectTrigger>
+            <SelectContent>
+                {categories.map((category) => (
+                    <SelectItem key={category.id} value={category.slug}>
+                        {category.name}
+                    </SelectItem>
+                ))}
+            </SelectContent>
+        </Select>
       </div>
 
        {loading ? (
