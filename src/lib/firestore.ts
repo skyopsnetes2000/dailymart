@@ -1,9 +1,9 @@
 
 
 import { initializeApp, getApp, getApps, deleteApp } from 'firebase/app';
-import { getFirestore, collection, getDocs, doc, addDoc, updateDoc, deleteDoc, query, where, writeBatch, orderBy, getDoc, setDoc } from 'firebase/firestore';
+import { getFirestore, collection, getDocs, doc, addDoc, updateDoc, deleteDoc, query, where, writeBatch, orderBy, getDoc, setDoc, onSnapshot, runTransaction } from 'firebase/firestore';
 import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
-import { Product, Category, Offer, Order, products as initialProducts, categories as initialCategories, AppearanceSettings, OrderStatus, Address } from './data';
+import { Product, Category, Offer, Order, products as initialProducts, categories as initialCategories, AppearanceSettings, OrderStatus, Address, CartItem } from './data';
 import { PlaceHolderImages } from './placeholder-images';
 import { firebaseConfig } from './firebase'; // Assuming firebaseConfig is exported from firebase.ts
 
@@ -17,8 +17,6 @@ export const storage = getStorage(mainApp);
 
 
 // --- Unauthenticated Firestore Instance for Public Data ---
-// This prevents server-side queries for public data from using admin/user credentials
-// and resolves the "Missing or insufficient permissions" error.
 const publicAppName = 'public-unauthenticated';
 let publicDb;
 
@@ -133,18 +131,14 @@ export async function addOrder(order: Omit<Order, 'id'>): Promise<string> {
 export async function getOrders(userId?: string): Promise<Order[]> {
     let ordersQuery;
     if (userId) {
-        // This query would require a composite index. By removing the orderBy,
-        // we avoid the need for the index and can sort on the client.
         ordersQuery = query(collection(db, 'orders'), where('userId', '==', userId));
     } else {
-        // This query is for the admin panel and is sorted by date.
         ordersQuery = query(collection(db, 'orders'), orderBy('date', 'desc'));
     }
     
     const orderSnapshot = await getDocs(ordersQuery);
     const allOrders = orderSnapshot.docs.map(doc => ({ ...doc.data() as Order, id: doc.id }));
     
-    // If it was a user-specific query, sort client-side.
     if (userId) {
         allOrders.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
     }
@@ -246,6 +240,98 @@ export async function uploadImage(file: File, path: string): Promise<{ url: stri
   await uploadBytes(storageRef, file);
   const downloadURL = await getDownloadURL(storageRef);
   return { url: downloadURL }; 
+}
+
+// --- Cart Functions ---
+
+export function getCart(userId: string, onUpdate: (items: CartItem[]) => void): () => void {
+    const cartRef = doc(db, 'carts', userId);
+    return onSnapshot(cartRef, (doc) => {
+        const data = doc.data();
+        onUpdate(data?.items || []);
+    });
+}
+
+export async function addToCart(userId: string, product: Product) {
+    const cartRef = doc(db, 'carts', userId);
+    await runTransaction(db, async (transaction) => {
+        const cartDoc = await transaction.get(cartRef);
+        if (!cartDoc.exists()) {
+            transaction.set(cartRef, { items: [{ product, quantity: 1 }] });
+            return;
+        }
+        const items = cartDoc.data().items as CartItem[];
+        const existingItemIndex = items.findIndex((item) => item.product.id === product.id);
+        if (existingItemIndex > -1) {
+            items[existingItemIndex].quantity += 1;
+        } else {
+            items.push({ product, quantity: 1 });
+        }
+        transaction.update(cartRef, { items });
+    });
+}
+
+export async function updateCartItemQuantity(userId: string, productId: string, quantity: number) {
+    const cartRef = doc(db, 'carts', userId);
+    if (quantity === 0) {
+        await removeCartItem(userId, productId);
+        return;
+    }
+    await runTransaction(db, async (transaction) => {
+        const cartDoc = await transaction.get(cartRef);
+        if (!cartDoc.exists()) return;
+        
+        const items = cartDoc.data().items as CartItem[];
+        const itemIndex = items.findIndex((item) => item.product.id === productId);
+
+        if (itemIndex > -1) {
+            items[itemIndex].quantity = quantity;
+            transaction.update(cartRef, { items });
+        }
+    });
+}
+
+export async function removeCartItem(userId: string, productId: string) {
+    const cartRef = doc(db, 'carts', userId);
+    await runTransaction(db, async (transaction) => {
+        const cartDoc = await transaction.get(cartRef);
+        if (!cartDoc.exists()) return;
+        
+        const items = cartDoc.data().items as CartItem[];
+        const updatedItems = items.filter((item) => item.product.id !== productId);
+        transaction.update(cartRef, { items: updatedItems });
+    });
+}
+
+export async function clearCart(userId: string) {
+    const cartRef = doc(db, 'carts', userId);
+    await updateDoc(cartRef, { items: [] });
+}
+
+export async function mergeLocalCart(userId: string, localItems: CartItem[]) {
+    if (!localItems || localItems.length === 0) return;
+    const cartRef = doc(db, 'carts', userId);
+
+    await runTransaction(db, async (transaction) => {
+        const cartDoc = await transaction.get(cartRef);
+        let serverItems: CartItem[] = [];
+
+        if (cartDoc.exists()) {
+            serverItems = cartDoc.data().items as CartItem[];
+        }
+
+        localItems.forEach(localItem => {
+            const serverItemIndex = serverItems.findIndex(serverItem => serverItem.product.id === localItem.product.id);
+            if (serverItemIndex > -1) {
+                // If item exists, add quantities. Or you might decide to take the max, or server's, or local's. Adding is a common strategy.
+                serverItems[serverItemIndex].quantity += localItem.quantity;
+            } else {
+                serverItems.push(localItem);
+            }
+        });
+
+        transaction.set(cartRef, { items: serverItems });
+    });
 }
 
 // --- Data Seeding ---

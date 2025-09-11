@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { Home, LayoutGrid, ShoppingCart, User, Archive } from 'lucide-react';
@@ -10,7 +11,6 @@ import { auth } from '@/lib/firebase';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
 import useCart from '@/hooks/use-cart';
-import { useEffect, useState } from 'react';
 
 const baseNavItems = [
   { href: '/', label: 'Home', icon: Home },
@@ -23,21 +23,15 @@ const baseNavItems = [
 
 export default function BottomNav() {
   const pathname = usePathname();
+  const { items, isInitialized } = useCart();
   const [user, loading] = useAuthState(auth);
-  const { items } = useCart();
-  const [isClient, setIsClient] = useState(false);
-
-  useEffect(() => {
-    setIsClient(true);
-  }, []);
-
 
   // Do not render the nav on admin pages or the login page.
   if (pathname.startsWith('/admin') || pathname === '/login') {
     return null;
   }
   
-  if (loading) {
+  if (loading || !isInitialized) {
     return (
         <nav className="fixed bottom-0 left-0 right-0 z-50 h-20 border-t bg-card/80 backdrop-blur-sm">
             <div className="mx-auto grid h-full max-w-lg grid-cols-5 items-center justify-center font-medium">
@@ -53,7 +47,7 @@ export default function BottomNav() {
   }
 
   const navItems = baseNavItems;
-  const cartItemCount = isClient ? items.reduce((total, item) => total + item.quantity, 0) : 0;
+  const cartItemCount = items.reduce((total, item) => total + item.quantity, 0);
 
   return (
     <nav className="fixed bottom-0 left-0 right-0 z-50 h-20 border-t bg-card/80 backdrop-blur-sm">

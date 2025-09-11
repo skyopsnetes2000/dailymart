@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import Link from 'next/link';
@@ -13,13 +14,7 @@ import { calculateDiscountedPrice } from '@/lib/utils';
 import { useEffect, useState } from 'react';
 
 export default function CartPage() {
-  const { items, removeItem, updateQuantity, clearCart } = useCart();
-  const [isClient, setIsClient] = useState(false);
-
-  useEffect(() => {
-    setIsClient(true);
-  }, []);
-
+  const { items, removeItem, updateQuantity, clearCart, isInitialized } = useCart();
 
   const subtotal = items.reduce((total, item) => {
     const price = calculateDiscountedPrice(item.product) ?? item.product.price;
@@ -27,6 +22,7 @@ export default function CartPage() {
   }, 0);
 
   const formatWeight = (weight: string, quantity: number): string => {
+    if (!weight) return '';
     const match = weight.match(/([0-9.]+)\s*(\w+)/);
     if (match) {
         const value = parseFloat(match[1]);
@@ -42,7 +38,7 @@ export default function CartPage() {
     return weight;
   };
 
-  if (!isClient) {
+  if (!isInitialized) {
     return null;
   }
 
