@@ -65,7 +65,7 @@ export default function AdminDashboardPage() {
                     }
                     return order.returnRequest.items.reduce((sum, item) => {
                         const product = productMap.get(item.productName);
-                        if (!product) return sum; // Product might have been deleted, skip it
+                        if (!product) return sum;
                         
                         const price = calculateDiscountedPrice(product) ?? product.price;
                         return sum + (price * item.quantity);
@@ -144,7 +144,7 @@ export default function AdminDashboardPage() {
                     : currentMonthOrdersCount > 0 ? 100 : 0;
 
                 setStats({
-                    totalRevenue: Math.max(0, totalRevenue),
+                    totalRevenue: 0,
                     revenueChange: isFinite(revenueChange) ? revenueChange : 0,
                     totalOrders: orders.length,
                     ordersChange: isFinite(ordersChange) ? ordersChange : 0,
@@ -336,5 +336,7 @@ export default function AdminDashboardPage() {
     </div>
   );
 }
+
+    
 
     
