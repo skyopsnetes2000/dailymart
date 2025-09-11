@@ -23,6 +23,8 @@ export default async function Home() {
       getAppearanceSettings(),
   ]);
   
+  // Display the first 4 categories as "Best Sellers" as a placeholder
+  // since we cannot securely query all orders on the server.
   const topCategories = categories.slice(0, 4);
 
   const heroTitle = appearance?.heroTitle || "Freshness at Your Fingertips";
@@ -88,7 +90,7 @@ export default async function Home() {
         
         <section className="space-y-6">
           <h2 className="font-headline text-xl font-bold">Best Sellers</h2>
-          {categories.length > 0 ? (
+          {topCategories.length > 0 ? (
           <div className="space-y-8">
             {topCategories.map((category) => {
               const categoryProducts = products.filter(p => p.categorySlug === category.slug);
