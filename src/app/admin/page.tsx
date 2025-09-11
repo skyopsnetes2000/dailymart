@@ -2,12 +2,12 @@
 'use client';
 
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { DollarSign, Package, ShoppingCart, Loader2 } from 'lucide-react';
+import { DollarSign, Package, ShoppingCart, Loader2, LayoutGrid } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { useEffect, useState } from 'react';
-import { getOrders, getProducts } from '@/lib/firestore';
-import { Order, Product } from '@/lib/data';
+import { getOrders, getProducts, getCategories } from '@/lib/firestore';
+import { Order, Product, Category } from '@/lib/data';
 import { subMonths, isWithinInterval, startOfMonth, endOfMonth } from 'date-fns';
 
 type DashboardStats = {
@@ -16,6 +16,7 @@ type DashboardStats = {
   totalOrders: number;
   ordersChange: number;
   totalProducts: number;
+  totalCategories: number;
 };
 
 export default function AdminDashboardPage() {
@@ -26,7 +27,7 @@ export default function AdminDashboardPage() {
     useEffect(() => {
         async function fetchDashboardData() {
             try {
-                const [orders, products] = await Promise.all([getOrders(), getProducts()]);
+                const [orders, products, categories] = await Promise.all([getOrders(), getProducts(), getCategories()]);
 
                 const now = new Date();
                 const lastMonthStart = startOfMonth(subMonths(now, 1));
@@ -72,6 +73,7 @@ export default function AdminDashboardPage() {
                     totalOrders: orders.length,
                     ordersChange,
                     totalProducts: products.length,
+                    totalCategories: categories.length,
                 });
 
             } catch (error) {
@@ -109,7 +111,7 @@ export default function AdminDashboardPage() {
   return (
     <div className="space-y-6">
       <h1 className="text-3xl font-bold">Dashboard</h1>
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Total Revenue</CardTitle>
@@ -143,6 +145,18 @@ export default function AdminDashboardPage() {
             <div className="text-2xl font-bold">{stats.totalProducts}</div>
             <p className="text-xs text-muted-foreground">
               Total products in store
+            </p>
+          </CardContent>
+        </Card>
+         <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Categories</CardTitle>
+            <LayoutGrid className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{stats.totalCategories}</div>
+            <p className="text-xs text-muted-foreground">
+              Total categories available
             </p>
           </CardContent>
         </Card>
