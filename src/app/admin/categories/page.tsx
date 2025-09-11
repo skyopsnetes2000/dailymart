@@ -31,7 +31,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { type Category } from '@/lib/data';
-import { Pencil, PlusCircle, Search, Trash2 } from 'lucide-react';
+import { Loader2, Pencil, PlusCircle, Search, Trash2 } from 'lucide-react';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
 import Image from 'next/image';
 import { useToast } from '@/hooks/use-toast';
@@ -56,6 +56,7 @@ export default function AdminCategoriesPage() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingCategory, setEditingCategory] = useState<Category | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -104,6 +105,7 @@ export default function AdminCategoriesPage() {
   };
 
   const onSubmit = async (data: z.infer<typeof categorySchema>) => {
+    setIsSubmitting(true);
     try {
       let imageUrl: string | undefined = editingCategory?.imageId;
 
@@ -137,6 +139,8 @@ export default function AdminCategoriesPage() {
     } catch (error) {
        console.error("Failed to save category:", error);
        toast({ title: "Error", description: "An error occurred while saving the category.", variant: "destructive" });
+    } finally {
+        setIsSubmitting(false);
     }
   };
 
@@ -223,7 +227,8 @@ export default function AdminCategoriesPage() {
                     </FormItem>
                   )}
                 />
-              <Button type="submit">
+              <Button type="submit" disabled={isSubmitting}>
+                 {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                 {editingCategory ? 'Save Changes' : 'Create Category'}
               </Button>
             </form>
