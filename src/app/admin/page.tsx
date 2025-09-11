@@ -2,7 +2,7 @@
 'use client';
 
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { DollarSign, Package, ShoppingCart, Loader2, LayoutGrid } from 'lucide-react';
+import { IndianRupee, Package, ShoppingCart, Loader2, LayoutGrid } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { useEffect, useState } from 'react';
@@ -197,10 +197,10 @@ export default function AdminDashboardPage() {
             <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">Total Revenue</CardTitle>
-                <DollarSign className="h-4 w-4 text-muted-foreground" />
+                <IndianRupee className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-                <div className="text-2xl font-bold">${stats.totalRevenue.toFixed(2)}</div>
+                <div className="text-2xl font-bold">₹{stats.totalRevenue.toFixed(2)}</div>
                 <p className="text-xs text-muted-foreground">
                 {formatPercentage(stats.revenueChange)} from last month
                 </p>
@@ -265,7 +265,7 @@ export default function AdminDashboardPage() {
                     fontSize={12}
                     tickLine={false}
                     axisLine={false}
-                    tickFormatter={(value) => `$${value}`}
+                    tickFormatter={(value) => `₹${value}`}
                     />
                     <Bar
                     dataKey="total"
