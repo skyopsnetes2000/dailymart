@@ -72,17 +72,25 @@ export default function AdminDashboardPage() {
                 orders.forEach(order => {
                     const orderDate = new Date(order.date);
                     const monthKey = format(orderDate, 'MMM yyyy');
-
+                    
+                    let revenueFromOrder = 0;
                     if (order.status === 'Delivered') {
-                        totalRevenue += order.total;
-                        
-                        salesByMonth[monthKey] = (salesByMonth[monthKey] || 0) + order.total;
-                        
+                        revenueFromOrder = order.total;
+                    } else if (order.status === 'Return Successful' || order.status === 'Refund Completed') {
+                        revenueFromOrder = -order.total;
+                    }
+                    
+                    totalRevenue += revenueFromOrder;
+                    if (revenueFromOrder !== 0) {
+                         salesByMonth[monthKey] = (salesByMonth[monthKey] || 0) + revenueFromOrder;
+                    }
+
+
+                    // We only count sales from delivered orders for top products/categories
+                    if (order.status === 'Delivered') {
                         order.items.forEach(item => {
-                            // Top Products
                             salesByProduct[item.productName] = (salesByProduct[item.productName] || 0) + item.quantity;
                             
-                            // Top Categories
                             const categorySlug = productToCategoryMap.get(item.productName);
                             if (categorySlug) {
                                 const categoryName = categorySlugToNameMap.get(categorySlug) || categorySlug;
@@ -93,13 +101,13 @@ export default function AdminDashboardPage() {
 
                     if (isWithinInterval(orderDate, { start: currentMonthStart, end: now })) {
                         currentMonthOrders++;
-                        if (order.status === 'Delivered') {
-                            currentMonthRevenue += order.total;
+                        if (revenueFromOrder !== 0) {
+                            currentMonthRevenue += revenueFromOrder;
                         }
                     } else if (isWithinInterval(orderDate, { start: lastMonthStart, end: lastMonthEnd })) {
                         lastMonthOrders++;
-                        if (order.status === 'Delivered') {
-                            lastMonthRevenue += order.total;
+                         if (revenueFromOrder !== 0) {
+                            lastMonthRevenue += revenueFromOrder;
                         }
                     }
                 });
