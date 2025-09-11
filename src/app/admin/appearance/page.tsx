@@ -105,17 +105,17 @@ export default function AdminAppearancePage() {
             ad1: { 
                 ...initialData?.ad1, 
                 description: data.ad1Description,
-                categorySlug: data.ad1CategorySlug,
+                categorySlug: data.ad1CategorySlug === '_none_' ? '' : data.ad1CategorySlug,
             },
             ad2: { 
                 ...initialData?.ad2, 
                 description: data.ad2Description,
-                categorySlug: data.ad2CategorySlug,
+                categorySlug: data.ad2CategorySlug === '_none_' ? '' : data.ad2CategorySlug,
             },
             ad3: { 
                 ...initialData?.ad3, 
                 description: data.ad3Description,
-                categorySlug: data.ad3CategorySlug,
+                categorySlug: data.ad3CategorySlug === '_none_' ? '' : data.ad3CategorySlug,
             },
         };
 
@@ -143,9 +143,9 @@ export default function AdminAppearancePage() {
         // Optimistically update the displayed images and data
         const updatedInitialData = { ...initialData, ...newSettings };
         if (newSettings.heroImageUrl) updatedInitialData.heroImageUrl = newSettings.heroImageUrl;
-        if (newSettings.ad1?.imageUrl) updatedInitialData.ad1 = { ...updatedInitialData.ad1, imageUrl: newSettings.ad1.imageUrl };
-        if (newSettings.ad2?.imageUrl) updatedInitialData.ad2 = { ...updatedInitialData.ad2, imageUrl: newSettings.ad2.imageUrl };
-        if (newSettings.ad3?.imageUrl) updatedInitialData.ad3 = { ...updatedInitialData.ad3, imageUrl: newSettings.ad3.imageUrl };
+        if (newSettings.ad1?.imageUrl) updatedInitialData.ad1 = { ...updatedInitialData.ad1!, imageUrl: newSettings.ad1.imageUrl };
+        if (newSettings.ad2?.imageUrl) updatedInitialData.ad2 = { ...updatedInitialData.ad2!, imageUrl: newSettings.ad2.imageUrl };
+        if (newSettings.ad3?.imageUrl) updatedInitialData.ad3 = { ...updatedInitialData.ad3!, imageUrl: newSettings.ad3.imageUrl };
 
         setInitialData(updatedInitialData);
 
@@ -199,7 +199,7 @@ export default function AdminAppearancePage() {
                             </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                            <SelectItem value="">None</SelectItem>
+                            <SelectItem value="_none_">None</SelectItem>
                             {categories.map(c => (
                                 <SelectItem key={c.id} value={c.slug}>{c.name}</SelectItem>
                             ))}
