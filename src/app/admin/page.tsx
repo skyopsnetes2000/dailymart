@@ -2,28 +2,109 @@
 'use client';
 
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { DollarSign, Package, ShoppingCart, Database } from 'lucide-react';
+import { DollarSign, Package, ShoppingCart, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { seedInitialData } from '@/lib/firestore';
 import { useToast } from '@/hooks/use-toast';
+import { useEffect, useState } from 'react';
+import { getOrders, getProducts } from '@/lib/firestore';
+import { Order, Product } from '@/lib/data';
+import { subMonths, isWithinInterval, startOfMonth, endOfMonth } from 'date-fns';
 
+type DashboardStats = {
+  totalRevenue: number;
+  revenueChange: number;
+  totalOrders: number;
+  ordersChange: number;
+  totalProducts: number;
+};
 
 export default function AdminDashboardPage() {
+    const [stats, setStats] = useState<DashboardStats | null>(null);
+    const [loading, setLoading] = useState(true);
+    const { toast } = useToast();
 
-    const handleSeedData = async () => {
-        try {
-            const result = await seedInitialData();
-            if (result.success) {
-                alert(result.message + " Please refresh the page to see the data.");
-            } else {
-                 alert(result.message);
+    useEffect(() => {
+        async function fetchDashboardData() {
+            try {
+                const [orders, products] = await Promise.all([getOrders(), getProducts()]);
+
+                const now = new Date();
+                const lastMonthStart = startOfMonth(subMonths(now, 1));
+                const lastMonthEnd = endOfMonth(subMonths(now, 1));
+                const currentMonthStart = startOfMonth(now);
+
+                let totalRevenue = 0;
+                let currentMonthRevenue = 0;
+                let lastMonthRevenue = 0;
+                let currentMonthOrders = 0;
+                let lastMonthOrders = 0;
+
+                orders.forEach(order => {
+                    const orderDate = new Date(order.date);
+                    if (order.status === 'Delivered') {
+                        totalRevenue += order.total;
+                    }
+
+                    if (isWithinInterval(orderDate, { start: currentMonthStart, end: now })) {
+                        currentMonthOrders++;
+                        if (order.status === 'Delivered') {
+                            currentMonthRevenue += order.total;
+                        }
+                    } else if (isWithinInterval(orderDate, { start: lastMonthStart, end: lastMonthEnd })) {
+                        lastMonthOrders++;
+                        if (order.status === 'Delivered') {
+                            lastMonthRevenue += order.total;
+                        }
+                    }
+                });
+
+                const revenueChange = lastMonthRevenue > 0
+                    ? ((currentMonthRevenue - lastMonthRevenue) / lastMonthRevenue) * 100
+                    : currentMonthRevenue > 0 ? 100 : 0;
+                
+                const ordersChange = lastMonthOrders > 0
+                    ? ((currentMonthOrders - lastMonthOrders) / lastMonthOrders) * 100
+                    : currentMonthOrders > 0 ? 100 : 0;
+
+                setStats({
+                    totalRevenue,
+                    revenueChange,
+                    totalOrders: orders.length,
+                    ordersChange,
+                    totalProducts: products.length,
+                });
+
+            } catch (error) {
+                console.error("Failed to fetch dashboard data:", error);
+                toast({
+                    title: 'Error',
+                    description: 'Could not load dashboard data.',
+                    variant: 'destructive',
+                });
+            } finally {
+                setLoading(false);
             }
-        } catch (error) {
-            console.error("Seeding failed:", error);
-            alert("An error occurred during seeding.");
         }
-    };
 
+        fetchDashboardData();
+    }, [toast]);
+
+    if (loading) {
+        return (
+            <div className="flex h-[80vh] items-center justify-center">
+                <Loader2 className="h-10 w-10 animate-spin text-primary" />
+            </div>
+        );
+    }
+    
+    if (!stats) {
+        return <p>Could not load dashboard data.</p>
+    }
+    
+    const formatPercentage = (change: number) => {
+        const sign = change >= 0 ? '+' : '';
+        return `${sign}${change.toFixed(1)}%`;
+    }
 
   return (
     <div className="space-y-6">
@@ -35,9 +116,9 @@ export default function AdminDashboardPage() {
             <DollarSign className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">$45,231.89</div>
+            <div className="text-2xl font-bold">${stats.totalRevenue.toFixed(2)}</div>
             <p className="text-xs text-muted-foreground">
-              +20.1% from last month
+              {formatPercentage(stats.revenueChange)} from last month
             </p>
           </CardContent>
         </Card>
@@ -47,9 +128,9 @@ export default function AdminDashboardPage() {
             <ShoppingCart className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">+2350</div>
-            <p className="text-xs text-muted-foreground">
-              +180.1% from last month
+            <div className="text-2xl font-bold">+{stats.totalOrders}</div>
+             <p className="text-xs text-muted-foreground">
+              {formatPercentage(stats.ordersChange)} from last month
             </p>
           </CardContent>
         </Card>
@@ -59,7 +140,7 @@ export default function AdminDashboardPage() {
             <Package className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">125</div>
+            <div className="text-2xl font-bold">{stats.totalProducts}</div>
             <p className="text-xs text-muted-foreground">
               Total products in store
             </p>
