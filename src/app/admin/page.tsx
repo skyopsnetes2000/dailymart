@@ -58,7 +58,7 @@ export default function AdminDashboardPage() {
                 const currentMonthStart = startOfMonth(now);
 
                 const productPriceMap = new Map(products.map(p => [p.name, p]));
-
+                
                 const getRefundAmount = (order: Order): number => {
                     if (!order.returnRequest) return 0;
                     
@@ -68,10 +68,8 @@ export default function AdminDashboardPage() {
                            const price = calculateDiscountedPrice(product) ?? product.price;
                            return sum + (price * item.quantity);
                         }
-                         // Fallback if product not found, using a proportional amount of the total.
-                         // This is less accurate but prevents crashes.
                         const totalQuantity = order.items.reduce((acc, i) => acc + i.quantity, 0);
-                        if (totalQuantity === 0) return sum; // Avoid division by zero
+                        if (totalQuantity === 0) return sum;
                         const pricePerItem = order.total / totalQuantity;
                         return sum + (pricePerItem * item.quantity);
                     }, 0);
@@ -163,7 +161,6 @@ export default function AdminDashboardPage() {
                     .slice(0, 5)
                     .map(([name, sales]) => ({ name, sales }));
                 setTopCategories(sortedCategories);
-
 
                 const revenueChange = lastMonthRevenue > 0
                     ? ((currentMonthRevenue - lastMonthRevenue) / lastMonthRevenue) * 100
@@ -366,6 +363,3 @@ export default function AdminDashboardPage() {
     </div>
   );
 }
-
-    
-    
