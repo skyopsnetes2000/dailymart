@@ -68,9 +68,11 @@ export default function AdminDashboardPage() {
                            const price = calculateDiscountedPrice(product) ?? product.price;
                            return sum + (price * item.quantity);
                         }
-                        // Fallback if product not found (should be rare)
+                         // Fallback if product not found, using a proportional amount of the total.
+                         // This is less accurate but prevents crashes.
                         const totalQuantity = order.items.reduce((acc, i) => acc + i.quantity, 0);
-                        const pricePerItem = totalQuantity > 0 ? (order.total / totalQuantity) : 0;
+                        if (totalQuantity === 0) return sum; // Avoid division by zero
+                        const pricePerItem = order.total / totalQuantity;
                         return sum + (pricePerItem * item.quantity);
                     }, 0);
                 };
@@ -365,4 +367,5 @@ export default function AdminDashboardPage() {
   );
 }
 
+    
     
