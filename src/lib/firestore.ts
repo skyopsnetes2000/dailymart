@@ -121,13 +121,22 @@ export async function addOrder(order: Omit<Order, 'id'>): Promise<string> {
 }
 
 export async function getOrders(userId?: string): Promise<Order[]> {
-    let ordersQuery = query(collection(db, 'orders'), orderBy('date', 'desc'));
+    let ordersQuery;
     if (userId) {
-        ordersQuery = query(collection(db, 'orders'), where('userId', '==', userId), orderBy('date', 'desc'));
+        // This query requires a composite index on userId (asc) and date (desc).
+        // Temporarily removing orderBy to prevent app crash until index is created.
+        ordersQuery = query(collection(db, 'orders'), where('userId', '==', userId));
+    } else {
+        ordersQuery = query(collection(db, 'orders'), orderBy('date', 'desc'));
     }
     
     const orderSnapshot = await getDocs(ordersQuery);
     const allOrders = orderSnapshot.docs.map(doc => ({ ...doc.data() as Order, id: doc.id }));
+
+    // Manual sort for user-specific orders since we removed orderBy from the query
+    if (userId) {
+        allOrders.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+    }
     
     return allOrders;
 }
