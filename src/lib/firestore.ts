@@ -189,7 +189,7 @@ export async function addAddress(userId: string, address: Omit<Address, 'id'>): 
     
     if (address.isDefault) {
         const batch = writeBatch(db);
-        const q = query(addressesCol, where('id', '!=', docRef.id));
+        const q = query(addressesCol, where('__name__', '!=', docRef.id));
         const snapshot = await getDocs(q);
         snapshot.forEach(d => {
             batch.update(d.ref, { isDefault: false });
