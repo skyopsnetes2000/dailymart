@@ -3,31 +3,37 @@ rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
-  
-    // Public collections: Allow anyone to read, but no one to write.
-    // Writes should be handled by an admin backend in a real production app.
-    match /categories/{categoryId} {
-      allow read: if true;
-      allow write: if false; 
-    }
-
-    match /products/{productId} {
-      allow read: if true;
-      allow write: if false;
-    }
     
-    match /appearance/{docId} {
-      allow read: if true;
-      allow write: if false;
+    // By default, disallow all reads and writes
+    match /{document=**} {
+      allow read, write: if false;
     }
 
-    // Orders:
-    // - Allow any authenticated user to create an order.
-    // - Only allow a user to read/update their own order.
+    // Allow public read and list for collections needed by the homepage.
+    // Write access is restricted to authenticated users.
+    match /products/{productId} {
+      allow get, list: if true;
+      allow write: if request.auth != null;
+    }
+
+    match /categories/{categoryId} {
+      allow get, list: if true;
+      allow write: if request.auth != null;
+    }
+
+    match /appearance/{docId} {
+      allow get, list: if true;
+      allow write: if request.auth != null;
+    }
+
+    // Secure user-specific and admin-only data
     match /orders/{orderId} {
-      allow create: if request.auth != null;
-      allow read, update: if request.auth != null && request.auth.uid == resource.data.userId;
-      allow delete: if false;
+      // Allow a user to read/write their own order, or an admin to read/write any order
+      allow get, update: if request.auth != null && (request.auth.uid == resource.data.userId || get(/databases/$(database)/documents/users/$(request.auth.uid)).data.email == 'dhandesaurav52@gmail.com');
+      // Allow a user to create their own order
+      allow create: if request.auth != null && request.auth.uid == request.resource.data.userId;
+      // Allow admin to list all orders
+      allow list: if request.auth != null && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.email == 'dhandesaurav52@gmail.com';
     }
   }
 }

@@ -1,119 +1,42 @@
 
-
-'use client'
-
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import HomeHeader from '@/components/home-header';
 import CategoryCard from '@/components/category-card';
 import ProductCard from '@/components/product-card';
 import { Input } from '@/components/ui/input';
 import { Search } from 'lucide-react';
 import Link from 'next/link';
-import Image from 'next/image';
 import {
   Carousel,
   CarouselContent,
   CarouselItem,
 } from '@/components/ui/carousel';
-import { PlaceHolderImages } from '@/lib/placeholder-images';
-import Autoplay from "embla-carousel-autoplay";
-import { Button } from '@/components/ui/button';
-import { Card } from '@/components/ui/card';
 import { Product, Category, AppearanceSettings } from '@/lib/data';
-import { Skeleton } from '@/components/ui/skeleton';
 import { getCategories, getProducts, getSpecialOfferProducts, getAppearanceSettings } from '@/lib/firestore';
+import AdCarousel from '@/components/ad-carousel';
 
-function LoadingSkeletons() {
-    return (
-        <div className="space-y-8 p-4 sm:p-6">
-            <Skeleton className="relative -mx-4 -mt-4 h-64 w-auto rounded-b-2xl" />
-            <Skeleton className="h-12 w-full" />
-            <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-4">
-                 {Array.from({ length: 3 }).map((_, i) => (
-                    <Skeleton key={i} className="aspect-video" />
-                ))}
-            </div>
-            <Skeleton className="h-8 w-1/4" />
-            <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 md:basis-1/4 lg:basis-1/5">
-                {Array.from({ length: 4 }).map((_, i) => (
-                    <Skeleton key={i} className="h-32" />
-                ))}
-            </div>
-            <Skeleton className="h-8 w-1/4" />
-             <div className="grid grid-cols-4 gap-3 md:grid-cols-5 lg:grid-cols-6">
-                {Array.from({ length: 6 }).map((_, i) => (
-                    <Skeleton key={i} className="h-24" />
-                ))}
-            </div>
-        </div>
-    )
-}
-
-
-export default function Home() {
-  const [products, setProducts] = useState<Product[]>([]);
-  const [categories, setCategories] = useState<Category[]>([]);
-  const [specialOffers, setSpecialOffers] = useState<Product[]>([]);
-  const [appearance, setAppearance] = useState<AppearanceSettings | null>(null);
-  const [loading, setLoading] = useState(true);
-  
-  useEffect(() => {
-    const fetchData = async () => {
-        try {
-            const [productsData, categoriesData, specialOffersData, appearanceData] = await Promise.all([
-                getProducts(),
-                getCategories(),
-                getSpecialOfferProducts(),
-                getAppearanceSettings(),
-            ]);
-            setProducts(productsData);
-            setCategories(categoriesData);
-            setSpecialOffers(specialOffersData);
-            setAppearance(appearanceData);
-        } catch (error) {
-            console.error("Error fetching data from Firestore", error);
-        } finally {
-            setLoading(false);
-        }
-    };
-    fetchData();
-  }, []);
+export default async function Home() {
+  const [products, categories, specialOffers, appearance] = await Promise.all([
+      getProducts(),
+      getCategories(),
+      getSpecialOfferProducts(),
+      getAppearanceSettings(),
+  ]);
   
   const topCategories = categories.slice(0, 4);
-  const placeholderHero = PlaceHolderImages.find((img) => img.id === 'hero-bg');
-  
-  const autoplayPlugin = React.useRef(
-    Autoplay({ delay: 2000, stopOnInteraction: false })
-  )
-
-  const ads = (appearance?.ads || []).filter(ad => ad.imageUrl);
-
-  if (loading) {
-      return (
-        <>
-            <HomeHeader />
-            <LoadingSkeletons />
-        </>
-      )
-  }
 
   const heroTitle = appearance?.heroTitle || "Freshness at Your Fingertips";
   const heroSubtitle = appearance?.heroSubtitle || "The best groceries, delivered fresh to your door daily.";
-  const heroImageUrl = appearance?.heroImageUrl || placeholderHero?.imageUrl;
+  const heroImageUrl = appearance?.heroImageUrl || "https://picsum.photos/seed/101/1200/800";
 
   return (
     <>
       <HomeHeader />
       <div className="space-y-8 p-4 pt-0 sm:p-6 sm:pt-0">
-        <section className="relative -mx-4 -mt-4 sm:-mx-6 sm:-mt-6 h-64 w-auto overflow-hidden rounded-b-2xl">
-            {heroImageUrl && (
-              <Image
-                src={heroImageUrl}
-                alt="Hero background"
-                fill
-                className="object-cover"
-              />
-            )}
+        <section 
+          className="relative -mx-4 -mt-4 sm:-mx-6 sm:-mt-6 h-64 w-auto overflow-hidden rounded-b-2xl bg-cover bg-center"
+          style={{ backgroundImage: `url(${heroImageUrl})`}}
+        >
             <div className="absolute inset-0 bg-black/50" />
             <div className="absolute inset-0 flex flex-col items-center justify-center text-center text-white p-4">
               <h1 className="font-headline text-3xl font-bold md:text-4xl">{heroTitle}</h1>
@@ -128,40 +51,7 @@ export default function Home() {
           </div>
         </section>
 
-        {ads.length > 0 && (
-          <section className="w-full overflow-hidden">
-            <Carousel
-                opts={{ align: 'start', loop: true }}
-                plugins={[autoplayPlugin.current]}
-                onMouseEnter={autoplayPlugin.current.stop}
-                onMouseLeave={autoplayPlugin.current.reset}
-            >
-                <CarouselContent className="-ml-2">
-                 {ads.map((ad, index) => (
-                    ad.imageUrl && (
-                        <CarouselItem key={`${ad.id}-${index}`} className="basis-auto pl-2">
-                            <Card className="overflow-hidden relative aspect-video w-[300px] sm:w-[400px]">
-                            <Image
-                                src={ad.imageUrl}
-                                alt={ad.description || 'Advertisement'}
-                                fill
-                                className="object-cover"
-                            />
-                            <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
-                            <div className="absolute bottom-0 left-0 p-2 md:p-3">
-                                {ad.description && <h3 className="font-bold text-sm md:text-base text-white">{ad.description}</h3>}
-                                <Button asChild size="sm" variant="secondary" className="mt-1 h-7 text-sm md:h-8">
-                                <Link href={ad.categorySlug ? `/categories/${ad.categorySlug}` : '/products'}>Order Now</Link>
-                                </Button>
-                            </div>
-                            </Card>
-                        </CarouselItem>
-                    )
-                 ))}
-                </CarouselContent>
-            </Carousel>
-          </section>
-        )}
+        <AdCarousel ads={appearance?.ads || []} />
 
          {specialOffers.length > 0 && (
             <section className="space-y-4">
