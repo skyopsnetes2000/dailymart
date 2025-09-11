@@ -68,6 +68,7 @@ export default function CartPage() {
                 />
                 <div className="flex-1 space-y-1">
                   <h3 className="font-semibold">{product.name}</h3>
+                  <p className="text-sm text-muted-foreground">{product.weight}</p>
                   <div className="flex items-center gap-2">
                     <p className="font-bold">${finalPrice.toFixed(2)}</p>
                     {product.offer && <p className="text-sm text-muted-foreground line-through">${product.price.toFixed(2)}</p>}
