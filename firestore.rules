@@ -1,38 +1,19 @@
-
 rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
-
-    // Helper function to check for admin role
-    function isAdmin() {
-      return request.auth != null && request.auth.token.email == 'dhandesaurav52@gmail.com';
-    }
-
-    // Products: Public can read, admin can write
-    match /products/{productId} {
+    // Public collections can be read by anyone, but only written by authenticated users.
+    match /(products|categories|appearance)/{document=**} {
       allow read: if true;
-      allow write: if isAdmin();
+      allow write: if request.auth != null;
     }
 
-    // Categories: Public can read, admin can write
-    match /categories/{categoryId} {
-      allow read: if true;
-      allow write: if isAdmin();
-    }
-
-    // Appearance: Public can read, admin can write
-    match /appearance/{docId} {
-      allow read: if true;
-      allow write: if isAdmin();
-    }
-
-    // Orders: Users can create their own orders and read their own orders. Admin can read all.
+    // Orders
     match /orders/{orderId} {
-      allow read: if request.auth != null && (request.auth.uid == resource.data.userId || isAdmin());
+      // Users can only create orders for themselves.
       allow create: if request.auth != null && request.auth.uid == request.resource.data.userId;
-      allow update: if isAdmin();
-      allow delete: if isAdmin();
+      // Users can only read, update, or delete their own orders.
+      allow read, update, delete: if request.auth != null && request.auth.uid == resource.data.userId;
     }
   }
 }
