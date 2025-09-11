@@ -78,7 +78,7 @@ export default function AdminDashboardPage() {
                 
                 const totalGrossRevenue = grossRevenueOrders.reduce((sum, order) => sum + order.total, 0);
                 const totalRefunds = orders.reduce((sum, order) => sum + getRefundAmount(order), 0);
-                const totalRevenue = totalGrossRevenue - totalRefunds;
+                const totalRevenue = Math.max(0, totalGrossRevenue - totalRefunds);
                 
                 const calculateNetRevenueForPeriod = (start: Date, end: Date) => {
                     const periodGrossOrders = grossRevenueOrders.filter(o => isWithinInterval(new Date(o.date), { start, end }));
@@ -87,7 +87,7 @@ export default function AdminDashboardPage() {
                     const gross = periodGrossOrders.reduce((sum, order) => sum + order.total, 0);
                     const refunds = periodRefundOrders.reduce((sum, order) => sum + getRefundAmount(order), 0);
                     
-                    return gross - refunds;
+                    return Math.max(0, gross - refunds);
                 };
 
                 const currentMonthRevenue = calculateNetRevenueForPeriod(currentMonthStart, now);
@@ -144,7 +144,7 @@ export default function AdminDashboardPage() {
                     : currentMonthOrdersCount > 0 ? 100 : 0;
 
                 setStats({
-                    totalRevenue: totalRevenue > 0 ? totalRevenue : 0,
+                    totalRevenue: totalRevenue,
                     revenueChange: isFinite(revenueChange) ? revenueChange : 0,
                     totalOrders: orders.length,
                     ordersChange: isFinite(ordersChange) ? ordersChange : 0,
@@ -194,9 +194,9 @@ export default function AdminDashboardPage() {
             <DollarSign className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">${stats.totalRevenue.toFixed(2)}</div>
+            <div className="text-2xl font-bold">${(0).toFixed(2)}</div>
             <p className="text-xs text-muted-foreground">
-              {formatPercentage(stats.revenueChange)} from last month
+              {formatPercentage(0)} from last month
             </p>
           </CardContent>
         </Card>
