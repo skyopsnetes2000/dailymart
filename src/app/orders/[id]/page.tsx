@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import PageHeader from "@/components/shared/page-header";
@@ -6,7 +7,7 @@ import { type Order, type ReturnRequestItem } from "@/lib/data";
 import { notFound, useParams } from "next/navigation";
 import OrderTracker from "@/components/order-tracker";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { format } from "date-fns";
+import { format, differenceInHours } from "date-fns";
 import { useEffect, useState } from "react";
 import { Loader2, MessageSquareWarning, Minus, Plus } from "lucide-react";
 import { doc, onSnapshot } from "firebase/firestore";
@@ -17,9 +18,10 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { submitReturnRequest } from "@/lib/firestore";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 
-function ReturnRequestDialog({ order, onReturnSuccess }: { order: Order, onReturnSuccess: () => void }) {
+function ReturnRequestDialog({ order, onReturnSuccess, disabled, disabledReason }: { order: Order, onReturnSuccess: () => void, disabled: boolean, disabledReason: string }) {
     const [selectedItems, setSelectedItems] = useState<ReturnRequestItem[]>([]);
     const [reason, setReason] = useState('');
     const [isSubmitting, setIsSubmitting] = useState(false);
@@ -78,12 +80,25 @@ function ReturnRequestDialog({ order, onReturnSuccess }: { order: Order, onRetur
       }
     };
 
+    const dialogTriggerButton = (
+        <Button variant="outline" disabled={disabled}>
+            <MessageSquareWarning className="mr-2 h-4 w-4" />
+            Report an Issue
+        </Button>
+    );
 
     return (
         <Dialog>
-            <DialogTrigger asChild>
-                <Button variant="outline"><MessageSquareWarning className="mr-2 h-4 w-4" />Report an Issue</Button>
-            </DialogTrigger>
+            <TooltipProvider>
+                <Tooltip>
+                    <TooltipTrigger asChild>
+                        {/* The Tooltip requires a single child, so if the button is disabled, we need to wrap it. */}
+                        {disabled ? <div>{dialogTriggerButton}</div> : dialogTriggerButton}
+                    </TooltipTrigger>
+                    {disabled && <TooltipContent><p>{disabledReason}</p></TooltipContent>}
+                </Tooltip>
+            </TooltipProvider>
+
             <DialogContent>
                 <DialogHeader>
                     <DialogTitle>Report an Issue</DialogTitle>
@@ -178,6 +193,24 @@ export default function OrderDetailsPage() {
         notFound();
     }
 
+    const canReportIssue = () => {
+        if (order.status !== 'Delivered') return { can: false, reason: 'You can only report an issue for delivered orders.' };
+
+        const deliveryEvent = order.trackingHistory.find(h => h.status === 'Delivered');
+        if (!deliveryEvent) return { can: false, reason: 'Delivery time could not be determined.' };
+
+        const deliveryDate = new Date(deliveryEvent.date);
+        const hoursSinceDelivery = differenceInHours(new Date(), deliveryDate);
+        
+        if (hoursSinceDelivery > 12) {
+            return { can: false, reason: 'The 12-hour window to report an issue has passed.' };
+        }
+        
+        return { can: true, reason: '' };
+    }
+    
+    const issueReportStatus = canReportIssue();
+
     return (
         <div>
             <PageHeader title="Order Details" />
@@ -199,7 +232,12 @@ export default function OrderDetailsPage() {
                     </CardContent>
                      {order.status === 'Delivered' && (
                         <CardFooter>
-                           <ReturnRequestDialog order={order} onReturnSuccess={() => {}} />
+                           <ReturnRequestDialog 
+                                order={order} 
+                                onReturnSuccess={() => {}} 
+                                disabled={!issueReportStatus.can}
+                                disabledReason={issueReportStatus.reason}
+                            />
                         </CardFooter>
                     )}
                 </Card>
