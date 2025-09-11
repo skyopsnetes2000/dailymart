@@ -18,6 +18,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import { calculateDiscountedPrice } from '@/lib/utils';
 
 type DashboardStats = {
   totalRevenue: number;
@@ -56,59 +57,64 @@ export default function AdminDashboardPage() {
                 const lastMonthEnd = endOfMonth(subMonths(now, 1));
                 const currentMonthStart = startOfMonth(now);
 
-                let totalRevenue = 0;
-                let currentMonthRevenue = 0;
-                let lastMonthRevenue = 0;
-                
-                const salesByMonth: { [key: string]: { sales: number; refunds: number } } = {};
-                const salesByProduct: { [key: string]: number } = {};
-                const salesByCategory: { [key: string]: number } = {};
+                const productPriceMap = new Map(products.map(p => [p.name, p]));
 
-                const productToCategoryMap = new Map(products.map(p => [p.name, p.categorySlug]));
-                const categorySlugToNameMap = new Map(categories.map(c => [c.slug, c.name]));
-                
-                orders.forEach(order => {
-                    const orderDate = new Date(order.date);
-                    const monthKey = format(orderDate, 'MMM yyyy');
-                    if (!salesByMonth[monthKey]) {
-                        salesByMonth[monthKey] = { sales: 0, refunds: 0 };
-                    }
+                const getRefundAmount = (order: Order): number => {
+                    if (!order.returnRequest) return order.total; // Fallback for older data
+                    
+                    return order.returnRequest.items.reduce((sum, item) => {
+                        const product = productPriceMap.get(item.productName);
+                        if (product) {
+                            // Find the original item in the order to check for discounts
+                            const originalOrderItem = order.items.find(i => i.productName === item.productName);
+                            if (originalOrderItem) {
+                               const pricePerItem = (order.total / order.items.reduce((acc, i) => acc + i.quantity, 0));
+                               const originalProduct = products.find(p => p.name === item.productName);
+                               const discountedPrice = originalProduct ? (calculateDiscountedPrice(originalProduct) ?? originalProduct.price) : pricePerItem;
 
-                    if (['Delivered', 'Return Requested', 'Return Initiated', 'Return Successful', 'Refund Completed'].includes(order.status)) {
-                        salesByMonth[monthKey].sales += order.total;
-                    }
-                    if (['Return Successful', 'Refund Completed'].includes(order.status)) {
-                        salesByMonth[monthKey].refunds += order.total;
-                    }
-                });
+                                return sum + (discountedPrice * item.quantity);
+                            }
+                        }
+                        // Fallback if product not found (e.g., deleted product)
+                        return sum + (order.total / order.items.length) * item.quantity;
+                    }, 0);
+                };
 
-                const grossRevenueOrders = orders.filter(o => ['Delivered', 'Return Requested', 'Return Initiated', 'Return Successful', 'Refund Completed'].includes(o.status));
-                const refundedOrders = orders.filter(o => ['Return Successful', 'Refund Completed'].includes(o.status));
+                const grossRevenueOrders = orders.filter(o => 
+                    ['Delivered', 'Return Requested', 'Return Initiated', 'Return Successful', 'Refund Completed'].includes(o.status)
+                );
+                const refundedOrders = orders.filter(o => 
+                    ['Return Successful', 'Refund Completed'].includes(o.status)
+                );
                 
                 const totalGrossRevenue = grossRevenueOrders.reduce((sum, order) => sum + order.total, 0);
-                const totalRefunds = refundedOrders.reduce((sum, order) => sum + order.total, 0);
-                totalRevenue = totalGrossRevenue - totalRefunds;
-
+                const totalRefunds = refundedOrders.reduce((sum, order) => sum + getRefundAmount(order), 0);
+                const totalRevenue = totalGrossRevenue - totalRefunds;
 
                 const currentMonthGross = grossRevenueOrders
                     .filter(o => isWithinInterval(new Date(o.date), { start: currentMonthStart, end: now }))
                     .reduce((sum, order) => sum + order.total, 0);
                 const currentMonthRefunds = refundedOrders
                     .filter(o => isWithinInterval(new Date(o.date), { start: currentMonthStart, end: now }))
-                    .reduce((sum, order) => sum + order.total, 0);
-                currentMonthRevenue = currentMonthGross - currentMonthRefunds;
+                    .reduce((sum, order) => sum + getRefundAmount(order), 0);
+                const currentMonthRevenue = currentMonthGross - currentMonthRefunds;
 
                 const lastMonthGross = grossRevenueOrders
                     .filter(o => isWithinInterval(new Date(o.date), { start: lastMonthStart, end: lastMonthEnd }))
                     .reduce((sum, order) => sum + order.total, 0);
                 const lastMonthRefunds = refundedOrders
                     .filter(o => isWithinInterval(new Date(o.date), { start: lastMonthStart, end: lastMonthEnd }))
-                    .reduce((sum, order) => sum + order.total, 0);
-                lastMonthRevenue = lastMonthGross - lastMonthRefunds;
+                    .reduce((sum, order) => sum + getRefundAmount(order), 0);
+                const lastMonthRevenue = lastMonthGross - lastMonthRefunds;
                 
                 const currentMonthOrdersCount = orders.filter(o => isWithinInterval(new Date(o.date), { start: currentMonthStart, end: now })).length;
                 const lastMonthOrdersCount = orders.filter(o => isWithinInterval(new Date(o.date), { start: lastMonthStart, end: lastMonthEnd })).length;
 
+                const salesByProduct: { [key: string]: number } = {};
+                const salesByCategory: { [key: string]: number } = {};
+                const productToCategoryMap = new Map(products.map(p => [p.name, p.categorySlug]));
+                const categorySlugToNameMap = new Map(categories.map(c => [c.slug, c.name]));
+                
                 orders.filter(o => o.status === 'Delivered').forEach(order => {
                     order.items.forEach(item => {
                         salesByProduct[item.productName] = (salesByProduct[item.productName] || 0) + item.quantity;
@@ -120,7 +126,24 @@ export default function AdminDashboardPage() {
                         }
                     });
                 });
+                
+                const salesByMonth: { [key: string]: { sales: number; refunds: number } } = {};
+                 for (let i = 5; i >= 0; i--) {
+                    const date = subMonths(now, i);
+                    const monthKey = format(date, 'MMM yyyy');
+                    const monthStart = startOfMonth(date);
+                    const monthEnd = endOfMonth(date);
 
+                    const monthGross = grossRevenueOrders
+                        .filter(o => isWithinInterval(new Date(o.date), { start: monthStart, end: monthEnd }))
+                        .reduce((sum, order) => sum + order.total, 0);
+                    
+                    const monthRefunds = refundedOrders
+                        .filter(o => isWithinInterval(new Date(o.date), { start: monthStart, end: monthEnd }))
+                        .reduce((sum, order) => sum + getRefundAmount(order), 0);
+
+                    salesByMonth[monthKey] = { sales: monthGross, refunds: monthRefunds };
+                }
 
                 const last6Months: MonthlySales[] = [];
                 for (let i = 5; i >= 0; i--) {
@@ -345,9 +368,3 @@ export default function AdminDashboardPage() {
     </div>
   );
 }
-
-    
-
-    
-
-    
