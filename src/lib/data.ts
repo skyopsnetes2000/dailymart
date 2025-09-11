@@ -40,7 +40,7 @@ export type Order = {
   items: { productName: string, quantity: number }[];
   trackingHistory: { status: string; date: string; }[];
   customerName: string;
-  shippingAddress: Address;
+  shippingAddress?: Address;
 };
 
 export type Address = {
@@ -55,6 +55,7 @@ export type Address = {
 }
 
 export type AdBanner = {
+    id: string;
     imageUrl?: string;
     description?: string;
     categorySlug?: string;
@@ -64,9 +65,7 @@ export type AppearanceSettings = {
     heroTitle: string;
     heroSubtitle: string;
     heroImageUrl?: string;
-    ad1?: AdBanner;
-    ad2?: AdBanner;
-    ad3?: AdBanner;
+    ads: AdBanner[];
 }
 
 export const categories: Category[] = [

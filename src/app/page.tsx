@@ -19,7 +19,7 @@ import { PlaceHolderImages } from '@/lib/placeholder-images';
 import Autoplay from "embla-carousel-autoplay";
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { Product, Category, AppearanceSettings, AdBanner } from '@/lib/data';
+import { Product, Category, AppearanceSettings } from '@/lib/data';
 import { Skeleton } from '@/components/ui/skeleton';
 import { getCategories, getProducts, getSpecialOfferProducts, getAppearanceSettings } from '@/lib/firestore';
 
@@ -86,11 +86,7 @@ export default function Home() {
     Autoplay({ delay: 3000, stopOnInteraction: true })
   )
 
-  const ads = [
-    { id: 'ad1', ...appearance?.ad1 },
-    { id: 'ad2', ...appearance?.ad2 },
-    { id: 'ad3', ...appearance?.ad3 },
-  ].filter(ad => ad.imageUrl);
+  const ads = (appearance?.ads || []).filter(ad => ad.imageUrl);
 
   if (loading) {
       return (
