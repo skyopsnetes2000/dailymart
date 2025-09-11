@@ -56,52 +56,42 @@ export default function AdminDashboardPage() {
                 const lastMonthStart = startOfMonth(subMonths(now, 1));
                 const lastMonthEnd = endOfMonth(subMonths(now, 1));
                 const currentMonthStart = startOfMonth(now);
-
-                const productPriceMap = new Map(products.map(p => [p.name, p]));
+                
+                const productMap = new Map(products.map(p => [p.name, p]));
                 
                 const getRefundAmount = (order: Order): number => {
-                    if (!order.returnRequest) return 0;
-                    
+                    if (!order.returnRequest || !['Return Successful', 'Refund Completed'].includes(order.status)) {
+                        return 0;
+                    }
                     return order.returnRequest.items.reduce((sum, item) => {
-                        const product = productPriceMap.get(item.productName);
-                        if (product) {
-                           const price = calculateDiscountedPrice(product) ?? product.price;
-                           return sum + (price * item.quantity);
-                        }
-                        const totalQuantity = order.items.reduce((acc, i) => acc + i.quantity, 0);
-                        if (totalQuantity === 0) return sum;
-                        const pricePerItem = order.total / totalQuantity;
-                        return sum + (pricePerItem * item.quantity);
+                        const product = productMap.get(item.productName);
+                        if (!product) return sum; // Product might have been deleted, skip it
+                        
+                        const price = calculateDiscountedPrice(product) ?? product.price;
+                        return sum + (price * item.quantity);
                     }, 0);
                 };
-                
+
                 const grossRevenueOrders = orders.filter(o => 
                     ['Delivered', 'Return Requested', 'Return Initiated', 'Return Successful', 'Refund Completed'].includes(o.status)
                 );
                 
-                const refundedOrders = orders.filter(o => 
-                    ['Return Successful', 'Refund Completed'].includes(o.status)
-                );
-                
                 const totalGrossRevenue = grossRevenueOrders.reduce((sum, order) => sum + order.total, 0);
-                const totalRefunds = refundedOrders.reduce((sum, order) => sum + getRefundAmount(order), 0);
+                const totalRefunds = orders.reduce((sum, order) => sum + getRefundAmount(order), 0);
                 const totalRevenue = totalGrossRevenue - totalRefunds;
+                
+                const calculateNetRevenueForPeriod = (start: Date, end: Date) => {
+                    const periodGrossOrders = grossRevenueOrders.filter(o => isWithinInterval(new Date(o.date), { start, end }));
+                    const periodRefundOrders = orders.filter(o => isWithinInterval(new Date(o.date), { start, end }));
 
-                const currentMonthGross = grossRevenueOrders
-                    .filter(o => isWithinInterval(new Date(o.date), { start: currentMonthStart, end: now }))
-                    .reduce((sum, order) => sum + order.total, 0);
-                const currentMonthRefunds = refundedOrders
-                    .filter(o => isWithinInterval(new Date(o.date), { start: currentMonthStart, end: now }))
-                    .reduce((sum, order) => sum + getRefundAmount(order), 0);
-                const currentMonthRevenue = currentMonthGross - currentMonthRefunds;
+                    const gross = periodGrossOrders.reduce((sum, order) => sum + order.total, 0);
+                    const refunds = periodRefundOrders.reduce((sum, order) => sum + getRefundAmount(order), 0);
+                    
+                    return gross - refunds;
+                };
 
-                const lastMonthGross = grossRevenueOrders
-                    .filter(o => isWithinInterval(new Date(o.date), { start: lastMonthStart, end: lastMonthEnd }))
-                    .reduce((sum, order) => sum + order.total, 0);
-                const lastMonthRefunds = refundedOrders
-                    .filter(o => isWithinInterval(new Date(o.date), { start: lastMonthStart, end: lastMonthEnd }))
-                    .reduce((sum, order) => sum + getRefundAmount(order), 0);
-                const lastMonthRevenue = lastMonthGross - lastMonthRefunds;
+                const currentMonthRevenue = calculateNetRevenueForPeriod(currentMonthStart, now);
+                const lastMonthRevenue = calculateNetRevenueForPeriod(lastMonthStart, lastMonthEnd);
                 
                 const currentMonthOrdersCount = orders.filter(o => isWithinInterval(new Date(o.date), { start: currentMonthStart, end: now })).length;
                 const lastMonthOrdersCount = orders.filter(o => isWithinInterval(new Date(o.date), { start: lastMonthStart, end: lastMonthEnd })).length;
@@ -123,30 +113,13 @@ export default function AdminDashboardPage() {
                     });
                 });
                 
-                const salesByMonth: { [key: string]: { sales: number; refunds: number } } = {};
+                const last6Months: MonthlySales[] = [];
                  for (let i = 5; i >= 0; i--) {
                     const date = subMonths(now, i);
-                    const monthKey = format(date, 'MMM yyyy');
                     const monthStart = startOfMonth(date);
                     const monthEnd = endOfMonth(date);
-
-                    const monthGross = grossRevenueOrders
-                        .filter(o => isWithinInterval(new Date(o.date), { start: monthStart, end: monthEnd }))
-                        .reduce((sum, order) => sum + order.total, 0);
-                    
-                    const monthRefunds = refundedOrders
-                        .filter(o => isWithinInterval(new Date(o.date), { start: monthStart, end: monthEnd }))
-                        .reduce((sum, order) => sum + getRefundAmount(order), 0);
-
-                    salesByMonth[monthKey] = { sales: monthGross, refunds: monthRefunds };
-                }
-
-                const last6Months: MonthlySales[] = [];
-                for (let i = 5; i >= 0; i--) {
-                    const date = subMonths(now, i);
-                    const monthKey = format(date, 'MMM yyyy');
-                    const monthData = salesByMonth[monthKey] || { sales: 0, refunds: 0 };
-                    last6Months.push({ month: format(date, 'MMM'), total: Math.max(0, monthData.sales - monthData.refunds) });
+                    const monthNetRevenue = calculateNetRevenueForPeriod(monthStart, monthEnd);
+                    last6Months.push({ month: format(date, 'MMM'), total: Math.max(0, monthNetRevenue) });
                 }
                 setMonthlySales(last6Months);
 
@@ -172,9 +145,9 @@ export default function AdminDashboardPage() {
 
                 setStats({
                     totalRevenue: Math.max(0, totalRevenue),
-                    revenueChange,
+                    revenueChange: isFinite(revenueChange) ? revenueChange : 0,
                     totalOrders: orders.length,
-                    ordersChange,
+                    ordersChange: isFinite(ordersChange) ? ordersChange : 0,
                     totalProducts: products.length,
                     totalCategories: categories.length,
                 });
@@ -363,3 +336,5 @@ export default function AdminDashboardPage() {
     </div>
   );
 }
+
+    
