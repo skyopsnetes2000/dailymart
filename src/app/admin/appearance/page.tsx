@@ -129,7 +129,6 @@ export default function AdminAppearancePage() {
 
         await saveAppearanceSettings(newSettings);
         
-        // Optimistically update the displayed data
         const updatedInitialData = { ...initialData, ...newSettings } as AppearanceSettings;
         if (newSettings.heroImageUrl) updatedInitialData.heroImageUrl = newSettings.heroImageUrl;
         updatedInitialData.ads = newSettings.ads || [];
@@ -301,7 +300,7 @@ export default function AdminAppearancePage() {
                 variant="outline"
                 size="sm"
                 className="mt-2"
-                onClick={() => append({ id: `ad_${Date.now()}` })}
+                onClick={() => append({ id: `ad_${Date.now()}`, description: '', categorySlug: '' })}
                 >
                 <PlusCircle className="mr-2 h-4 w-4" />
                 Add Advertisement
