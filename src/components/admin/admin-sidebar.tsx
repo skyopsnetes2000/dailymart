@@ -16,11 +16,14 @@ const navItems = [
   { href: '/admin/appearance', label: 'Appearance', icon: Settings },
 ];
 
-export default function AdminSidebar() {
+export default function AdminSidebar({ isMobile = false }: { isMobile?: boolean }) {
   const pathname = usePathname();
 
   return (
-    <aside className="hidden w-64 flex-col border-r bg-card text-card-foreground md:flex">
+    <aside className={cn(
+        "flex-col border-r bg-card text-card-foreground",
+        isMobile ? "flex h-full" : "hidden w-64 md:flex"
+    )}>
       <div className="flex h-16 items-center border-b px-6">
         <Link href="/admin" className="flex items-center gap-2 font-semibold">
           <UtensilsCrossed className="h-6 w-6 text-primary" />
