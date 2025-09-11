@@ -1,7 +1,7 @@
 
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   Table,
   TableBody,
@@ -22,7 +22,7 @@ import { Order, OrderStatus } from '@/lib/data';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { format } from 'date-fns';
-import { ChevronDown, ChevronUp, Search } from 'lucide-react';
+import { ChevronDown, ChevronUp, RefreshCw, Search } from 'lucide-react';
 import { getOrders, updateOrderStatus } from '@/lib/firestore';
 import { useToast } from '@/hooks/use-toast';
 import { Input } from '@/components/ui/input';
@@ -45,24 +45,30 @@ export default function AdminOrdersPage() {
   const [openOrderId, setOpenOrderId] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState<OrderStatus | 'all'>('all');
+  const [isRefreshing, setIsRefreshing] = useState(false);
   const { toast } = useToast();
 
-  useEffect(() => {
-    const fetchOrders = async () => {
-        try {
-            const fetchedOrders = await getOrders();
-            setOrders(fetchedOrders);
-        } catch (error) {
-            console.error("Could not fetch orders.", error);
-            toast({
-                title: "Error",
-                description: "Failed to fetch orders from the database.",
-                variant: "destructive"
-            });
-        }
+  const fetchOrders = useCallback(async () => {
+    setIsRefreshing(true);
+    try {
+        const fetchedOrders = await getOrders();
+        setOrders(fetchedOrders);
+    } catch (error) {
+        console.error("Could not fetch orders.", error);
+        toast({
+            title: "Error",
+            description: "Failed to fetch orders from the database.",
+            variant: "destructive"
+        });
+    } finally {
+        setIsRefreshing(false);
     }
-    fetchOrders();
   }, [toast]);
+
+
+  useEffect(() => {
+    fetchOrders();
+  }, [fetchOrders]);
 
   const handleStatusChange = async (orderId: string, newStatus: OrderStatus) => {
     const orderToUpdate = orders.find(o => o.id === orderId);
@@ -109,7 +115,12 @@ export default function AdminOrdersPage() {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-3xl font-bold">Orders</h1>
+      <div className="flex items-center gap-4">
+        <h1 className="text-3xl font-bold">Orders</h1>
+        <Button variant="outline" size="icon" onClick={fetchOrders} disabled={isRefreshing}>
+          <RefreshCw className={isRefreshing ? "h-4 w-4 animate-spin" : "h-4 w-4"} />
+        </Button>
+      </div>
        <div className="flex gap-2">
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
