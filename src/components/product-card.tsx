@@ -19,7 +19,7 @@ type ProductCardProps = {
 
 const ProductCard: FC<ProductCardProps> = ({ product }) => {
   const discountedPrice = calculateDiscountedPrice(product);
-  const imageUrl = product.imageId;
+  const imageUrl = product.imageUrls && product.imageUrls.length > 0 ? product.imageUrls[0] : '';
   const { addItem } = useCart();
 
   return (

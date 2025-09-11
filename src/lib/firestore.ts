@@ -196,9 +196,9 @@ export async function seedInitialData() {
     console.log("Seeding products...");
     initialProducts.forEach(product => {
         const docRef = doc(productsCol); // Auto-generate ID for products
-        const placeholder = PlaceHolderImages.find(p => p.id === product.imageId);
+        const placeholder = PlaceHolderImages.find(p => p.id === product.imageUrls[0]);
         // We set the imageId to the actual placeholder URL now
-        batch.set(docRef, { ...product, id: docRef.id, imageId: placeholder?.imageUrl || '' });
+        batch.set(docRef, { ...product, id: docRef.id, imageUrls: [placeholder?.imageUrl || ''] });
     });
     seeded = true;
   }

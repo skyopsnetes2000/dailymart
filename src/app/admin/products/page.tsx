@@ -39,7 +39,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { type Product, type Category } from '@/lib/data';
-import { Loader2, Pencil, PlusCircle, Search, Trash2 } from 'lucide-react';
+import { Loader2, Pencil, PlusCircle, Search, Trash2, X } from 'lucide-react';
 import Image from 'next/image';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -52,7 +52,7 @@ const productSchema = z.object({
   price: z.coerce.number().min(0.01, 'Price must be greater than 0'),
   weight: z.string().min(1, 'Weight is required'),
   categorySlug: z.string().min(1, 'Category is required'),
-  image: z.any(),
+  images: z.any(),
 });
 
 
@@ -65,6 +65,7 @@ export default function AdminProductsPage() {
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { toast } = useToast();
+  const [imagePreviews, setImagePreviews] = useState<string[]>([]);
 
   useEffect(() => {
     const fetchProductsAndCategories = async () => {
@@ -82,19 +83,28 @@ export default function AdminProductsPage() {
 
   const handleEdit = (product: Product) => {
     setEditingProduct(product);
-    form.reset({...product, image: null});
+    setImagePreviews(product.imageUrls || []);
+    form.reset({
+      name: product.name,
+      description: product.description,
+      price: product.price,
+      weight: product.weight,
+      categorySlug: product.categorySlug,
+      images: null
+    });
     setIsDialogOpen(true);
   };
   
   const handleAddNew = () => {
     setEditingProduct(null);
+    setImagePreviews([]);
     form.reset({
       name: '',
       description: '',
       price: 0,
       weight: '',
       categorySlug: '',
-      image: null,
+      images: null,
     });
     setIsDialogOpen(true);
   }
@@ -108,21 +118,48 @@ export default function AdminProductsPage() {
         toast({ title: "Error", description: "Could not delete product.", variant: "destructive" });
     }
   };
+  
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (files) {
+      const newPreviews = Array.from(files).map(file => URL.createObjectURL(file));
+      setImagePreviews(prev => [...prev, ...newPreviews]);
+      form.setValue('images', files);
+    }
+  };
+  
+  const handleRemoveImage = (index: number) => {
+    const newImagePreviews = [...imagePreviews];
+    newImagePreviews.splice(index, 1);
+    setImagePreviews(newImagePreviews);
+
+    const currentFiles = form.getValues('images');
+    if (currentFiles && typeof currentFiles !== 'string') {
+        const newFiles = Array.from(currentFiles);
+        newFiles.splice(index, 1);
+        const dataTransfer = new DataTransfer();
+        newFiles.forEach(file => dataTransfer.items.add(file));
+        form.setValue('images', dataTransfer.files.length > 0 ? dataTransfer.files : null);
+    }
+  };
+
 
   const onSubmit = async (data: z.infer<typeof productSchema>) => {
     setIsSubmitting(true);
     try {
-      let imageUrl: string | undefined = editingProduct?.imageId;
+        let newImageUrls: string[] = editingProduct?.imageUrls || [];
 
-      if (data.image && data.image.length > 0) {
-        const file = data.image[0];
-        const uploadResult = await uploadImage(file, 'products');
-        imageUrl = uploadResult.url;
-      } else if (!editingProduct) {
-        const productImages = PlaceHolderImages.filter(img => img.id.startsWith('product-'));
-        const randomImage = productImages[Math.floor(Math.random() * productImages.length)];
-        imageUrl = randomImage.imageUrl;
-      }
+        if (data.images && data.images.length > 0) {
+            const uploadPromises = Array.from(data.images as FileList).map(file => uploadImage(file, 'products'));
+            const uploadResults = await Promise.all(uploadPromises);
+            newImageUrls = [...newImageUrls, ...uploadResults.map(res => res.url)];
+        }
+
+        if (newImageUrls.length === 0) {
+            const productImages = PlaceHolderImages.filter(img => img.id.startsWith('product-'));
+            const randomImage = productImages[Math.floor(Math.random() * productImages.length)];
+            newImageUrls.push(randomImage.imageUrl);
+        }
       
       const productData: Omit<Product, 'id'> = {
         name: data.name,
@@ -130,12 +167,12 @@ export default function AdminProductsPage() {
         price: data.price,
         weight: data.weight,
         categorySlug: data.categorySlug,
-        imageId: imageUrl || (editingProduct?.imageId ?? ''),
+        imageUrls: newImageUrls,
       };
 
       if (editingProduct) {
-        await updateProduct(editingProduct.id, { ...productData, imageId: imageUrl || editingProduct.imageId });
-        setProducts(products.map(p => p.id === editingProduct.id ? { ...editingProduct, ...productData, imageId: imageUrl || editingProduct.imageId } : p));
+        await updateProduct(editingProduct.id, { ...productData });
+        setProducts(products.map(p => p.id === editingProduct.id ? { ...editingProduct, ...productData } : p));
         toast({ title: "Success", description: "Product updated." });
       } else {
         const newProductId = await addProduct(productData);
@@ -297,19 +334,25 @@ export default function AdminProductsPage() {
                         </FormItem>
                       )}
                     />
-                  <FormField
-                      control={form.control}
-                      name="image"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Product Image</FormLabel>
-                          <FormControl>
-                            <Input type="file" accept="image/*" onChange={(e) => field.onChange(e.target.files)} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
+                  <FormItem>
+                      <FormLabel>Product Images</FormLabel>
+                      {imagePreviews.length > 0 && (
+                        <div className="grid grid-cols-3 gap-2">
+                            {imagePreviews.map((src, index) => (
+                                <div key={index} className="relative">
+                                    <Image src={src} alt={`Preview ${index}`} width={100} height={100} className="rounded-md object-cover w-full aspect-square" />
+                                    <Button type="button" size="icon" variant="destructive" className="absolute -top-2 -right-2 h-6 w-6 rounded-full" onClick={() => handleRemoveImage(index)}>
+                                        <X className="h-4 w-4" />
+                                    </Button>
+                                </div>
+                            ))}
+                        </div>
                       )}
-                    />
+                      <FormControl>
+                        <Input type="file" accept="image/*" multiple onChange={handleImageChange} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
                  </div>
               </ScrollArea>
               <div className="flex justify-end px-4">
@@ -339,9 +382,9 @@ export default function AdminProductsPage() {
                 return (
                   <TableRow key={product.id}>
                      <TableCell>
-                      {product.imageId && (
+                      {product.imageUrls && product.imageUrls[0] && (
                         <Image
-                          src={product.imageId}
+                          src={product.imageUrls[0]}
                           alt={product.name}
                           width={40}
                           height={40}
@@ -378,3 +421,4 @@ export default function AdminProductsPage() {
       </Card>
     </div>
   );
+}

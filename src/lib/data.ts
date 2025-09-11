@@ -11,7 +11,7 @@ export type Product = {
   description: string;
   weight: string;
   price: number;
-  imageId: string;
+  imageUrls: string[];
   categorySlug: string;
   offer?: Offer | null;
 };
@@ -87,14 +87,14 @@ export const categories: Category[] = [
 ];
 
 export const products: Product[] = [
-    { id: '1', name: 'Organic Bananas', description: 'A bunch of fresh, organic bananas.', weight: 'Approx. 500g', price: 1.99, imageId: 'product-banana', categorySlug: 'fruits', offer: { type: 'percentage', value: 10} },
-    { id: '2', name: 'Farm Fresh Eggs', description: 'A dozen large, brown eggs.', weight: '12-pack', price: 3.49, imageId: 'product-eggs', categorySlug: 'dairy' },
-    { id: '3', name: 'Whole Milk', description: 'A gallon of whole milk.', weight: '1 gallon', price: 2.99, imageId: 'product-milk', categorySlug: 'dairy', offer: { type: 'fixed', value: 0.50} },
-    { id: '4', name: 'Sourdough Bread', description: 'A loaf of freshly baked sourdough bread.', weight: '1 loaf', price: 4.99, imageId: 'product-bread', categorySlug: 'bakery' },
-    { id: '5', name: 'Ripe Tomatoes', description: 'Vine-ripened tomatoes, perfect for salads.', weight: '1 lb', price: 2.49, imageId: 'product-tomatoes', categorySlug: 'vegetables' },
-    { id: '6', name: 'Crunchy Carrots', description: 'A bunch of organic carrots.', weight: '1 lb', price: 1.49, imageId: 'product-carrots', categorySlug: 'vegetables' },
-    { id: '7', name: 'Granny Smith Apples', description: 'Tart and crisp green apples.', weight: '1 lb', price: 1.99, imageId: 'product-apples', categorySlug: 'fruits' },
-    { id: '8', name: 'Chicken Breast', description: 'Boneless, skinless chicken breast.', weight: '1 lb', price: 5.99, imageId: 'product-chicken', categorySlug: 'meat-fish' },
+    { id: '1', name: 'Organic Bananas', description: 'A bunch of fresh, organic bananas.', weight: 'Approx. 500g', price: 1.99, imageUrls: ['product-banana'], categorySlug: 'fruits', offer: { type: 'percentage', value: 10} },
+    { id: '2', name: 'Farm Fresh Eggs', description: 'A dozen large, brown eggs.', weight: '12-pack', price: 3.49, imageUrls: ['product-eggs'], categorySlug: 'dairy' },
+    { id: '3', name: 'Whole Milk', description: 'A gallon of whole milk.', weight: '1 gallon', price: 2.99, imageUrls: ['product-milk'], categorySlug: 'dairy', offer: { type: 'fixed', value: 0.50} },
+    { id: '4', name: 'Sourdough Bread', description: 'A loaf of freshly baked sourdough bread.', weight: '1 loaf', price: 4.99, imageUrls: ['product-bread'], categorySlug: 'bakery' },
+    { id: '5', name: 'Ripe Tomatoes', description: 'Vine-ripened tomatoes, perfect for salads.', weight: '1 lb', price: 2.49, imageUrls: ['product-tomatoes'], categorySlug: 'vegetables' },
+    { id: '6', name: 'Crunchy Carrots', description: 'A bunch of organic carrots.', weight: '1 lb', price: 1.49, imageUrls: ['product-carrots'], categorySlug: 'vegetables' },
+    { id: '7', name: 'Granny Smith Apples', description: 'Tart and crisp green apples.', weight: '1 lb', price: 1.99, imageUrls: ['product-apples'], categorySlug: 'fruits' },
+    { id: '8', name: 'Chicken Breast', description: 'Boneless, skinless chicken breast.', weight: '1 lb', price: 5.99, imageUrls: ['product-chicken'], categorySlug: 'meat-fish' },
 ];
 
 export const user = {
