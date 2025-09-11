@@ -144,7 +144,7 @@ export default function AdminDashboardPage() {
                     : currentMonthOrdersCount > 0 ? 100 : 0;
 
                 setStats({
-                    totalRevenue: 0,
+                    totalRevenue: totalRevenue > 0 ? totalRevenue : 0,
                     revenueChange: isFinite(revenueChange) ? revenueChange : 0,
                     totalOrders: orders.length,
                     ordersChange: isFinite(ordersChange) ? ordersChange : 0,
@@ -336,7 +336,3 @@ export default function AdminDashboardPage() {
     </div>
   );
 }
-
-    
-
-    
