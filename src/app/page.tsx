@@ -83,7 +83,7 @@ export default function Home() {
   const placeholderHero = PlaceHolderImages.find((img) => img.id === 'hero-bg');
   
   const autoplayPlugin = React.useRef(
-    Autoplay({ delay: 3000, stopOnInteraction: true })
+    Autoplay({ delay: 2000, stopOnInteraction: true })
   )
 
   const ads = (appearance?.ads || []).filter(ad => ad.imageUrl);
@@ -130,30 +130,36 @@ export default function Home() {
 
         {ads.length > 0 && (
           <section className="w-full overflow-hidden">
-            <div className="flex animate-marquee-normal hover:pause">
-              {/* We render the ads twice for a seamless loop */}
-              {[...ads, ...ads].map((ad, index) => (
-                ad.imageUrl && (
-                  <div key={`${ad.id}-${index}`} className="flex-shrink-0 px-2">
-                    <Card className="overflow-hidden relative aspect-video w-[300px] sm:w-[400px]">
-                      <Image
-                        src={ad.imageUrl}
-                        alt={ad.description || 'Advertisement'}
-                        fill
-                        className="object-cover"
-                      />
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
-                      <div className="absolute bottom-0 left-0 p-2 md:p-3">
-                        {ad.description && <h3 className="font-bold text-sm md:text-base text-white">{ad.description}</h3>}
-                        <Button asChild size="sm" variant="secondary" className="mt-1 h-7 text-sm md:h-8">
-                          <Link href={ad.categorySlug ? `/categories/${ad.categorySlug}` : '/products'}>Order Now</Link>
-                        </Button>
-                      </div>
-                    </Card>
-                  </div>
-                )
-              ))}
-            </div>
+            <Carousel
+                opts={{ align: 'start', loop: true }}
+                plugins={[autoplayPlugin.current]}
+                onMouseEnter={autoplayPlugin.current.stop}
+                onMouseLeave={autoplayPlugin.current.reset}
+            >
+                <CarouselContent className="-ml-2">
+                 {ads.map((ad, index) => (
+                    ad.imageUrl && (
+                        <CarouselItem key={`${ad.id}-${index}`} className="basis-auto pl-2">
+                            <Card className="overflow-hidden relative aspect-video w-[300px] sm:w-[400px]">
+                            <Image
+                                src={ad.imageUrl}
+                                alt={ad.description || 'Advertisement'}
+                                fill
+                                className="object-cover"
+                            />
+                            <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
+                            <div className="absolute bottom-0 left-0 p-2 md:p-3">
+                                {ad.description && <h3 className="font-bold text-sm md:text-base text-white">{ad.description}</h3>}
+                                <Button asChild size="sm" variant="secondary" className="mt-1 h-7 text-sm md:h-8">
+                                <Link href={ad.categorySlug ? `/categories/${ad.categorySlug}` : '/products'}>Order Now</Link>
+                                </Button>
+                            </div>
+                            </Card>
+                        </CarouselItem>
+                    )
+                 ))}
+                </CarouselContent>
+            </Carousel>
           </section>
         )}
 
