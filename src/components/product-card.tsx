@@ -8,30 +8,14 @@ import { Button } from '@/components/ui/button';
 import {
   Card,
   CardContent,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle,
 } from '@/components/ui/card';
 import type { Product } from '@/lib/data';
 import useCart from '@/hooks/use-cart';
+import { calculateDiscountedPrice } from '@/lib/utils';
 
 type ProductCardProps = {
   product: Product;
 };
-
-function calculateDiscountedPrice(product: Product) {
-    if (!product.offer || product.offer.value <= 0) {
-        return null;
-    }
-    if (product.offer.type === 'percentage') {
-        return product.price * (1 - product.offer.value / 100);
-    }
-    if (product.offer.type === 'fixed') {
-        return product.price - product.offer.value;
-    }
-    return null;
-}
 
 const ProductCard: FC<ProductCardProps> = ({ product }) => {
   const discountedPrice = calculateDiscountedPrice(product);
@@ -40,8 +24,7 @@ const ProductCard: FC<ProductCardProps> = ({ product }) => {
 
   return (
     <Card className="flex h-full flex-col overflow-hidden">
-      <CardHeader className="p-0">
-        <div className="relative aspect-[4/3] w-full">
+        <div className="relative aspect-[3/4] w-full">
           {imageUrl && (
             <Image
               src={imageUrl}
@@ -50,28 +33,32 @@ const ProductCard: FC<ProductCardProps> = ({ product }) => {
               className="object-cover"
             />
           )}
+           <Button 
+                size="icon" 
+                className="absolute top-2 right-2 h-8 w-8 rounded-full shadow-lg" 
+                style={{ backgroundColor: 'hsl(var(--accent))', color: 'hsl(var(--accent-foreground))' }} 
+                onClick={() => addItem(product)}
+                aria-label={`Add ${product.name} to cart`}
+            >
+                <Plus className="h-4 w-4" />
+            </Button>
         </div>
-      </CardHeader>
-      <CardContent className="flex-1 p-2 md:p-3">
-        <CardTitle className="mb-1 text-sm font-medium">{product.name}</CardTitle>
-        <CardDescription className="text-xs">{product.weight}</CardDescription>
-      </CardContent>
-      <CardFooter className="flex items-center justify-between p-2 pt-0 md:p-3">
-        <div className="flex flex-col">
+      <CardContent className="flex-1 p-2 md:p-3 flex flex-col justify-between">
+        <div>
+            <h3 className="mb-1 text-sm font-medium leading-tight line-clamp-2">{product.name}</h3>
+            <p className="text-xs text-muted-foreground">{product.weight}</p>
+        </div>
+        <div className="mt-2">
             {discountedPrice !== null && discountedPrice < product.price ? (
-                <>
+                <div className="flex items-baseline gap-1.5">
                     <p className="text-base font-bold text-foreground">${discountedPrice.toFixed(2)}</p>
                     <p className="text-xs font-medium text-muted-foreground line-through">${product.price.toFixed(2)}</p>
-                </>
+                </div>
             ) : (
                  <p className="text-base font-bold text-foreground">${product.price.toFixed(2)}</p>
             )}
         </div>
-        <Button size="icon" className="h-8 w-8" style={{ backgroundColor: 'hsl(var(--accent))', color: 'hsl(var(--accent-foreground))' }} onClick={() => addItem(product)}>
-          <Plus className="h-4 w-4" />
-          <span className="sr-only">Add to cart</span>
-        </Button>
-      </CardFooter>
+      </CardContent>
     </Card>
   );
 };
