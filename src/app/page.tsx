@@ -83,7 +83,7 @@ export default function Home() {
   const placeholderHero = PlaceHolderImages.find((img) => img.id === 'hero-bg');
   
   const autoplayPlugin = React.useRef(
-    Autoplay({ delay: 2000, stopOnInteraction: true })
+    Autoplay({ delay: 2000, stopOnInteraction: false })
   )
 
   const ads = (appearance?.ads || []).filter(ad => ad.imageUrl);
