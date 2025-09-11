@@ -1,3 +1,4 @@
+
 'use client';
 
 import { z } from 'zod';
@@ -36,7 +37,7 @@ export function AddressForm({ isOpen, onClose, onSave, address }: AddressFormPro
   
   const form = useForm<z.infer<typeof AddressSchema>>({
     resolver: zodResolver(AddressSchema),
-    defaultValues: address || {
+    defaultValues: {
       line1: '',
       landmark: '',
       city: '',
@@ -44,11 +45,12 @@ export function AddressForm({ isOpen, onClose, onSave, address }: AddressFormPro
       zip: '',
       mobile: '',
       isDefault: false,
+      ...address,
     },
   });
 
   useEffect(() => {
-    form.reset(address || {
+    form.reset({
       line1: '',
       landmark: '',
       city: '',
@@ -56,8 +58,9 @@ export function AddressForm({ isOpen, onClose, onSave, address }: AddressFormPro
       zip: '',
       mobile: '',
       isDefault: false,
+      ...address,
     });
-  }, [address, form]);
+  }, [address, form, isOpen]);
 
 
   const onSubmit = (data: z.infer<typeof AddressSchema>) => {
