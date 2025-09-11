@@ -132,14 +132,14 @@ export default function Home() {
             <section>
             <Carousel
                 opts={{ align: 'start', loop: true }}
-                plugins={ads.length > 4 ? [autoplayPlugin.current] : []}
+                plugins={ads.length > 1 ? [autoplayPlugin.current] : []}
                 onMouseEnter={autoplayPlugin.current.stop}
                 onMouseLeave={autoplayPlugin.current.reset}
             >
                 <CarouselContent className="-ml-2">
                 {ads.map((ad) => (
-                    ad.imageUrl && <CarouselItem key={ad.id} className="pl-2 basis-auto">
-                    <Card className="overflow-hidden relative aspect-video w-64">
+                    ad.imageUrl && <CarouselItem key={ad.id} className="pl-2 basis-4/5 sm:basis-auto">
+                    <Card className="overflow-hidden relative aspect-video w-[300px] sm:w-[400px]">
                         
                         <Image
                             src={ad.imageUrl}
@@ -171,7 +171,7 @@ export default function Home() {
             >
                 <CarouselContent className="-ml-2">
                 {specialOffers.map((product) => (
-                    <CarouselItem key={product.id} className="basis-2/5 sm:basis-1/3 md:basis-1/4 lg:basis-1/5 pl-2">
+                    <CarouselItem key={product.id} className="basis-1/3 sm:basis-1/4 md:basis-1/5 lg:basis-1/6 pl-2">
                     <ProductCard product={product} />
                     </CarouselItem>
                 ))}
@@ -215,7 +215,7 @@ export default function Home() {
                   <Carousel opts={{ align: 'start', dragFree: true }}>
                     <CarouselContent className="-ml-2">
                       {categoryProducts.map((product) => (
-                        <CarouselItem key={product.id} className="basis-2/5 sm:basis-1/3 md:basis-1/4 lg:basis-1/5 pl-2">
+                        <CarouselItem key={product.id} className="basis-1/3 sm:basis-1/4 md:basis-1/5 lg:basis-1/6 pl-2">
                           <ProductCard product={product} />
                         </CarouselItem>
                       ))}
