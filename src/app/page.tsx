@@ -1,5 +1,7 @@
 
-import React from 'react';
+'use client';
+
+import React, { useState, useEffect } from 'react';
 import HomeHeader from '@/components/home-header';
 import CategoryCard from '@/components/category-card';
 import ProductCard from '@/components/product-card';
@@ -14,22 +16,68 @@ import {
 import { Product, Category, AppearanceSettings } from '@/lib/data';
 import { getCategories, getProducts, getSpecialOfferProducts, getAppearanceSettings } from '@/lib/firestore';
 import AdCarousel from '@/components/ad-carousel';
+import { Skeleton } from '@/components/ui/skeleton';
 
-export default async function Home() {
-  const [products, categories, specialOffers, appearance] = await Promise.all([
-      getProducts(),
-      getCategories(),
-      getSpecialOfferProducts(),
-      getAppearanceSettings(),
-  ]);
-  
-  // Display the first 4 categories as "Best Sellers" as a placeholder
-  // since we cannot securely query all orders on the server.
+export default function Home() {
+  const [products, setProducts] = useState<Product[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [specialOffers, setSpecialOffers] = useState<Product[]>([]);
+  const [appearance, setAppearance] = useState<AppearanceSettings | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    async function fetchData() {
+      try {
+        const [
+          productsData,
+          categoriesData,
+          specialOffersData,
+          appearanceData,
+        ] = await Promise.all([
+          getProducts(),
+          getCategories(),
+          getSpecialOfferProducts(),
+          getAppearanceSettings(),
+        ]);
+        setProducts(productsData);
+        setCategories(categoriesData);
+        setSpecialOffers(specialOffersData);
+        setAppearance(appearanceData);
+      } catch (error) {
+        console.error("Failed to fetch homepage data:", error);
+      } finally {
+        setLoading(false);
+      }
+    }
+    fetchData();
+  }, []);
+
   const topCategories = categories.slice(0, 4);
 
   const heroTitle = appearance?.heroTitle || "Freshness at Your Fingertips";
   const heroSubtitle = appearance?.heroSubtitle || "The best groceries, delivered fresh to your door daily.";
   const heroImageUrl = appearance?.heroImageUrl || "https://picsum.photos/seed/101/1200/800";
+
+  if (loading) {
+    return (
+      <>
+        <HomeHeader />
+        <div className="space-y-8 p-4 pt-0 sm:p-6 sm:pt-0">
+          <Skeleton className="h-64 w-full rounded-b-2xl -mx-4 -mt-4 sm:-mx-6 sm:-mt-6" />
+          <div className="-mt-16 space-y-4">
+             <Skeleton className="h-12 w-full shadow-lg" />
+          </div>
+          <Skeleton className="h-48 w-full" />
+           <div className="space-y-4">
+              <Skeleton className="h-6 w-1/3" />
+              <div className="grid grid-cols-4 gap-3 sm:grid-cols-5 md:grid-cols-6 lg:grid-cols-8">
+                {Array.from({ length: 8 }).map((_, i) => <Skeleton key={i} className="h-24 w-full" />)}
+              </div>
+           </div>
+        </div>
+      </>
+    )
+  }
 
   return (
     <>
