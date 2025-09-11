@@ -60,23 +60,23 @@ export default function AdminDashboardPage() {
                 const productPriceMap = new Map(products.map(p => [p.name, p]));
 
                 const getRefundAmount = (order: Order): number => {
-                    if (!order.returnRequest) return order.total; // Fallback for older data
+                    if (!order.returnRequest) return 0;
                     
                     return order.returnRequest.items.reduce((sum, item) => {
                         const product = productPriceMap.get(item.productName);
                         if (product) {
-                            // Find the original item in the order to check for discounts
                             const originalOrderItem = order.items.find(i => i.productName === item.productName);
                             if (originalOrderItem) {
-                               const pricePerItem = (order.total / order.items.reduce((acc, i) => acc + i.quantity, 0));
+                               const totalQuantity = order.items.reduce((acc, i) => acc + i.quantity, 0);
+                               const pricePerItem = totalQuantity > 0 ? (order.total / totalQuantity) : 0;
                                const originalProduct = products.find(p => p.name === item.productName);
                                const discountedPrice = originalProduct ? (calculateDiscountedPrice(originalProduct) ?? originalProduct.price) : pricePerItem;
 
                                 return sum + (discountedPrice * item.quantity);
                             }
                         }
-                        // Fallback if product not found (e.g., deleted product)
-                        return sum + (order.total / order.items.length) * item.quantity;
+                        const totalItemsInOrder = order.items.length || 1;
+                        return sum + (order.total / totalItemsInOrder) * item.quantity;
                     }, 0);
                 };
 
