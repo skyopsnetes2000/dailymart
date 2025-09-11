@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -40,7 +39,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { type Product, type Category } from '@/lib/data';
-import { Pencil, PlusCircle, Trash2 } from 'lucide-react';
+import { Pencil, PlusCircle, Search, Trash2 } from 'lucide-react';
 import Image from 'next/image';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -62,6 +61,8 @@ export default function AdminProductsPage() {
   const [categories, setCategories] = useState<Category[]>([]);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState('all');
   const { toast } = useToast();
 
   useEffect(() => {
@@ -147,6 +148,15 @@ export default function AdminProductsPage() {
     }
   };
 
+  const filteredProducts = products.filter((product) => {
+    const matchesCategory =
+      selectedCategory === 'all' || product.categorySlug === selectedCategory;
+    const matchesSearch = product.name
+      .toLowerCase()
+      .includes(searchTerm.toLowerCase());
+    return matchesCategory && matchesSearch;
+  });
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -155,6 +165,31 @@ export default function AdminProductsPage() {
           <PlusCircle className="mr-2 h-4 w-4" />
           Add New Product
         </Button>
+      </div>
+
+      <div className="flex gap-2">
+        <div className="relative flex-1">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+          <Input
+            placeholder="Search for products..."
+            className="pl-10 h-10"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+          />
+        </div>
+        <Select onValueChange={setSelectedCategory} defaultValue="all">
+          <SelectTrigger className="w-[180px] h-10">
+            <SelectValue placeholder="Category" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All Categories</SelectItem>
+            {categories.map((category) => (
+              <SelectItem key={category.id} value={category.slug}>
+                {category.name}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
       </div>
 
       <Dialog
@@ -295,7 +330,7 @@ export default function AdminProductsPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {products.map((product) => {
+              {filteredProducts.map((product) => {
                 return (
                   <TableRow key={product.id}>
                      <TableCell>
@@ -338,4 +373,5 @@ export default function AdminProductsPage() {
       </Card>
     </div>
   );
-}
+
+    
