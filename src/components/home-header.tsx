@@ -1,6 +1,10 @@
+
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useAuthState } from 'react-firebase-hooks/auth';
+import { auth } from '@/lib/firebase';
+import { getAddresses } from '@/lib/firestore';
 import { MapPin, ChevronDown, UtensilsCrossed } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
@@ -10,33 +14,27 @@ import {
   SheetTitle,
   SheetTrigger,
 } from '@/components/ui/sheet';
-import { user as staticUser, type Address } from '@/lib/data';
+import { type Address } from '@/lib/data';
 
-const STORAGE_KEY = 'user_addresses';
 
 export default function HomeHeader() {
+  const [user] = useAuthState(auth);
   const [addresses, setAddresses] = useState<Address[]>([]);
   const [selectedAddress, setSelectedAddress] = useState<Address | null>(null);
 
   useEffect(() => {
-    let storedAddresses: Address[] = [];
-    try {
-      const storedAddressesRaw = localStorage.getItem(STORAGE_KEY);
-      if (storedAddressesRaw) {
-        storedAddresses = JSON.parse(storedAddressesRaw);
-      } else {
-        storedAddresses = staticUser.addresses;
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(staticUser.addresses));
-      }
-    } catch (error) {
-      console.warn("Could not access localStorage. Using initial addresses.");
-      storedAddresses = staticUser.addresses;
+    async function fetchAddresses() {
+        if (user) {
+            const userAddresses = await getAddresses(user.uid);
+            setAddresses(userAddresses);
+            const defaultAddress = userAddresses.find(addr => addr.isDefault) || userAddresses[0];
+            if (defaultAddress) {
+                setSelectedAddress(defaultAddress);
+            }
+        }
     }
-
-    setAddresses(storedAddresses);
-    const defaultAddress = storedAddresses.find(addr => addr.isDefault) || storedAddresses[0] || null;
-    setSelectedAddress(defaultAddress);
-  }, []);
+    fetchAddresses();
+  }, [user]);
 
   return (
     <header className="sticky top-0 z-40 bg-background/80 p-4 backdrop-blur-sm">
