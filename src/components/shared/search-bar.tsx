@@ -1,14 +1,21 @@
 
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Input } from '@/components/ui/input';
 import { Search } from 'lucide-react';
+import { Skeleton } from '@/components/ui/skeleton';
 
 export default function SearchBar({ placeholder = "Search for products..." }: { placeholder?: string }) {
   const router = useRouter();
   const [searchTerm, setSearchTerm] = useState('');
+  const [isClient, setIsClient] = useState(false);
+
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
+
 
   const handleSearch = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -16,6 +23,10 @@ export default function SearchBar({ placeholder = "Search for products..." }: { 
       router.push(`/search?q=${encodeURIComponent(searchTerm.trim())}`);
     }
   };
+
+  if (!isClient) {
+    return <Skeleton className="h-12 w-full" />;
+  }
 
   return (
     <form onSubmit={handleSearch}>
