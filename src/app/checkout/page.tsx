@@ -2,7 +2,7 @@
 
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useAuthState } from 'react-firebase-hooks/auth';
@@ -37,6 +37,7 @@ export default function CheckoutPage() {
   const [selectedAddressId, setSelectedAddressId] = useState<string | null>(null);
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [isPlacingOrder, setIsPlacingOrder] = useState(false);
+  const [subtotal, setSubtotal] = useState(0);
 
   useEffect(() => {
     if (!loading && !user) {
@@ -48,6 +49,13 @@ export default function CheckoutPage() {
     if (items.length === 0 && !isPlacingOrder) {
       router.replace('/cart');
     }
+    
+    const newSubtotal = items.reduce((total, item) => {
+        const price = calculateDiscountedPrice(item.product) ?? item.product.price;
+        return total + price * item.quantity;
+    }, 0);
+    setSubtotal(newSubtotal);
+
   }, [items, router, isPlacingOrder]);
 
   useEffect(() => {
@@ -78,12 +86,6 @@ export default function CheckoutPage() {
       setIsFormOpen(false);
   };
 
-
-  const subtotal = items.reduce((total, item) => {
-    const price = calculateDiscountedPrice(item.product) ?? item.product.price;
-    return total + price * item.quantity;
-  }, 0);
-  
   const isOrderValueMet = subtotal >= MINIMUM_ORDER_VALUE;
   const amountNeeded = MINIMUM_ORDER_VALUE - subtotal;
 
