@@ -8,7 +8,7 @@ import { cn } from '@/lib/utils';
 import { Separator } from '@/components/ui/separator';
 
 const navItems = [
-  { href: '/admin', label: 'Dashboard', icon: Home },
+  { href: '/admin/dashboard', label: 'Dashboard', icon: Home },
   { href: '/admin/products', label: 'Products', icon: Package },
   { href: '/admin/orders', label: 'Orders', icon: ShoppingCart },
   { href: '/admin/categories', label: 'Categories', icon: LayoutGrid },
@@ -21,23 +21,23 @@ export default function AdminSidebar({ isMobile = false }: { isMobile?: boolean 
 
   return (
     <aside className={cn(
-        "flex-col border-r bg-card text-card-foreground",
+        "flex-col border-r bg-muted/20 text-foreground",
         isMobile ? "flex h-full" : "hidden w-64 md:flex"
     )}>
       <div className="flex h-16 items-center border-b px-6">
-        <Link href="/admin" className="flex items-center gap-2 font-semibold">
+        <Link href="/admin/dashboard" className="flex items-center gap-2 font-semibold">
           <UtensilsCrossed className="h-6 w-6 text-primary" />
           <span>DailyMart Admin</span>
         </Link>
       </div>
-      <nav className="flex-1 space-y-2 p-4">
+      <nav className="flex-1 space-y-1 p-2">
         {navItems.map((item) => (
           <Link
             key={item.href}
             href={item.href}
             className={cn(
-              'flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary',
-              pathname === item.href && 'bg-muted text-primary'
+              'flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:bg-primary/10 hover:text-primary',
+              pathname === item.href && 'bg-primary/10 font-medium text-primary'
             )}
           >
             <item.icon className="h-4 w-4" />
@@ -49,8 +49,10 @@ export default function AdminSidebar({ isMobile = false }: { isMobile?: boolean 
         <Separator className="my-2" />
         <Link
           href="/"
+          target="_blank"
+          rel="noopener noreferrer"
           className={cn(
-            'flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary'
+            'flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:bg-primary/10 hover:text-primary'
           )}
         >
           <ArrowUpRightFromSquare className="h-4 w-4" />

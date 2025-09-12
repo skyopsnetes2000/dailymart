@@ -37,7 +37,7 @@ export default function HomeHeader() {
   }, [user]);
 
   return (
-    <header className="sticky top-0 z-40 bg-background/80 p-4 backdrop-blur-sm">
+    <header className="sticky top-0 z-40 bg-background/80 p-4 backdrop-blur-sm border-b">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
            <UtensilsCrossed className="h-7 w-7 text-primary" />
@@ -46,17 +46,15 @@ export default function HomeHeader() {
         
         <Sheet>
           <SheetTrigger asChild>
-            <Button variant="ghost" className="flex items-center gap-2 text-sm">
-              <MapPin className="h-4 w-4" />
-              <span className="hidden sm:inline">Deliver to: </span>
-              {selectedAddress ? (
-                <>
-                  <span className="font-semibold">{selectedAddress.line1}</span>
-                  <ChevronDown className="h-4 w-4 opacity-50" />
-                </>
-              ) : (
-                <span className="font-semibold">Set Location</span>
-              )}
+            <Button variant="ghost" className="flex flex-col items-end gap-0 h-auto p-0">
+              <div className='flex items-center gap-1 text-xs text-muted-foreground'>
+                <span className="hidden sm:inline">Deliver to: </span>
+                 <MapPin className="h-3 w-3" />
+                 <ChevronDown className="h-3 w-3 opacity-50" />
+              </div>
+              <span className="font-semibold text-sm truncate max-w-[150px] sm:max-w-xs">
+                {selectedAddress ? selectedAddress.line1 : 'Select Location'}
+              </span>
             </Button>
           </SheetTrigger>
           <SheetContent side="bottom" className="rounded-t-lg">

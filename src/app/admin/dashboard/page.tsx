@@ -9,7 +9,7 @@ import { useEffect, useState } from 'react';
 import { getOrders, getProducts, getCategories } from '@/lib/firestore';
 import { Order, Product, Category } from '@/lib/data';
 import { subMonths, isWithinInterval, startOfMonth, endOfMonth, format } from 'date-fns';
-import { Bar, BarChart, ResponsiveContainer, XAxis, YAxis } from 'recharts';
+import { Bar, BarChart, ResponsiveContainer, XAxis, YAxis, Tooltip } from 'recharts';
 import {
   Table,
   TableBody,
@@ -19,6 +19,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { calculateDiscountedPrice } from '@/lib/utils';
+import Link from 'next/link';
 
 type DashboardStats = {
   totalRevenue: number;
@@ -37,6 +38,7 @@ type MonthlySales = {
 type TopItem = {
   name: string;
   sales: number;
+  slug?: string;
 }
 
 export default function AdminDashboardPage() {
@@ -102,19 +104,24 @@ export default function AdminDashboardPage() {
                 const currentMonthOrdersCount = orders.filter(o => isWithinInterval(new Date(o.date), { start: currentMonthStart, end: now })).length;
                 const lastMonthOrdersCount = orders.filter(o => isWithinInterval(new Date(o.date), { start: lastMonthStart, end: lastMonthEnd })).length;
 
-                const salesByProduct: { [key: string]: number } = {};
-                const salesByCategory: { [key: string]: number } = {};
+                const salesByProduct: { [key: string]: { sales: number; slug?: string; } } = {};
+                const salesByCategory: { [key: string]: { sales: number; slug?: string; } } = {};
+                
                 const productToCategoryMap = new Map(products.map(p => [p.name, p.categorySlug]));
-                const categorySlugToNameMap = new Map(categories.map(c => [c.slug, c.name]));
+                const categorySlugToNameMap = new Map(categories.map(c => [c.slug, {name: c.name, slug: c.slug}]));
                 
                 orders.filter(o => o.status === 'Delivered').forEach(order => {
                     order.items.forEach(item => {
-                        salesByProduct[item.productName] = (salesByProduct[item.productName] || 0) + item.quantity;
+                        if (!salesByProduct[item.productName]) salesByProduct[item.productName] = { sales: 0 };
+                        salesByProduct[item.productName].sales += item.quantity;
                         
                         const categorySlug = productToCategoryMap.get(item.productName);
                         if (categorySlug) {
-                            const categoryName = categorySlugToNameMap.get(categorySlug) || categorySlug;
-                            salesByCategory[categoryName] = (salesByCategory[categoryName] || 0) + item.quantity;
+                            const categoryInfo = categorySlugToNameMap.get(categorySlug);
+                            if (categoryInfo) {
+                                if (!salesByCategory[categoryInfo.name]) salesByCategory[categoryInfo.name] = { sales: 0, slug: categoryInfo.slug };
+                                salesByCategory[categoryInfo.name].sales += item.quantity;
+                            }
                         }
                     });
                 });
@@ -130,15 +137,15 @@ export default function AdminDashboardPage() {
                 setMonthlySales(last6Months);
 
                 const sortedProducts = Object.entries(salesByProduct)
-                    .sort(([, a], [, b]) => b - a)
+                    .sort(([, a], [, b]) => b.sales - a.sales)
                     .slice(0, 5)
-                    .map(([name, sales]) => ({ name, sales }));
+                    .map(([name, data]) => ({ name, sales: data.sales }));
                 setTopProducts(sortedProducts);
                 
                 const sortedCategories = Object.entries(salesByCategory)
-                    .sort(([, a], [, b]) => b - a)
+                    .sort(([, a], [, b]) => b.sales - a.sales)
                     .slice(0, 5)
-                    .map(([name, sales]) => ({ name, sales }));
+                    .map(([name, data]) => ({ name, sales: data.sales, slug: data.slug }));
                 setTopCategories(sortedCategories);
                 
                 const revenueChange = lastMonthRevenue > 0
@@ -187,7 +194,8 @@ export default function AdminDashboardPage() {
     
     const formatPercentage = (change: number) => {
         const sign = change >= 0 ? '+' : '';
-        return `${sign}${change.toFixed(1)}%`;
+        const color = change >= 0 ? 'text-green-600' : 'text-red-600';
+        return <span className={color}>{`${sign}${change.toFixed(1)}%`}</span>;
     }
 
     return (
@@ -225,9 +233,9 @@ export default function AdminDashboardPage() {
             </CardHeader>
             <CardContent>
                 <div className="text-2xl font-bold">{stats.totalProducts}</div>
-                <p className="text-xs text-muted-foreground">
-                Total products in store
-                </p>
+                 <Button asChild variant="link" className="text-xs p-0 h-auto">
+                  <Link href="/admin/products">View all products</Link>
+                </Button>
             </CardContent>
             </Card>
             <Card>
@@ -237,9 +245,9 @@ export default function AdminDashboardPage() {
             </CardHeader>
             <CardContent>
                 <div className="text-2xl font-bold">{stats.totalCategories}</div>
-                <p className="text-xs text-muted-foreground">
-                Total categories available
-                </p>
+                 <Button asChild variant="link" className="text-xs p-0 h-auto">
+                  <Link href="/admin/categories">Manage categories</Link>
+                </Button>
             </CardContent>
             </Card>
         </div>
@@ -248,7 +256,7 @@ export default function AdminDashboardPage() {
             <Card className="col-span-4">
             <CardHeader>
                 <CardTitle>Overview</CardTitle>
-                <CardDescription>Monthly revenue overview.</CardDescription>
+                <CardDescription>Monthly net revenue for the last 6 months.</CardDescription>
             </CardHeader>
             <CardContent className="pl-2">
                 <ResponsiveContainer width="100%" height={350}>
@@ -267,6 +275,14 @@ export default function AdminDashboardPage() {
                     axisLine={false}
                     tickFormatter={(value) => `₹${value}`}
                     />
+                    <Tooltip
+                      cursor={{ fill: 'hsl(var(--accent))' }}
+                      contentStyle={{
+                        backgroundColor: 'hsl(var(--background))',
+                        border: '1px solid hsl(var(--border))',
+                        borderRadius: 'var(--radius)',
+                      }}
+                    />
                     <Bar
                     dataKey="total"
                     fill="hsl(var(--primary))"
@@ -281,7 +297,7 @@ export default function AdminDashboardPage() {
                 <CardHeader>
                 <CardTitle>Top Selling Products</CardTitle>
                 <CardDescription>
-                    The most sold products this month.
+                    The most sold products based on delivered orders.
                 </CardDescription>
                 </CardHeader>
                 <CardContent>
@@ -289,7 +305,7 @@ export default function AdminDashboardPage() {
                     <TableHeader>
                         <TableRow>
                         <TableHead>Product</TableHead>
-                        <TableHead className="text-right">Sales</TableHead>
+                        <TableHead className="text-right">Units Sold</TableHead>
                         </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -311,7 +327,7 @@ export default function AdminDashboardPage() {
                 <CardHeader>
                 <CardTitle>Top Selling Categories</CardTitle>
                 <CardDescription>
-                    The most popular categories this month.
+                    The most popular categories based on delivered orders.
                 </CardDescription>
                 </CardHeader>
                 <CardContent>
@@ -319,13 +335,17 @@ export default function AdminDashboardPage() {
                     <TableHeader>
                         <TableRow>
                         <TableHead>Category</TableHead>
-                        <TableHead className="text-right">Sales</TableHead>
+                        <TableHead className="text-right">Units Sold</TableHead>
                         </TableRow>
                     </TableHeader>
                     <TableBody>
                         {topCategories.length > 0 ? topCategories.map((category) => (
                         <TableRow key={category.name}>
-                            <TableCell className="font-medium">{category.name}</TableCell>
+                            <TableCell className="font-medium">
+                               <Button asChild variant="link" className="p-0 h-auto font-medium">
+                                <Link href={`/admin/products?category=${category.slug}`}>{category.name}</Link>
+                               </Button>
+                            </TableCell>
                             <TableCell className="text-right">{category.sales}</TableCell>
                         </TableRow>
                         )) : (

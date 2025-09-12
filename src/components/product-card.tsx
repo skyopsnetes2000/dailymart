@@ -13,6 +13,7 @@ import {
 import type { Product } from '@/lib/data';
 import useCart from '@/hooks/use-cart';
 import { calculateDiscountedPrice } from '@/lib/utils';
+import { Badge } from '@/components/ui/badge';
 
 type ProductCardProps = {
   product: Product;
@@ -22,10 +23,11 @@ const ProductCard: FC<ProductCardProps> = ({ product }) => {
   const discountedPrice = calculateDiscountedPrice(product);
   const imageUrl = product.imageUrls && product.imageUrls.length > 0 ? product.imageUrls[0] : '';
   const { addItem } = useCart();
+  const hasOffer = discountedPrice !== null && discountedPrice < product.price;
 
   return (
     <Card className="group flex h-full flex-col overflow-hidden transition-all duration-300 hover:shadow-lg hover:-translate-y-1">
-        <div className="relative aspect-[3/4] w-full overflow-hidden">
+        <div className="relative aspect-[4/3] w-full overflow-hidden">
           {imageUrl && (
             <Image
               src={imageUrl}
@@ -34,14 +36,19 @@ const ProductCard: FC<ProductCardProps> = ({ product }) => {
               className="object-cover transition-transform duration-300 group-hover:scale-105"
             />
           )}
+          {hasOffer && (
+            <Badge variant="destructive" className="absolute top-2 right-2">
+              {product.offer?.type === 'percentage' ? `${product.offer.value}% OFF` : `₹${product.offer?.value} OFF`}
+            </Badge>
+          )}
         </div>
       <CardContent className="flex-1 p-2 md:p-3 flex flex-col justify-between">
         <div>
-            <h3 className="mb-1 text-sm font-medium leading-tight line-clamp-2">{product.name}</h3>
             <p className="text-xs text-muted-foreground">{product.weight}</p>
+            <h3 className="mb-1 text-sm font-medium leading-tight line-clamp-2">{product.name}</h3>
         </div>
         <div className="mt-2 flex justify-between items-center">
-            {discountedPrice !== null && discountedPrice < product.price ? (
+            {hasOffer ? (
                 <div className="flex flex-col items-start gap-0">
                     <p className="text-base font-bold text-foreground">₹{discountedPrice.toFixed(2)}</p>
                     <p className="text-xs font-medium text-muted-foreground line-through">₹{product.price.toFixed(2)}</p>
@@ -51,8 +58,8 @@ const ProductCard: FC<ProductCardProps> = ({ product }) => {
             )}
              <Button 
                 size="icon" 
-                className="h-8 w-8 rounded-full shadow-md" 
-                style={{ backgroundColor: 'hsl(var(--accent))', color: 'hsl(var(--accent-foreground))' }} 
+                variant="outline"
+                className="h-8 w-8 rounded-full shadow-sm" 
                 onClick={(e) => { e.preventDefault(); addItem(product); }}
                 aria-label={`Add ${product.name} to cart`}
             >
