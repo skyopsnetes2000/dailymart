@@ -83,28 +83,23 @@ const useCartStore = create<CartStore>((set, get) => ({
         description: `${product.name} has been added.`,
     });
 
-    const existingItem = items.find((item) => item.product.id === product.id);
-    let newItems;
-    if (existingItem) {
-        newItems = items.map((item) =>
-            item.product.id === product.id
-              ? { ...item, quantity: item.quantity + 1 }
-              : item
-        );
-    } else {
-        newItems = [...items, { product, quantity: 1 }];
-    }
-
     if (userId) {
-      // Optimistic update for logged-in users
-      set({ items: newItems }); 
       addToCart(userId, product).catch(error => {
         console.error("Failed to add item to cart:", error);
         toast({ title: "Update Failed", description: "Could not add item to cart.", variant: 'destructive'});
-        // The onSnapshot listener will eventually correct the state
       });
     } else {
-        // Update local state and localStorage for logged-out users
+        const existingItem = items.find((item) => item.product.id === product.id);
+        let newItems;
+        if (existingItem) {
+            newItems = items.map((item) =>
+                item.product.id === product.id
+                  ? { ...item, quantity: item.quantity + 1 }
+                  : item
+            );
+        } else {
+            newItems = [...items, { product, quantity: 1 }];
+        }
         set({ items: newItems });
         setLocalCart(newItems);
     }
@@ -116,15 +111,15 @@ const useCartStore = create<CartStore>((set, get) => ({
         title: "Item removed",
         description: "The item has been removed from your cart.",
     });
-    const newItems = items.filter((item) => item.product.id !== productId);
-    set({ items: newItems }); // Optimistic update
 
     if (userId) {
         await removeCartItem(userId, productId).catch(error => {
             console.error("Failed to remove item:", error);
-            set({items}); // Revert on error
+            toast({ title: "Update Failed", description: "Could not remove item from cart.", variant: 'destructive'});
         });
     } else {
+        const newItems = items.filter((item) => item.product.id !== productId);
+        set({ items: newItems });
         setLocalCart(newItems);
     }
   },
@@ -132,22 +127,21 @@ const useCartStore = create<CartStore>((set, get) => ({
   updateQuantity: async (productId, quantity) => {
     const { userId, items } = get();
     
-    let newItems;
-    if (quantity <= 0) {
-        newItems = items.filter((item) => item.product.id !== productId);
-    } else {
-        newItems = items.map((item) =>
-            item.product.id === productId ? { ...item, quantity } : item
-        );
-    }
-    set({ items: newItems }); // Optimistic update
-
     if (userId) {
         await updateCartItemQuantity(userId, productId, quantity).catch(error => {
              console.error("Failed to update quantity:", error);
-             set({items}); // Revert on error
+             toast({ title: "Update Failed", description: "Could not update item quantity.", variant: 'destructive'});
         });
     } else {
+        let newItems;
+        if (quantity <= 0) {
+            newItems = items.filter((item) => item.product.id !== productId);
+        } else {
+            newItems = items.map((item) =>
+                item.product.id === productId ? { ...item, quantity } : item
+            );
+        }
+        set({ items: newItems });
         setLocalCart(newItems);
     }
   },
@@ -158,11 +152,11 @@ const useCartStore = create<CartStore>((set, get) => ({
         title: 'Cart Cleared',
         description: 'Your shopping cart has been emptied.',
     });
-    set({ items: [] }); // Optimistic update
-
+    
     if (userId) {
         await clearFirestoreCart(userId);
     } else {
+        set({ items: [] });
         setLocalCart([]);
     }
   },
