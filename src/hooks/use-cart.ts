@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { create } from 'zustand';
@@ -66,26 +67,36 @@ const useCart = create<CartStore>((set, get) => ({
     }
   },
 
-  addItem: async (product) => {
+  addItem: (product) => {
     const { userId, items } = get();
     toast({
         title: "Added to cart",
         description: `${product.name} has been added.`,
     });
-    if (userId) {
-        await addToCart(userId, product);
+
+    const existingItem = items.find((item) => item.product.id === product.id);
+    let newItems;
+    if (existingItem) {
+        newItems = items.map((item) =>
+            item.product.id === product.id
+              ? { ...item, quantity: item.quantity + 1 }
+              : item
+        );
     } else {
-        const existingItem = items.find((item) => item.product.id === product.id);
-        let newItems;
-        if (existingItem) {
-            newItems = items.map((item) =>
-                item.product.id === product.id
-                  ? { ...item, quantity: item.quantity + 1 }
-                  : item
-            );
-        } else {
-            newItems = [...items, { product, quantity: 1 }];
-        }
+        newItems = [...items, { product, quantity: 1 }];
+    }
+
+    if (userId) {
+      // Optimistic update for logged-in users
+      set({ items: newItems }); 
+      addToCart(userId, product).catch(error => {
+        // On error, revert to the state from Firestore by forcing a re-fetch/re-sync
+        console.error("Failed to add item to cart:", error);
+        toast({ title: "Update Failed", description: "Could not add item to cart.", variant: 'destructive'});
+        // The onSnapshot listener will eventually correct the state, or we could force it here.
+      });
+    } else {
+        // Update local state and localStorage for logged-out users
         set({ items: newItems });
         setLocalCart(newItems);
     }
