@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuthState } from 'react-firebase-hooks/auth';
 import { auth } from '@/lib/firebase';
@@ -19,6 +19,7 @@ export default function AdminLayout({
 }) {
   const [user, loading] = useAuthState(auth);
   const router = useRouter();
+  const [isMobileSheetOpen, setIsMobileSheetOpen] = useState(false);
 
   useEffect(() => {
     if (!loading) {
@@ -44,7 +45,7 @@ export default function AdminLayout({
       <AdminSidebar />
       <main className="flex-1 p-4 sm:p-6">
         <header className="md:hidden border-b pb-4 mb-4 flex justify-between items-center">
-             <Sheet>
+             <Sheet open={isMobileSheetOpen} onOpenChange={setIsMobileSheetOpen}>
                 <SheetTrigger asChild>
                   <Button size="icon" variant="outline">
                     <PanelLeft className="h-5 w-5" />
@@ -55,7 +56,7 @@ export default function AdminLayout({
                   <SheetHeader className='p-4'>
                     <SheetTitle className="sr-only">Menu</SheetTitle>
                   </SheetHeader>
-                  <AdminSidebar isMobile={true} />
+                  <AdminSidebar isMobile={true} onLinkClick={() => setIsMobileSheetOpen(false)} />
                 </SheetContent>
               </Sheet>
         </header>
