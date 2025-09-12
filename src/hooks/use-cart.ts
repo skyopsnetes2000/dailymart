@@ -181,7 +181,11 @@ const useCart = () => {
 
     useEffect(() => {
         setIsClient(true);
-    }, []);
+        // Initial call to sync cart state on component mount
+        if (!store.isInitialized) {
+            store.initializeCart(auth.currentUser);
+        }
+    }, [store.isInitialized]);
 
     return isClient ? store : {
         ...store,
