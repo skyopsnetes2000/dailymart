@@ -1,0 +1,22 @@
+
+{
+  "name": "DailyMart",
+  "short_name": "DailyMart",
+  "description": "The best groceries, delivered fresh to your door daily.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#F5F5DC",
+  "theme_color": "#FF8C00",
+  "icons": [
+    {
+      "src": "https://firebasestorage.googleapis.com/v0/b/studio-4696204822-f7627.firebasestorage.app/o/Untitled%20Project.jpg?alt=media&token=c3220511-29bc-4130-9779-ff4d8e95bf1c",
+      "sizes": "192x192",
+      "type": "image/jpeg"
+    },
+    {
+      "src": "https://firebasestorage.googleapis.com/v0/b/studio-4696204822-f7627.firebasestorage.app/o/Untitled%20Project.jpg?alt=media&token=c3220511-29bc-4130-9779-ff4d8e95bf1c",
+      "sizes": "512x512",
+      "type": "image/jpeg"
+    }
+  ]
+}

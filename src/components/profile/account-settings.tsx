@@ -19,7 +19,7 @@ import { auth } from '@/lib/firebase';
 import { EmailAuthProvider, reauthenticateWithCredential, updatePassword } from 'firebase/auth';
 import { useToast } from '@/hooks/use-toast';
 import { useEffect, useState } from 'react';
-import { Loader2, Monitor, Moon, Sun } from 'lucide-react';
+import { Loader2, Monitor, Moon, Sun, Download } from 'lucide-react';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 
@@ -86,6 +86,58 @@ function ThemeSelector() {
     )
 }
 
+function PwaInstall() {
+  const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
+  const [isInstallable, setIsInstallable] = useState(false);
+  const { toast } = useToast();
+
+  useEffect(() => {
+    const handleBeforeInstallPrompt = (e: Event) => {
+      e.preventDefault();
+      setDeferredPrompt(e);
+      setIsInstallable(true);
+    };
+
+    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+    return () => window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+  }, []);
+
+  const handleInstallClick = async () => {
+    if (!deferredPrompt) return;
+
+    deferredPrompt.prompt();
+    const { outcome } = await deferredPrompt.userChoice;
+
+    if (outcome === 'accepted') {
+      toast({ title: 'Success', description: 'DailyMart has been installed!' });
+    } else {
+      toast({ title: 'Install Cancelled', description: 'You can install the app later from settings.' });
+    }
+
+    setDeferredPrompt(null);
+    setIsInstallable(false);
+  };
+
+  if (!isInstallable) {
+    return null; // Don't show anything if it's not installable (e.g., already installed or on desktop)
+  }
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>Get the App</CardTitle>
+        <CardDescription>Install the DailyMart app on your device for a better experience.</CardDescription>
+      </CardHeader>
+      <CardContent>
+        <Button onClick={handleInstallClick} className="w-full">
+          <Download className="mr-2 h-4 w-4" />
+          Install App
+        </Button>
+      </CardContent>
+    </Card>
+  );
+}
+
 
 export default function AccountSettings() {
   const { toast } = useToast();
@@ -142,6 +194,7 @@ export default function AccountSettings() {
 
   return (
     <div className="space-y-6">
+      <PwaInstall />
       <ThemeSelector />
       
        <Card>
