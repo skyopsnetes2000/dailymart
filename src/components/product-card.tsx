@@ -58,7 +58,6 @@ const ProductCard: FC<ProductCardProps> = ({ product }) => {
             )}
              <Button 
                 size="icon" 
-                variant="outline"
                 className="h-8 w-8 rounded-full shadow-sm" 
                 onClick={(e) => { e.preventDefault(); addItem(product); }}
                 aria-label={`Add ${product.name} to cart`}
