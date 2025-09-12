@@ -13,6 +13,7 @@ import { Product, Category, AppearanceSettings } from '@/lib/data';
 import { getCategories, getProducts, getSpecialOfferProducts, getAppearanceSettings } from '@/lib/firestore';
 import AdCarousel from '@/components/ad-carousel';
 import SearchBar from '@/components/shared/search-bar';
+import { Button } from '@/components/ui/button';
 
 export default async function Home() {
   const [
@@ -45,6 +46,9 @@ export default async function Home() {
             <div className="absolute inset-0 flex flex-col items-center justify-center text-center text-white p-4">
               <h1 className="font-headline text-3xl font-bold md:text-4xl">{heroTitle}</h1>
               <p className="mt-2 max-w-md text-base text-white/90">{heroSubtitle}</p>
+              <Button asChild className="mt-4">
+                <Link href="/products">Shop Now</Link>
+              </Button>
             </div>
         </section>
 
