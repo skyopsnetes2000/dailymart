@@ -47,23 +47,28 @@ const ProductCard: FC<ProductCardProps> = ({ product }) => {
             <p className="text-xs text-muted-foreground">{product.weight}</p>
             <h3 className="mb-1 text-sm font-medium leading-tight line-clamp-2">{product.name}</h3>
         </div>
-        <div className="mt-2 flex justify-between items-center">
+        <div className="mt-2 flex items-center justify-between">
+          <div className="flex flex-col">
             {hasOffer ? (
-                <div className="flex flex-col items-start gap-0">
-                    <p className="text-base font-bold text-foreground">₹{discountedPrice.toFixed(2)}</p>
-                    <p className="text-xs font-medium text-muted-foreground line-through">₹{product.price.toFixed(2)}</p>
-                </div>
+              <>
+                <p className="text-sm font-bold">₹{discountedPrice.toFixed(2)}</p>
+                <p className="text-xs text-muted-foreground line-through">
+                  ₹{product.price.toFixed(2)}
+                </p>
+              </>
             ) : (
-                 <p className="text-base font-bold text-foreground">₹{product.price.toFixed(2)}</p>
+              <p className="text-sm font-bold">₹{product.price.toFixed(2)}</p>
             )}
-             <Button 
-                size="icon" 
-                className="h-8 w-8 rounded-full shadow-sm" 
-                onClick={(e) => { e.preventDefault(); addItem(product); }}
-                aria-label={`Add ${product.name} to cart`}
-            >
-                <Plus className="h-4 w-4" />
-            </Button>
+          </div>
+          <Button
+            size="icon"
+            variant="default"
+            className="h-8 w-8 shrink-0 rounded-full shadow-sm"
+            onClick={(e) => { e.preventDefault(); addItem(product); }}
+            aria-label={`Add ${product.name} to cart`}
+          >
+            <Plus className="h-4 w-4" />
+          </Button>
         </div>
       </CardContent>
     </Card>
