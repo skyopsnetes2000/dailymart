@@ -90,13 +90,18 @@ function ReturnRequestDialog({ order, onReturnSuccess, disabled, disabledReason 
     return (
         <Dialog>
             <TooltipProvider>
-                <Tooltip>
-                    <TooltipTrigger asChild>
-                        {/* The Tooltip requires a single child, so if the button is disabled, we need to wrap it. */}
-                        {disabled ? <div>{dialogTriggerButton}</div> : dialogTriggerButton}
-                    </TooltipTrigger>
-                    {disabled && <TooltipContent><p>{disabledReason}</p></TooltipContent>}
-                </Tooltip>
+                {disabled ? (
+                    <Tooltip>
+                        <TooltipTrigger asChild>
+                            <div>{dialogTriggerButton}</div>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                            <p>{disabledReason}</p>
+                        </TooltipContent>
+                    </Tooltip>
+                ) : (
+                   <DialogTrigger asChild>{dialogTriggerButton}</DialogTrigger>
+                )}
             </TooltipProvider>
 
             <DialogContent>
