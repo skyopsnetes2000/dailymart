@@ -101,29 +101,25 @@ function PwaInstall() {
   }, []);
 
   const handleInstallClick = async () => {
-    if (!deferredPrompt) {
-        toast({
-            title: 'App Not Ready',
-            description: 'The app is not ready to be installed, or may already be installed.',
+    if (deferredPrompt) {
+        deferredPrompt.prompt();
+        const { outcome } = await deferredPrompt.userChoice;
+
+        if (outcome === 'accepted') {
+          toast({ title: 'Success', description: 'DailyMart has been installed!' });
+        } else {
+          toast({ title: 'Install Cancelled', description: 'You can install the app later from settings.' });
+        }
+        setDeferredPrompt(null);
+    } else {
+         toast({
+            title: 'App Not Ready for Installation',
+            description: 'The app may already be installed, or the install prompt was recently dismissed. Please try again later.',
             variant: 'destructive',
         });
-        return;
     }
-
-    deferredPrompt.prompt();
-    const { outcome } = await deferredPrompt.userChoice;
-
-    if (outcome === 'accepted') {
-      toast({ title: 'Success', description: 'DailyMart has been installed!' });
-    } else {
-      toast({ title: 'Install Cancelled', description: 'You can install the app later from settings.' });
-    }
-
-    setDeferredPrompt(null);
   };
   
-  // This component will always render the button, but it will only be functional
-  // when the `beforeinstallprompt` event has been fired and captured.
   return (
     <Card>
       <CardHeader>
@@ -131,7 +127,7 @@ function PwaInstall() {
         <CardDescription>Install the DailyMart app on your device for a better experience.</CardDescription>
       </CardHeader>
       <CardContent>
-        <Button onClick={handleInstallClick} className="w-full" disabled={!deferredPrompt}>
+        <Button onClick={handleInstallClick} className="w-full">
           <Download className="mr-2 h-4 w-4" />
           Install App
         </Button>
@@ -197,6 +193,7 @@ export default function AccountSettings() {
   return (
     <div className="space-y-6">
       <ThemeSelector />
+      
       <PwaInstall />
       
        <Card>
