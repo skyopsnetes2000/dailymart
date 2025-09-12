@@ -2,7 +2,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { notFound } from 'next/navigation';
+import { notFound, useParams } from 'next/navigation';
 import { getProduct, getProducts } from '@/lib/firestore';
 import type { Product } from '@/lib/data';
 import useCart from '@/hooks/use-cart';
@@ -21,16 +21,24 @@ import {
 } from '@/components/ui/carousel';
 import ProductCard from '@/components/product-card';
 
-export default function ProductDetailPage({ params }: { params: { id: string } }) {
+export default function ProductDetailPage() {
+    const params = useParams();
+    const { id } = params;
     const [product, setProduct] = useState<Product | null>(null);
     const [relatedProducts, setRelatedProducts] = useState<Product[]>([]);
     const [loading, setLoading] = useState(true);
     const { addItem } = useCart();
 
     useEffect(() => {
+        if (!id || typeof id !== 'string') {
+            setLoading(false);
+            notFound();
+            return;
+        }
+
         const fetchProduct = async () => {
             setLoading(true);
-            const fetchedProduct = await getProduct(params.id);
+            const fetchedProduct = await getProduct(id);
             if (fetchedProduct) {
                 setProduct(fetchedProduct);
                 const allProducts = await getProducts(fetchedProduct.categorySlug);
@@ -41,7 +49,7 @@ export default function ProductDetailPage({ params }: { params: { id: string } }
             setLoading(false);
         };
         fetchProduct();
-    }, [params.id]);
+    }, [id]);
 
     if (loading || !product) {
         return <div className="flex h-screen items-center justify-center">Loading...</div>;
@@ -116,4 +124,3 @@ export default function ProductDetailPage({ params }: { params: { id: string } }
         </div>
     );
 }
-
