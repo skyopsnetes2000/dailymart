@@ -20,6 +20,8 @@ import {
   CarouselPrevious,
 } from '@/components/ui/carousel';
 import ProductCard from '@/components/product-card';
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import { Skeleton } from '@/components/ui/skeleton';
 
 export default function ProductDetailPage() {
     const params = useParams();
@@ -52,7 +54,22 @@ export default function ProductDetailPage() {
     }, [id]);
 
     if (loading || !product) {
-        return <div className="flex h-screen items-center justify-center">Loading...</div>;
+        return (
+            <div>
+                <PageHeader title="Loading..." />
+                <div className="p-4 sm:p-6 mx-auto max-w-4xl">
+                     <div className="grid md:grid-cols-2 gap-8">
+                        <Skeleton className="aspect-square w-full rounded-lg" />
+                        <div className="space-y-4">
+                            <Skeleton className="h-10 w-3/4" />
+                            <Skeleton className="h-6 w-1/4" />
+                            <Skeleton className="h-20 w-full" />
+                            <Skeleton className="h-12 w-full" />
+                        </div>
+                    </div>
+                </div>
+            </div>
+        )
     }
 
     const discountedPrice = calculateDiscountedPrice(product);
@@ -63,38 +80,37 @@ export default function ProductDetailPage() {
             <PageHeader title={product.name} />
             <div className="p-4 sm:p-6">
                 <div className="mx-auto max-w-4xl">
-                    <div className="grid md:grid-cols-2 gap-8">
-                        <Carousel className="w-full">
-                            <CarouselContent>
-                                {product.imageUrls.map((url, index) => (
-                                    <CarouselItem key={index}>
-                                        <div className="relative aspect-square w-full overflow-hidden rounded-lg shadow-lg">
-                                            <Image
-                                                src={url}
-                                                alt={`${product.name} image ${index + 1}`}
-                                                fill
-                                                className="object-cover"
-                                            />
-                                        </div>
-                                    </CarouselItem>
-                                ))}
-                            </CarouselContent>
-                            {product.imageUrls.length > 1 && (
-                                <>
-                                    <CarouselPrevious className="left-2" />
-                                    <CarouselNext className="right-2" />
-                                </>
-                            )}
-                        </Carousel>
-                        <div className="space-y-4">
-                            <div className="space-y-2">
-                                <h1 className="text-3xl font-bold">{product.name}</h1>
-                                {hasOffer && (
-                                    <Badge variant="destructive">
-                                        {product.offer?.type === 'percentage' ? `${product.offer.value}% OFF` : `₹${product.offer?.value} OFF`}
-                                    </Badge>
+                    <div className="grid md:grid-cols-2 gap-6">
+                        <Card className="overflow-hidden">
+                           <Carousel className="w-full">
+                                <CarouselContent>
+                                    {product.imageUrls.map((url, index) => (
+                                        <CarouselItem key={index}>
+                                            <div className="relative aspect-square w-full">
+                                                <Image
+                                                    src={url}
+                                                    alt={`${product.name} image ${index + 1}`}
+                                                    fill
+                                                    className="object-cover"
+                                                />
+                                            </div>
+                                        </CarouselItem>
+                                    ))}
+                                </CarouselContent>
+                                {product.imageUrls.length > 1 && (
+                                    <>
+                                        <CarouselPrevious className="left-2" />
+                                        <CarouselNext className="right-2" />
+                                    </>
                                 )}
-                                <p className="text-muted-foreground">{product.weight}</p>
+                            </Carousel>
+                        </Card>
+                        <Card>
+                             <CardHeader>
+                                <CardTitle className="text-3xl">{product.name}</CardTitle>
+                                <CardDescription>{product.weight}</CardDescription>
+                             </CardHeader>
+                             <CardContent className="space-y-4">
                                 <div className="flex items-baseline gap-2">
                                      {hasOffer ? (
                                         <>
@@ -102,17 +118,22 @@ export default function ProductDetailPage() {
                                             <p className="text-xl text-muted-foreground line-through">
                                             ₹{product.price.toFixed(2)}
                                             </p>
+                                            <Badge variant="destructive">
+                                                {product.offer?.type === 'percentage' ? `${product.offer.value}% OFF` : `₹${product.offer?.value} OFF`}
+                                            </Badge>
                                         </>
                                         ) : (
                                         <p className="text-3xl font-bold">₹{product.price.toFixed(2)}</p>
                                         )}
                                 </div>
-                            </div>
-                            <p className="text-base text-muted-foreground">{product.description}</p>
-                            <Button size="lg" className="w-full" onClick={() => addItem(product)}>
-                                <Plus className="mr-2 h-5 w-5" /> Add to Cart
-                            </Button>
-                        </div>
+                                <p className="text-base text-muted-foreground">{product.description}</p>
+                             </CardContent>
+                             <CardFooter>
+                                 <Button size="lg" className="w-full" onClick={() => addItem(product)}>
+                                    <Plus className="mr-2 h-5 w-5" /> Add to Cart
+                                </Button>
+                             </CardFooter>
+                        </Card>
                     </div>
                 </div>
 
