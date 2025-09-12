@@ -27,7 +27,7 @@ const ProductCard: FC<ProductCardProps> = ({ product }) => {
 
   return (
     <Card className="group flex h-full flex-col overflow-hidden transition-all duration-300 hover:shadow-lg hover:-translate-y-1">
-        <div className="relative aspect-[4/3] w-full overflow-hidden">
+        <div className="relative aspect-[4/5] w-full overflow-hidden">
           {imageUrl && (
             <Image
               src={imageUrl}
