@@ -190,7 +190,7 @@ export default function ProfilePage() {
               </div>
             </TabsContent>
             <TabsContent value="settings" className="mt-6">
-                <AccountSettings isAdmin={isAdmin} />
+                <AccountSettings />
             </TabsContent>
           </Tabs>
 
