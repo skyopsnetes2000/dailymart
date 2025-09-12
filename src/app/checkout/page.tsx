@@ -30,14 +30,13 @@ const MINIMUM_ORDER_VALUE = 149;
 export default function CheckoutPage() {
   const [user, loading] = useAuthState(auth);
   const router = useRouter();
-  const { items, clearCart } = useCart();
+  const { items, clearCart, isInitialized } = useCart();
   const { toast } = useToast();
 
   const [addresses, setAddresses] = useState<Address[]>([]);
   const [selectedAddressId, setSelectedAddressId] = useState<string | null>(null);
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [isPlacingOrder, setIsPlacingOrder] = useState(false);
-  const [subtotal, setSubtotal] = useState(0);
 
   useEffect(() => {
     if (!loading && !user) {
@@ -46,17 +45,21 @@ export default function CheckoutPage() {
   }, [user, loading, router]);
   
   useEffect(() => {
-    if (items.length === 0 && !isPlacingOrder) {
+    if (isInitialized && items.length === 0 && !isPlacingOrder) {
       router.replace('/cart');
     }
-    
+  }, [items, router, isPlacingOrder, isInitialized]);
+
+  const { subtotal, isOrderValueMet, amountNeeded } = useMemo(() => {
     const newSubtotal = items.reduce((total, item) => {
         const price = calculateDiscountedPrice(item.product) ?? item.product.price;
         return total + price * item.quantity;
     }, 0);
-    setSubtotal(newSubtotal);
+    const orderMet = newSubtotal >= MINIMUM_ORDER_VALUE;
+    const needed = MINIMUM_ORDER_VALUE - newSubtotal;
+    return { subtotal: newSubtotal, isOrderValueMet: orderMet, amountNeeded: needed };
+  }, [items]);
 
-  }, [items, router, isPlacingOrder]);
 
   useEffect(() => {
     async function fetchAddresses() {
@@ -85,9 +88,6 @@ export default function CheckoutPage() {
       setSelectedAddressId(newAddress.id);
       setIsFormOpen(false);
   };
-
-  const isOrderValueMet = subtotal >= MINIMUM_ORDER_VALUE;
-  const amountNeeded = MINIMUM_ORDER_VALUE - subtotal;
 
   const handlePlaceOrder = async () => {
     if (!isOrderValueMet) {
@@ -138,7 +138,7 @@ export default function CheckoutPage() {
     }
   }
 
-  if (loading) {
+  if (loading || !isInitialized) {
     return (
       <div className="flex h-screen items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin" />
