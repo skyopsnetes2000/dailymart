@@ -194,8 +194,8 @@ export default function AccountSettings({ isAdmin }: { isAdmin: boolean }) {
 
   return (
     <div className="space-y-6">
-      {!isAdmin && <PwaInstall />}
       <ThemeSelector />
+      {!isAdmin && <PwaInstall />}
       
        <Card>
         <CardHeader>
