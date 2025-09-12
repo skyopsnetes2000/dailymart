@@ -88,14 +88,12 @@ function ThemeSelector() {
 
 function PwaInstall() {
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
-  const [isInstallable, setIsInstallable] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
     const handleBeforeInstallPrompt = (e: Event) => {
       e.preventDefault();
       setDeferredPrompt(e);
-      setIsInstallable(true);
     };
 
     window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
@@ -103,7 +101,14 @@ function PwaInstall() {
   }, []);
 
   const handleInstallClick = async () => {
-    if (!deferredPrompt) return;
+    if (!deferredPrompt) {
+        toast({
+            title: 'App Not Ready',
+            description: 'The app is not ready to be installed, or may already be installed.',
+            variant: 'destructive',
+        });
+        return;
+    }
 
     deferredPrompt.prompt();
     const { outcome } = await deferredPrompt.userChoice;
@@ -115,13 +120,10 @@ function PwaInstall() {
     }
 
     setDeferredPrompt(null);
-    setIsInstallable(false);
   };
-
-  if (!isInstallable) {
-    return null; // Don't show anything if it's not installable (e.g., already installed or on desktop)
-  }
-
+  
+  // This component will always render the button, but it will only be functional
+  // when the `beforeinstallprompt` event has been fired and captured.
   return (
     <Card>
       <CardHeader>
@@ -129,7 +131,7 @@ function PwaInstall() {
         <CardDescription>Install the DailyMart app on your device for a better experience.</CardDescription>
       </CardHeader>
       <CardContent>
-        <Button onClick={handleInstallClick} className="w-full">
+        <Button onClick={handleInstallClick} className="w-full" disabled={!deferredPrompt}>
           <Download className="mr-2 h-4 w-4" />
           Install App
         </Button>
