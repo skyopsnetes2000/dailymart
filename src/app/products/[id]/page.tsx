@@ -38,7 +38,7 @@ export default function ProductDetailPage() {
 
         const fetchProduct = async () => {
             setLoading(true);
-            const fetchedProduct = await getProduct(id);
+            const fetchedProduct = await getProduct(id as string);
             if (fetchedProduct) {
                 setProduct(fetchedProduct);
                 const allProducts = await getProducts(fetchedProduct.categorySlug);
@@ -64,16 +64,28 @@ export default function ProductDetailPage() {
             <div className="p-4 sm:p-6">
                 <div className="mx-auto max-w-4xl">
                     <div className="grid md:grid-cols-2 gap-8">
-                        <div>
-                           <div className="relative aspect-square w-full overflow-hidden rounded-lg shadow-lg">
-                             <Image
-                                src={product.imageUrls[0]}
-                                alt={product.name}
-                                fill
-                                className="object-cover"
-                             />
-                           </div>
-                        </div>
+                        <Carousel className="w-full">
+                            <CarouselContent>
+                                {product.imageUrls.map((url, index) => (
+                                    <CarouselItem key={index}>
+                                        <div className="relative aspect-square w-full overflow-hidden rounded-lg shadow-lg">
+                                            <Image
+                                                src={url}
+                                                alt={`${product.name} image ${index + 1}`}
+                                                fill
+                                                className="object-cover"
+                                            />
+                                        </div>
+                                    </CarouselItem>
+                                ))}
+                            </CarouselContent>
+                            {product.imageUrls.length > 1 && (
+                                <>
+                                    <CarouselPrevious className="left-2" />
+                                    <CarouselNext className="right-2" />
+                                </>
+                            )}
+                        </Carousel>
                         <div className="space-y-4">
                             <div className="space-y-2">
                                 <h1 className="text-3xl font-bold">{product.name}</h1>
