@@ -11,15 +11,22 @@ import Image from 'next/image';
 import { Card, CardContent, CardFooter } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { calculateDiscountedPrice } from '@/lib/utils';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
+
+const MINIMUM_ORDER_VALUE = 149;
 
 export default function CartPage() {
   const { items, removeItem, updateQuantity, clearCart, isInitialized } = useCart();
 
-  const subtotal = items.reduce((total, item) => {
-    const price = calculateDiscountedPrice(item.product) ?? item.product.price;
-    return total + price * item.quantity;
-  }, 0);
+  const { subtotal, isOrderValueMet, amountNeeded } = useMemo(() => {
+    const newSubtotal = items.reduce((total, item) => {
+        const price = calculateDiscountedPrice(item.product) ?? item.product.price;
+        return total + price * item.quantity;
+    }, 0);
+    const orderMet = newSubtotal >= MINIMUM_ORDER_VALUE;
+    const needed = MINIMUM_ORDER_VALUE - newSubtotal;
+    return { subtotal: newSubtotal, isOrderValueMet: orderMet, amountNeeded: needed };
+  }, [items]);
 
   const formatWeight = (weight: string, quantity: number): string => {
     if (!weight) return '';
@@ -121,6 +128,11 @@ export default function CartPage() {
                 <span>Total</span>
                 <span>₹{subtotal.toFixed(2)}</span>
             </div>
+            {!isOrderValueMet && (
+                <div className="text-center text-sm text-destructive font-medium p-2 rounded-md bg-destructive/10">
+                    You need ₹{amountNeeded.toFixed(2)} more for a minimum order of ₹{MINIMUM_ORDER_VALUE}.
+                </div>
+            )}
           </CardContent>
           <CardFooter>
             <Button asChild className="w-full">
