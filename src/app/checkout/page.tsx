@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useEffect, useState } from 'react';
@@ -23,6 +24,8 @@ import { calculateDiscountedPrice } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
 import { addOrder, getAddresses, addAddress } from '@/lib/firestore';
 
+
+const MINIMUM_ORDER_VALUE = 149;
 
 export default function CheckoutPage() {
   const [user, loading] = useAuthState(auth);
@@ -80,8 +83,15 @@ export default function CheckoutPage() {
     const price = calculateDiscountedPrice(item.product) ?? item.product.price;
     return total + price * item.quantity;
   }, 0);
+  
+  const isOrderValueMet = subtotal >= MINIMUM_ORDER_VALUE;
+  const amountNeeded = MINIMUM_ORDER_VALUE - subtotal;
 
   const handlePlaceOrder = async () => {
+    if (!isOrderValueMet) {
+        toast({ title: "Minimum Order Value", description: `You need to add ₹${amountNeeded.toFixed(2)} more to place an order.`, variant: "destructive"});
+        return;
+    }
     if (!selectedAddressId) {
         toast({ title: "Address Required", description: "Please select a delivery address.", variant: "destructive"});
         return;
@@ -208,9 +218,14 @@ export default function CheckoutPage() {
                       <span>Total</span>
                       <span>₹{subtotal.toFixed(2)}</span>
                   </div>
+                   {!isOrderValueMet && (
+                        <div className="text-center text-sm text-destructive font-medium p-2 rounded-md bg-destructive/10">
+                            You need ₹{amountNeeded.toFixed(2)} more for a minimum order of ₹{MINIMUM_ORDER_VALUE}.
+                        </div>
+                   )}
               </CardContent>
               <CardFooter className="flex-col gap-2">
-                  <Button className="w-full" onClick={handlePlaceOrder} disabled={isPlacingOrder || items.length === 0}>
+                  <Button className="w-full" onClick={handlePlaceOrder} disabled={isPlacingOrder || items.length === 0 || !isOrderValueMet}>
                       {isPlacingOrder && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                       COD
                   </Button>
