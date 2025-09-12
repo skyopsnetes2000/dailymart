@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import ProductCard from '@/components/product-card';
 import { type Product, type Category } from '@/lib/data';
 import { Input } from '@/components/ui/input';
@@ -17,15 +17,28 @@ import {
 export default function FilterableProductList({ allProducts, categories }: { allProducts: Product[], categories: Category[] }) {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');
+  const [filteredProducts, setFilteredProducts] = useState<Product[]>(allProducts);
+  const [isClient, setIsClient] = useState(false);
 
-  const filteredProducts = allProducts.filter((product) => {
-    const matchesCategory =
-      selectedCategory === 'all' || product.categorySlug === selectedCategory;
-    const matchesSearch = product.name
-      .toLowerCase()
-      .includes(searchTerm.toLowerCase());
-    return matchesCategory && matchesSearch;
-  });
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
+
+  useEffect(() => {
+    if (isClient) {
+      const results = allProducts.filter((product) => {
+        const matchesCategory =
+          selectedCategory === 'all' || product.categorySlug === selectedCategory;
+        const matchesSearch = product.name
+          .toLowerCase()
+          .includes(searchTerm.toLowerCase());
+        return matchesCategory && matchesSearch;
+      });
+      setFilteredProducts(results);
+    }
+  }, [searchTerm, selectedCategory, allProducts, isClient]);
+
+  const displayProducts = isClient ? filteredProducts : allProducts;
 
   return (
     <>
@@ -54,9 +67,9 @@ export default function FilterableProductList({ allProducts, categories }: { all
         </Select>
       </div>
 
-      {filteredProducts.length > 0 ? (
+      {displayProducts.length > 0 ? (
         <div className="grid grid-cols-3 gap-3 p-4 pt-0 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6">
-          {filteredProducts.map((product) => (
+          {displayProducts.map((product) => (
             <ProductCard key={product.id} product={product} />
           ))}
         </div>
