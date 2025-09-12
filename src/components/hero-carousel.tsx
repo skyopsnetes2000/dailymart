@@ -9,6 +9,22 @@ type HeroCarouselProps = {
   images: string[];
 };
 
+const variants = {
+  enter: {
+    y: '-100%',
+    opacity: 0,
+  },
+  center: {
+    y: '0%',
+    opacity: 1,
+  },
+  exit: {
+    y: '100%',
+    opacity: 0,
+  },
+};
+
+
 export default function HeroCarousel({ images }: HeroCarouselProps) {
   const [index, setIndex] = useState(0);
 
@@ -25,9 +41,10 @@ export default function HeroCarousel({ images }: HeroCarouselProps) {
       <AnimatePresence initial={false}>
         <motion.div
           key={index}
-          initial={{ y: '-100%', opacity: 0 }}
-          animate={{ y: '0%', opacity: 1 }}
-          exit={{ y: '100%', opacity: 0 }}
+          variants={variants}
+          initial="enter"
+          animate="center"
+          exit="exit"
           transition={{ duration: 0.8, ease: 'easeInOut' }}
           className="absolute inset-0"
         >
