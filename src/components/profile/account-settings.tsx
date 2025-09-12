@@ -139,7 +139,7 @@ function PwaInstall() {
 }
 
 
-export default function AccountSettings() {
+export default function AccountSettings({ isAdmin }: { isAdmin: boolean }) {
   const { toast } = useToast();
   const [isPasswordLoading, setIsPasswordLoading] = useState(false);
   const [isNotificationsLoading, setIsNotificationsLoading] = useState(false);
@@ -194,7 +194,7 @@ export default function AccountSettings() {
 
   return (
     <div className="space-y-6">
-      <PwaInstall />
+      {!isAdmin && <PwaInstall />}
       <ThemeSelector />
       
        <Card>
