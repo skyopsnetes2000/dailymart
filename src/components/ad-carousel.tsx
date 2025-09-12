@@ -1,7 +1,7 @@
 
 'use client';
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import Autoplay from "embla-carousel-autoplay";
@@ -13,6 +13,7 @@ import {
   CarouselItem,
 } from '@/components/ui/carousel';
 import { type AdBanner } from '@/lib/data';
+import { Skeleton } from '@/components/ui/skeleton';
 
 type AdCarouselProps = {
     ads: AdBanner[];
@@ -22,11 +23,29 @@ export default function AdCarousel({ ads }: AdCarouselProps) {
     const autoplayPlugin = React.useRef(
         Autoplay({ delay: 2000, stopOnInteraction: true })
     );
+    const [isClient, setIsClient] = useState(false);
+
+    useEffect(() => {
+        setIsClient(true);
+    }, []);
+
 
     const validAds = (ads || []).filter(ad => ad.imageUrl);
 
     if (validAds.length === 0) {
         return null;
+    }
+
+    if (!isClient) {
+        return (
+            <div className="w-full overflow-hidden">
+                <div className="flex -ml-2">
+                    <div className="pl-2">
+                        <Skeleton className="aspect-video w-[300px] sm:w-[400px]" />
+                    </div>
+                </div>
+            </div>
+        );
     }
 
     return (
