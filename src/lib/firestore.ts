@@ -50,6 +50,14 @@ export async function deleteCategory(id: string): Promise<void> {
 
 
 // --- Product Functions ---
+export async function getProduct(id: string): Promise<Product | undefined> {
+    const productDoc = await getDoc(doc(db, 'products', id));
+    if (productDoc.exists()) {
+        return { ...productDoc.data(), id: productDoc.id } as Product;
+    }
+    return undefined;
+}
+
 
 export async function getProducts(categorySlug?: string): Promise<Product[]> {
   let productsQuery = query(collection(db, 'products'));
