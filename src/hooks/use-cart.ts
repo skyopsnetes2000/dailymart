@@ -44,32 +44,39 @@ const useCartStore = create<CartStore>((set, get) => ({
   userId: null,
 
   initializeCart: async (user) => {
-    const currentUserId = get().userId;
-    const isAlreadyInitializedForUser = get().isInitialized && currentUserId === user?.uid;
+    const { isInitialized, userId: currentUserId } = get();
 
-    if (isAlreadyInitializedForUser) {
+    if (isInitialized && currentUserId === user?.uid) {
+        // Already initialized for the same user state, do nothing.
         return;
     }
-
+    
+    // Disconnect any existing listener
     if (firestoreUnsubscribe) {
         firestoreUnsubscribe();
         firestoreUnsubscribe = null;
     }
     
+    set({ isInitialized: false });
+
     if (user) {
-        set({ userId: user.uid, isInitialized: false });
+        // --- User is logged in ---
+        set({ userId: user.uid });
         
+        // Merge local cart into Firestore cart
         const localCart = getLocalCart();
-        
         if (localCart.length > 0) {
             await mergeLocalCart(user.uid, localCart);
-            setLocalCart([]); // Clear local cart immediately after merging
+            setLocalCart([]); // Clear local cart after merging
         }
         
+        // Listen for real-time cart updates from Firestore
         firestoreUnsubscribe = getCart(user.uid, (items) => {
             set({ items, isInitialized: true });
         });
+
     } else {
+        // --- User is a guest ---
         set({ userId: null, items: getLocalCart(), isInitialized: true });
     }
   },
@@ -82,14 +89,13 @@ const useCartStore = create<CartStore>((set, get) => ({
     });
 
     if (userId) {
-      // For logged-in users, Firestore is the source of truth.
-      // The local state will be updated by the onSnapshot listener.
+      // Logged-in user: Defer to Firestore. The local state will be updated by the onSnapshot listener.
       addToCart(userId, product).catch(error => {
         console.error("Failed to add item to cart:", error);
         toast({ title: "Update Failed", description: "Could not add item to cart.", variant: 'destructive'});
       });
     } else {
-        // For guests, manage the cart in local state and localStorage.
+        // Guest user: Manage the cart in local state and localStorage.
         const { items } = get();
         const existingItem = items.find((item) => item.product.id === product.id);
         let newItems;
@@ -107,7 +113,7 @@ const useCartStore = create<CartStore>((set, get) => ({
     }
   },
 
-  removeItem: async (productId) => {
+  removeItem: (productId) => {
     const { userId } = get();
     toast({
         title: "Item removed",
@@ -115,11 +121,13 @@ const useCartStore = create<CartStore>((set, get) => ({
     });
 
     if (userId) {
-        await removeCartItem(userId, productId).catch(error => {
+        // Logged-in user: Defer to Firestore.
+        removeCartItem(userId, productId).catch(error => {
             console.error("Failed to remove item:", error);
             toast({ title: "Update Failed", description: "Could not remove item from cart.", variant: 'destructive'});
         });
     } else {
+        // Guest user:
         const { items } = get();
         const newItems = items.filter((item) => item.product.id !== productId);
         set({ items: newItems });
@@ -127,15 +135,17 @@ const useCartStore = create<CartStore>((set, get) => ({
     }
   },
 
-  updateQuantity: async (productId, quantity) => {
+  updateQuantity: (productId, quantity) => {
     const { userId } = get();
     
     if (userId) {
-        await updateCartItemQuantity(userId, productId, quantity).catch(error => {
+        // Logged-in user: Defer to Firestore.
+        updateCartItemQuantity(userId, productId, quantity).catch(error => {
              console.error("Failed to update quantity:", error);
              toast({ title: "Update Failed", description: "Could not update item quantity.", variant: 'destructive'});
         });
     } else {
+        // Guest user:
         const { items } = get();
         let newItems;
         if (quantity <= 0) {
@@ -154,7 +164,7 @@ const useCartStore = create<CartStore>((set, get) => ({
     }
   },
 
-  clearCart: async () => {
+  clearCart: () => {
     const { userId } = get();
     toast({
         title: 'Cart Cleared',
@@ -162,8 +172,10 @@ const useCartStore = create<CartStore>((set, get) => ({
     });
     
     if (userId) {
-        await clearFirestoreCart(userId);
+        // Logged-in user:
+        clearFirestoreCart(userId);
     } else {
+        // Guest user:
         set({ items: [] });
         setLocalCart([]);
     }
@@ -175,20 +187,19 @@ onAuthStateChanged(auth, (user) => {
     useCartStore.getState().initializeCart(user);
 });
 
+// The public hook that components will use.
 const useCart = () => {
   const store = useCartStore();
+  
+  // This state helps prevent hydration errors by ensuring that
+  // the component only renders the cart state on the client.
   const [isClient, setIsClient] = useState(false);
-
   useEffect(() => {
     setIsClient(true);
-    // This effect ensures we attempt initialization on mount if it hasn't happened.
-    // The onAuthStateChanged listener above is the primary mechanism.
-    if (!store.isInitialized) {
-        useCartStore.getState().initializeCart(auth.currentUser);
-    }
-  }, []); // Intentionally empty to run once on mount
+  }, []);
 
-  // While not initialized on the client, return a safe empty state
+  // On the server, or before the client has mounted and initialized,
+  // return a safe, empty, uninitialized state.
   if (!isClient || !store.isInitialized) {
     return {
         ...store,

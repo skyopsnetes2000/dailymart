@@ -3,7 +3,7 @@
 import { initializeApp, getApp, getApps } from 'firebase/app';
 import { getFirestore, collection, getDocs, doc, addDoc, updateDoc, deleteDoc, query, where, writeBatch, orderBy, getDoc, setDoc, onSnapshot, runTransaction } from 'firebase/firestore';
 import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
-import { Product, Category, Offer, Order, OrderStatus, Address, CartItem } from './data';
+import { Product, Category, Offer, Order, OrderStatus, Address, CartItem, ReturnRequestItem } from './data';
 import { firebaseConfig } from './firebase';
 
 const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
@@ -139,7 +139,7 @@ export async function updateOrderStatus(orderId: string, status: Order['status']
     await updateDoc(orderDoc, { status, trackingHistory });
 }
 
-export async function submitReturnRequest(orderId: string, request: Order['returnRequest']): Promise<void> {
+export async function submitReturnRequest(orderId: string, returnData: { items: ReturnRequestItem[]; reason: string; date: string; }): Promise<void> {
   const orderDoc = doc(db, 'orders', orderId);
   const newStatus: OrderStatus = 'Return Requested';
   
@@ -152,7 +152,7 @@ export async function submitReturnRequest(orderId: string, request: Order['retur
   const newTrackingHistoryEntry = { status: newStatus, date: new Date().toISOString() };
   await updateDoc(orderDoc, {
     status: newStatus,
-    returnRequest: request,
+    returnRequest: returnData,
     trackingHistory: [...currentHistory, newTrackingHistoryEntry]
   });
 }
@@ -234,43 +234,57 @@ export async function uploadImage(file: File, path: string): Promise<{ url: stri
 
 export function getCart(userId: string, onUpdate: (items: CartItem[]) => void): () => void {
     const cartRef = doc(db, 'carts', userId);
-    return onSnapshot(cartRef, (doc) => {
-        const data = doc.data();
-        onUpdate(data?.items || []);
-    }, (error) => {
-        console.error("Cart snapshot error: ", error);
+    const unsubscribe = onSnapshot(cartRef, (docSnap) => {
+        if (docSnap.exists()) {
+            const cartData = docSnap.data();
+            onUpdate(cartData.items || []);
+        } else {
+            onUpdate([]);
+        }
     });
+    return unsubscribe;
 }
 
 export async function addToCart(userId: string, product: Product) {
     const cartRef = doc(db, 'carts', userId);
     await runTransaction(db, async (transaction) => {
         const cartDoc = await transaction.get(cartRef);
-        if (!cartDoc.exists()) {
-            transaction.set(cartRef, { items: [{ product, quantity: 1 }] });
-            return;
-        }
-        const items = cartDoc.data().items as CartItem[];
+        const items = cartDoc.exists() ? (cartDoc.data().items as CartItem[]) : [];
         const existingItemIndex = items.findIndex((item) => item.product.id === product.id);
+
         if (existingItemIndex > -1) {
             items[existingItemIndex].quantity += 1;
         } else {
             items.push({ product, quantity: 1 });
         }
+        transaction.set(cartRef, { items }, { merge: true });
+    });
+}
+
+export async function removeCartItem(userId: string, productId: string) {
+    const cartRef = doc(db, 'carts', userId);
+    await runTransaction(db, async (transaction) => {
+        const cartDoc = await transaction.get(cartRef);
+        if (!cartDoc.exists()) return;
+
+        const items = (cartDoc.data().items as CartItem[]).filter(
+            (item) => item.product.id !== productId
+        );
         transaction.update(cartRef, { items });
     });
 }
 
 export async function updateCartItemQuantity(userId: string, productId: string, quantity: number) {
-    const cartRef = doc(db, 'carts', userId);
     if (quantity <= 0) {
         await removeCartItem(userId, productId);
         return;
     }
+
+    const cartRef = doc(db, 'carts', userId);
     await runTransaction(db, async (transaction) => {
         const cartDoc = await transaction.get(cartRef);
         if (!cartDoc.exists()) return;
-        
+
         const items = cartDoc.data().items as CartItem[];
         const itemIndex = items.findIndex((item) => item.product.id === productId);
 
@@ -281,18 +295,6 @@ export async function updateCartItemQuantity(userId: string, productId: string, 
     });
 }
 
-export async function removeCartItem(userId: string, productId: string) {
-    const cartRef = doc(db, 'carts', userId);
-    await runTransaction(db, async (transaction) => {
-        const cartDoc = await transaction.get(cartRef);
-        if (!cartDoc.exists()) return;
-        
-        const items = cartDoc.data().items as CartItem[];
-        const updatedItems = items.filter((item) => item.product.id !== productId);
-        transaction.update(cartRef, { items: updatedItems });
-    });
-}
-
 export async function clearCart(userId: string) {
     const cartRef = doc(db, 'carts', userId);
     await setDoc(cartRef, { items: [] });
@@ -300,25 +302,23 @@ export async function clearCart(userId: string) {
 
 export async function mergeLocalCart(userId: string, localItems: CartItem[]) {
     if (!localItems || localItems.length === 0) return;
-    const cartRef = doc(db, 'carts', userId);
 
+    const cartRef = doc(db, 'carts', userId);
     await runTransaction(db, async (transaction) => {
         const cartDoc = await transaction.get(cartRef);
-        let serverItems: CartItem[] = [];
-
-        if (cartDoc.exists()) {
-            serverItems = cartDoc.data().items as CartItem[];
-        }
+        const serverItems: CartItem[] = cartDoc.exists() ? cartDoc.data().items : [];
 
         localItems.forEach(localItem => {
             const serverItemIndex = serverItems.findIndex(serverItem => serverItem.product.id === localItem.product.id);
             if (serverItemIndex > -1) {
+                // To avoid complexity, we can decide on a merge strategy.
+                // For instance, summing quantities.
                 serverItems[serverItemIndex].quantity += localItem.quantity;
             } else {
                 serverItems.push(localItem);
             }
         });
 
-        transaction.set(cartRef, { items: serverItems });
+        transaction.set(cartRef, { items: serverItems }, { merge: true });
     });
 }
