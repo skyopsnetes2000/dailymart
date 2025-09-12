@@ -25,18 +25,16 @@ export default function FilterableProductList({ allProducts, categories }: { all
   }, []);
 
   useEffect(() => {
-    if (isClient) {
-      const results = allProducts.filter((product) => {
-        const matchesCategory =
-          selectedCategory === 'all' || product.categorySlug === selectedCategory;
-        const matchesSearch = product.name
-          .toLowerCase()
-          .includes(searchTerm.toLowerCase());
-        return matchesCategory && matchesSearch;
-      });
-      setFilteredProducts(results);
-    }
-  }, [searchTerm, selectedCategory, allProducts, isClient]);
+    const results = allProducts.filter((product) => {
+      const matchesCategory =
+        selectedCategory === 'all' || product.categorySlug === selectedCategory;
+      const matchesSearch = product.name
+        .toLowerCase()
+        .includes(searchTerm.toLowerCase());
+      return matchesCategory && matchesSearch;
+    });
+    setFilteredProducts(results);
+  }, [searchTerm, selectedCategory, allProducts]);
 
   const displayProducts = isClient ? filteredProducts : allProducts;
 

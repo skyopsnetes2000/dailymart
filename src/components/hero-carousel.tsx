@@ -11,19 +11,15 @@ type HeroCarouselProps = {
 
 const variants = {
   enter: {
-    y: '-100%',
     opacity: 0,
   },
   center: {
-    y: '0%',
     opacity: 1,
   },
   exit: {
-    y: '100%',
     opacity: 0,
   },
 };
-
 
 export default function HeroCarousel({ images }: HeroCarouselProps) {
   const [index, setIndex] = useState(0);
@@ -34,14 +30,13 @@ export default function HeroCarousel({ images }: HeroCarouselProps) {
   }, []);
 
   useEffect(() => {
-    if (!isClient) return;
-    
+    if (images.length <= 1) return;
     const interval = setInterval(() => {
       setIndex((prevIndex) => (prevIndex + 1) % images.length);
-    }, 3000); // Change image every 3 seconds
+    }, 5000); // Change image every 5 seconds
 
     return () => clearInterval(interval);
-  }, [images.length, isClient]);
+  }, [images.length]);
 
   if (!isClient) {
     // Render a static image on the server to prevent layout shift and hydration errors
@@ -65,7 +60,7 @@ export default function HeroCarousel({ images }: HeroCarouselProps) {
           initial="enter"
           animate="center"
           exit="exit"
-          transition={{ duration: 0.8, ease: 'easeInOut' }}
+          transition={{ duration: 1.5, ease: 'easeInOut' }}
           className="absolute inset-0"
         >
           <Image
