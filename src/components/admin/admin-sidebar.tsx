@@ -24,8 +24,8 @@ type AdminSidebarProps = {
 export default function AdminSidebar({ isMobile = false, onLinkClick }: AdminSidebarProps) {
   const pathname = usePathname();
   
-  const handleLinkClick = (isExternal: boolean = false) => {
-    if (isMobile && onLinkClick && !isExternal) {
+  const handleLinkClick = () => {
+    if (isMobile && onLinkClick) {
       onLinkClick();
     }
   }
@@ -36,7 +36,7 @@ export default function AdminSidebar({ isMobile = false, onLinkClick }: AdminSid
         isMobile ? "flex h-full" : "hidden w-64 md:flex"
     )}>
       <div className="flex h-16 items-center border-b px-6">
-        <Link href="/admin/dashboard" className="flex items-center gap-2 font-semibold" onClick={() => handleLinkClick()}>
+        <Link href="/admin/dashboard" className="flex items-center gap-2 font-semibold" onClick={handleLinkClick}>
           <UtensilsCrossed className="h-6 w-6 text-primary" />
           <span>DailyMart Admin</span>
         </Link>
@@ -46,7 +46,7 @@ export default function AdminSidebar({ isMobile = false, onLinkClick }: AdminSid
           <Link
             key={item.href}
             href={item.href}
-            onClick={() => handleLinkClick()}
+            onClick={handleLinkClick}
             className={cn(
               'flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:bg-primary/10 hover:text-primary',
               pathname === item.href && 'bg-primary/10 font-medium text-primary'
@@ -59,18 +59,17 @@ export default function AdminSidebar({ isMobile = false, onLinkClick }: AdminSid
       </nav>
       <div className="mt-auto p-4">
         <Separator className="my-2" />
-        <Link
+        <a
           href="/"
           target="_blank"
           rel="noopener noreferrer"
-          onClick={() => handleLinkClick(true)}
           className={cn(
             'flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:bg-primary/10 hover:text-primary'
           )}
         >
           <ArrowUpRightFromSquare className="h-4 w-4" />
           View Store
-        </Link>
+        </a>
       </div>
     </aside>
   );
