@@ -24,7 +24,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useEffect, useState } from 'react';
 import { getAppearanceSettings, saveAppearanceSettings, uploadImage, getCategories } from '@/lib/firestore';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, PlusCircle, Trash2 } from 'lucide-react';
+import { Loader2, PlusCircle, Trash2, X } from 'lucide-react';
 import { type AppearanceSettings, type Category, type AdBanner } from '@/lib/data';
 import Image from 'next/image';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -40,7 +40,7 @@ const adBannerSchema = z.object({
 const appearanceSchema = z.object({
   heroTitle: z.string().min(1, 'Title is required.'),
   heroSubtitle: z.string().min(1, 'Subtitle is required.'),
-  heroImage: z.any().optional(),
+  heroImages: z.any().optional(),
   ads: z.array(adBannerSchema),
 });
 
@@ -52,6 +52,8 @@ export default function AdminAppearancePage() {
   const [initialData, setInitialData] = useState<AppearanceSettings | null>(null);
   const [categories, setCategories] = useState<Category[]>([]);
   const { toast } = useToast();
+  const [heroImagePreviews, setHeroImagePreviews] = useState<string[]>([]);
+
 
   const form = useForm<AppearanceFormValues>({
     resolver: zodResolver(appearanceSchema),
@@ -76,6 +78,7 @@ export default function AdminAppearancePage() {
         ]);
         
         setInitialData(settings);
+        setHeroImagePreviews(settings?.heroImageUrls || []);
         setCategories(categoriesData);
 
         form.reset({
@@ -98,6 +101,38 @@ export default function AdminAppearancePage() {
   }, [form, toast]);
 
 
+  const handleHeroImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (files) {
+      const newPreviews = Array.from(files).map(file => URL.createObjectURL(file));
+      setHeroImagePreviews(prev => [...prev, ...newPreviews]);
+      
+      const currentFiles = form.getValues('heroImages') || [];
+      const updatedFiles = [...currentFiles, ...Array.from(files)];
+      form.setValue('heroImages', updatedFiles);
+    }
+  };
+
+  const handleRemoveHeroImage = (index: number) => {
+    const newImagePreviews = [...heroImagePreviews];
+    newImagePreviews.splice(index, 1);
+    setHeroImagePreviews(newImagePreviews);
+
+    // Also remove from initialData to reflect deletion of existing images
+    const updatedInitialUrls = initialData?.heroImageUrls?.filter((_, i) => i !== index);
+    setInitialData(prev => prev ? { ...prev, heroImageUrls: updatedInitialUrls } : null);
+
+    const currentFiles = form.getValues('heroImages');
+    if (currentFiles && typeof currentFiles !== 'string') {
+        const newFiles = Array.from(currentFiles);
+        newFiles.splice(index, 1);
+        const dataTransfer = new DataTransfer();
+        newFiles.forEach(file => dataTransfer.items.add(file));
+        form.setValue('heroImages', dataTransfer.files.length > 0 ? dataTransfer.files : null);
+    }
+  };
+
+
   const onSubmit = async (data: AppearanceFormValues) => {
     setSaving(true);
     try {
@@ -111,9 +146,18 @@ export default function AdminAppearancePage() {
         
         const updatedAds = await Promise.all(adUploadPromises);
 
+        let newHeroImageUrls: string[] = initialData?.heroImageUrls || [];
+        if (data.heroImages && data.heroImages.length > 0) {
+            const filesToUpload = Array.from(data.heroImages as FileList);
+            const uploadPromises = filesToUpload.map(file => uploadImage(file, 'appearance'));
+            const uploadResults = await Promise.all(uploadPromises);
+            newHeroImageUrls.push(...uploadResults.map(res => res.url));
+        }
+
         const newSettings: Partial<AppearanceSettings> = {
             heroTitle: data.heroTitle,
             heroSubtitle: data.heroSubtitle,
+            heroImageUrls: newHeroImageUrls,
             ads: updatedAds.map(ad => ({
                 id: ad.id,
                 description: ad.description,
@@ -122,22 +166,18 @@ export default function AdminAppearancePage() {
             })),
         };
 
-        if (data.heroImage && data.heroImage[0]) {
-            const result = await uploadImage(data.heroImage[0], 'appearance');
-            newSettings.heroImageUrl = result.url;
-        }
-
         await saveAppearanceSettings(newSettings);
         
         const updatedInitialData = { ...initialData, ...newSettings } as AppearanceSettings;
-        if (newSettings.heroImageUrl) updatedInitialData.heroImageUrl = newSettings.heroImageUrl;
-        updatedInitialData.ads = newSettings.ads || [];
         setInitialData(updatedInitialData);
+        
         form.reset({
             ...data,
-            heroImage: null, // Clear file input
-            ads: updatedAds.map(ad => ({...ad, imageFile: null})) // Clear file inputs
+            heroImages: null,
+            ads: updatedAds.map(ad => ({...ad, imageFile: null}))
         });
+
+        setHeroImagePreviews(newHeroImageUrls);
 
         toast({
             title: 'Success!',
@@ -201,17 +241,24 @@ export default function AdminAppearancePage() {
               />
               <FormField
                 control={form.control}
-                name="heroImage"
+                name="heroImages"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Background Image</FormLabel>
-                    {initialData?.heroImageUrl && (
-                        <div className="relative h-32 w-full rounded-md overflow-hidden">
-                           <Image src={initialData.heroImageUrl} alt="Hero Background" fill className="object-cover" />
+                    <FormLabel>Background Images</FormLabel>
+                     {heroImagePreviews.length > 0 && (
+                        <div className="grid grid-cols-3 gap-2">
+                            {heroImagePreviews.map((src, index) => (
+                                <div key={index} className="relative">
+                                    <Image src={src} alt={`Preview ${index}`} width={100} height={100} className="rounded-md object-cover w-full aspect-square" />
+                                    <Button type="button" size="icon" variant="destructive" className="absolute -top-2 -right-2 h-6 w-6 rounded-full" onClick={() => handleRemoveHeroImage(index)}>
+                                        <X className="h-4 w-4" />
+                                    </Button>
+                                </div>
+                            ))}
                         </div>
-                    )}
+                      )}
                     <FormControl>
-                      <Input type="file" onChange={(e) => field.onChange(e.target.files)} />
+                      <Input type="file" multiple onChange={handleHeroImageChange} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>

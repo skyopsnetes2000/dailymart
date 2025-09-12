@@ -73,7 +73,7 @@ export type AdBanner = {
 export type AppearanceSettings = {
     heroTitle: string;
     heroSubtitle: string;
-    heroImageUrl?: string;
+    heroImageUrls?: string[];
     ads: AdBanner[];
 }
 

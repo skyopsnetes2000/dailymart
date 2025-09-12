@@ -14,6 +14,7 @@ import { getCategories, getProducts, getSpecialOfferProducts, getAppearanceSetti
 import AdCarousel from '@/components/ad-carousel';
 import SearchBar from '@/components/shared/search-bar';
 import { Button } from '@/components/ui/button';
+import HeroCarousel from '@/components/hero-carousel';
 
 export default async function Home() {
   const [
@@ -32,16 +33,14 @@ export default async function Home() {
 
   const heroTitle = appearance?.heroTitle || "Freshness at Your Fingertips";
   const heroSubtitle = appearance?.heroSubtitle || "The best groceries, delivered fresh to your door daily.";
-  const heroImageUrl = appearance?.heroImageUrl || "https://picsum.photos/seed/101/1200/800";
+  const heroImageUrls = appearance?.heroImageUrls?.length ? appearance.heroImageUrls : ["https://picsum.photos/seed/101/1200/800"];
 
   return (
     <>
       <HomeHeader />
       <div className="space-y-8 p-4 pt-0 sm:p-6 sm:pt-0">
-        <section 
-          className="relative -mx-4 -mt-4 sm:-mx-6 sm:-mt-6 h-64 w-auto overflow-hidden rounded-b-2xl bg-cover bg-center"
-          style={{ backgroundImage: `url(${heroImageUrl})`}}
-        >
+        <section className="relative -mx-4 -mt-4 sm:-mx-6 sm:-mt-6 h-64 w-auto overflow-hidden rounded-b-2xl">
+            <HeroCarousel images={heroImageUrls} />
             <div className="absolute inset-0 bg-black/50" />
             <div className="absolute inset-0 flex flex-col items-center justify-center text-center text-white p-4">
               <h1 className="font-headline text-3xl font-bold md:text-4xl">{heroTitle}</h1>
