@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import { create } from 'zustand';
@@ -14,7 +13,7 @@ interface CartStore {
   items: CartItem[];
   isInitialized: boolean;
   userId: string | null;
-  initializeCart: (user: User | null) => void;
+  initializeCart: (user: User | null) => Promise<void>;
   addItem: (product: Product) => void;
   removeItem: (productId: string) => void;
   updateQuantity: (productId: string, quantity: number) => void;
@@ -27,6 +26,7 @@ const getLocalCart = (): CartItem[] => {
         const localData = localStorage.getItem('local-cart');
         return localData ? JSON.parse(localData) : [];
     } catch (e) {
+        console.error("Failed to parse local cart:", e);
         return [];
     }
 }
@@ -44,51 +44,53 @@ const useCartStore = create<CartStore>((set, get) => ({
   userId: null,
 
   initializeCart: async (user) => {
-    // Prevent re-initialization for the same user
-    if (get().isInitialized && get().userId === user?.uid) return;
+    const currentUserId = get().userId;
+    const isAlreadyInitializedForUser = get().isInitialized && currentUserId === user?.uid;
 
-    // Disconnect from previous listener if it exists
+    if (isAlreadyInitializedForUser) {
+        return;
+    }
+
     if (firestoreUnsubscribe) {
         firestoreUnsubscribe();
         firestoreUnsubscribe = null;
     }
     
     if (user) {
-        // User is logged in
         set({ userId: user.uid, isInitialized: false });
+        
         const localCart = getLocalCart();
         
-        // If there's a local cart, merge it with the server cart
         if (localCart.length > 0) {
             await mergeLocalCart(user.uid, localCart);
-            // Clear the local cart after merging
-            localStorage.removeItem('local-cart');
+            setLocalCart([]); // Clear local cart immediately after merging
         }
         
-        // Listen for real-time updates from Firestore
         firestoreUnsubscribe = getCart(user.uid, (items) => {
             set({ items, isInitialized: true });
         });
     } else {
-        // User is logged out
-        // Load cart from local storage and mark as initialized
         set({ userId: null, items: getLocalCart(), isInitialized: true });
     }
   },
 
   addItem: (product) => {
-    const { userId, items } = get();
+    const { userId } = get();
     toast({
         title: "Added to cart",
         description: `${product.name} has been added.`,
     });
 
     if (userId) {
+      // For logged-in users, Firestore is the source of truth.
+      // The local state will be updated by the onSnapshot listener.
       addToCart(userId, product).catch(error => {
         console.error("Failed to add item to cart:", error);
         toast({ title: "Update Failed", description: "Could not add item to cart.", variant: 'destructive'});
       });
     } else {
+        // For guests, manage the cart in local state and localStorage.
+        const { items } = get();
         const existingItem = items.find((item) => item.product.id === product.id);
         let newItems;
         if (existingItem) {
@@ -106,7 +108,7 @@ const useCartStore = create<CartStore>((set, get) => ({
   },
 
   removeItem: async (productId) => {
-    const { userId, items } = get();
+    const { userId } = get();
     toast({
         title: "Item removed",
         description: "The item has been removed from your cart.",
@@ -118,6 +120,7 @@ const useCartStore = create<CartStore>((set, get) => ({
             toast({ title: "Update Failed", description: "Could not remove item from cart.", variant: 'destructive'});
         });
     } else {
+        const { items } = get();
         const newItems = items.filter((item) => item.product.id !== productId);
         set({ items: newItems });
         setLocalCart(newItems);
@@ -125,7 +128,7 @@ const useCartStore = create<CartStore>((set, get) => ({
   },
 
   updateQuantity: async (productId, quantity) => {
-    const { userId, items } = get();
+    const { userId } = get();
     
     if (userId) {
         await updateCartItemQuantity(userId, productId, quantity).catch(error => {
@@ -133,9 +136,14 @@ const useCartStore = create<CartStore>((set, get) => ({
              toast({ title: "Update Failed", description: "Could not update item quantity.", variant: 'destructive'});
         });
     } else {
+        const { items } = get();
         let newItems;
         if (quantity <= 0) {
             newItems = items.filter((item) => item.product.id !== productId);
+             toast({
+                title: "Item removed",
+                description: "The item has been removed from your cart.",
+            });
         } else {
             newItems = items.map((item) =>
                 item.product.id === productId ? { ...item, quantity } : item
@@ -162,30 +170,34 @@ const useCartStore = create<CartStore>((set, get) => ({
   },
 }));
 
-
+// This listener will handle auth changes and initialize the cart accordingly.
 onAuthStateChanged(auth, (user) => {
-    // This ensures the cart is initialized or updated on auth state changes
     useCartStore.getState().initializeCart(user);
 });
 
-// A wrapper hook to safely use the store on the client side
 const useCart = () => {
-    const store = useCartStore();
-    const [isClient, setIsClient] = useState(false);
+  const store = useCartStore();
+  const [isClient, setIsClient] = useState(false);
 
-    useEffect(() => {
-        setIsClient(true);
-        // Initial call to sync cart state on component mount
-        if (!store.isInitialized) {
-            store.initializeCart(auth.currentUser);
-        }
-    }, [store.isInitialized]);
+  useEffect(() => {
+    setIsClient(true);
+    // This effect ensures we attempt initialization on mount if it hasn't happened.
+    // The onAuthStateChanged listener above is the primary mechanism.
+    if (!store.isInitialized) {
+        useCartStore.getState().initializeCart(auth.currentUser);
+    }
+  }, []); // Intentionally empty to run once on mount
 
-    return isClient ? store : {
+  // While not initialized on the client, return a safe empty state
+  if (!isClient || !store.isInitialized) {
+    return {
         ...store,
         items: [],
         isInitialized: false,
     };
+  }
+  
+  return store;
 }
 
 export default useCart;
