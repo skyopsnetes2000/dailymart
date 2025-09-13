@@ -1,3 +1,4 @@
+
 rules_version = '2';
 
 service cloud.firestore {
@@ -7,60 +8,83 @@ service cloud.firestore {
       return request.auth != null;
     }
 
-    function isMainAdmin() {
-      return request.auth.token.email == 'dhandesaurav52@gmail.com';
-    }
-
     function isOwner(userId) {
       return isAuth() && request.auth.uid == userId;
     }
 
-    match /users/{userId} {
-      allow read: if isOwner(userId) || isMainAdmin();
-      allow write: if isOwner(userId) || isMainAdmin();
+    function isMainAdmin() {
+      return isAuth() && request.auth.token.email == 'dhandesaurav52@gmail.com';
     }
 
+    // A user can manage their own user document
+    match /users/{userId} {
+      allow read, write: if isOwner(userId) || isMainAdmin();
+    }
+    
+    // A user can manage their own addresses
+    match /users/{userId}/addresses/{addressId} {
+        allow read, write, delete: if isOwner(userId);
+    }
+    
+    // A user can only access their own cart
+    match /carts/{userId} {
+      allow read, write: if isOwner(userId) || isMainAdmin();
+    }
+
+    // Products and Categories are public to read, but only admins can write
     match /products/{productId} {
-      allow read: if true;
+      allow read;
       allow write: if isMainAdmin();
     }
 
     match /categories/{categoryId} {
-      allow read: if true;
+      allow read;
       allow write: if isMainAdmin();
     }
 
-    match /carts/{userId} {
-      allow read, write: if isOwner(userId);
-    }
-
-    match /orders/{orderId} {
-      allow get, update, delete: if (isAuth() && request.auth.uid == resource.data.userId) || isMainAdmin();
-      allow create: if isAuth();
-      allow list: if isAuth() || isMainAdmin();
-    }
-    
+    // Appearance settings are public to read, admin to write
     match /appearance/{docId} {
-      allow read: if true;
+      allow read;
       allow write: if isMainAdmin();
     }
-    
-    match /settings/{docId} {
-        allow read, write: if isMainAdmin();
-    }
 
-    match /shopRequests/{requestId} {
-      allow read, list: if isMainAdmin() || (isAuth() && request.query.offset == 0);
-      allow create: if isAuth();
-      allow update: if isMainAdmin();
-    }
-    
+    // Main admin can manage employees, teams, and holidays
     match /employees/{employeeId} {
         allow read, write: if isMainAdmin();
     }
-
     match /teams/{teamId} {
         allow read, write: if isMainAdmin();
+    }
+    match /settings/{settingId} {
+        allow read, write: if isMainAdmin();
+    }
+
+
+    match /orders/{orderId} {
+      // Allow user to create their own order
+      allow create: if isAuth() && request.resource.data.userId == request.auth.uid;
+      // Allow user to read/update their own order, or admin to do so
+      allow read, update: if isAuth() && (resource.data.userId == request.auth.uid || isMainAdmin());
+    }
+
+    match /orders/{allOrders} {
+        // Allow a user to query for their own orders.
+        // The client-side query MUST include `where('userId', '==', request.auth.uid)`
+        allow list: if isAuth();
+    }
+
+    match /shopRequests/{requestId} {
+      // Allow authenticated users to create a request
+      allow create: if isAuth();
+      // Allow admin to read/update any request
+      allow read, update: if isMainAdmin();
+    }
+
+    match /shopRequests/{allRequests} {
+        // Allow main admin to list all requests.
+        // Allow authenticated users to list requests, which enables them to
+        // query for their own request using `where('userId', '==', request.auth.uid)`.
+        allow list: if isMainAdmin() || isAuth();
     }
   }
 }
