@@ -15,6 +15,7 @@ export type Product = {
   price: number;
   imageUrls: string[];
   categorySlug: string;
+  subCategory?: string;
   offer?: Offer | null;
   dietaryType?: DietaryType;
 };

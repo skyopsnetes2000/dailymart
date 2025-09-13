@@ -54,6 +54,7 @@ const productSchema = z.object({
   price: z.coerce.number().min(0.01, 'Price must be greater than 0'),
   weight: z.string().min(1, 'Weight is required'),
   categorySlug: z.string().min(1, 'Category is required'),
+  subCategory: z.string().optional(),
   dietaryType: z.enum(['veg', 'non-veg', 'egg']).optional(),
   images: z.any(),
 });
@@ -93,6 +94,7 @@ export default function AdminProductsPage() {
       price: product.price,
       weight: product.weight,
       categorySlug: product.categorySlug,
+      subCategory: product.subCategory,
       dietaryType: product.dietaryType,
       images: null
     });
@@ -108,6 +110,7 @@ export default function AdminProductsPage() {
       price: 0,
       weight: '',
       categorySlug: '',
+      subCategory: '',
       dietaryType: undefined,
       images: null,
     });
@@ -172,6 +175,7 @@ export default function AdminProductsPage() {
         price: data.price,
         weight: data.weight,
         categorySlug: data.categorySlug,
+        subCategory: data.subCategory,
         dietaryType: data.dietaryType,
         imageUrls: newImageUrls,
       };
@@ -336,6 +340,19 @@ export default function AdminProductsPage() {
                               </ScrollArea>
                             </SelectContent>
                           </Select>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="subCategory"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Sub Category</FormLabel>
+                          <FormControl>
+                            <Input placeholder="e.g. Leafy Greens" {...field} />
+                          </FormControl>
                           <FormMessage />
                         </FormItem>
                       )}
