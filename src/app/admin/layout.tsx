@@ -4,14 +4,14 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuthState } from 'react-firebase-hooks/auth';
-import { auth } from '@/lib/firebase';
+import { auth, db } from '@/lib/firebase';
 import AdminSidebar from '@/components/admin/admin-sidebar';
 import { Loader2, PanelLeft } from 'lucide-react';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
 import { User } from 'firebase/auth';
+import { doc, getDoc } from 'firebase/firestore';
 
-const ADMIN_EMAIL = 'dhandesaurav52@gmail.com';
 
 export default function AdminLayout({
   children,
@@ -21,16 +21,51 @@ export default function AdminLayout({
   const [user, loading] = useAuthState(auth);
   const router = useRouter();
   const [isMobileSheetOpen, setIsMobileSheetOpen] = useState(false);
+  const [isAuthorized, setIsAuthorized] = useState<boolean | null>(null);
 
   useEffect(() => {
-    if (!loading) {
-      if (!user || user.email !== ADMIN_EMAIL) {
+    const checkAuthorization = async () => {
+      if (loading) return;
+
+      if (!user) {
+        setIsAuthorized(false);
         router.replace('/');
+        return;
       }
-    }
+
+      try {
+        const userDocRef = doc(db, 'users', user.uid);
+        const userDoc = await getDoc(userDocRef);
+
+        if (userDoc.exists()) {
+            const userData = userDoc.data();
+            const roles = userData.roles || [];
+            if (roles.includes('admin') || roles.includes('seller')) {
+                setIsAuthorized(true);
+            } else {
+                setIsAuthorized(false);
+                router.replace('/');
+            }
+        } else {
+            // This case handles the main admin who might not have a doc initially
+             if (user.email === 'dhandesaurav52@gmail.com') {
+                setIsAuthorized(true);
+             } else {
+                setIsAuthorized(false);
+                router.replace('/');
+             }
+        }
+      } catch (error) {
+          console.error("Authorization check failed:", error);
+          setIsAuthorized(false);
+          router.replace('/');
+      }
+    };
+    
+    checkAuthorization();
   }, [user, loading, router]);
 
-  if (loading || !user || user.email !== ADMIN_EMAIL) {
+  if (loading || isAuthorized === null) {
     return (
       <div className="flex h-screen w-full items-center justify-center bg-background">
         <div className="flex flex-col items-center gap-4">
@@ -39,6 +74,11 @@ export default function AdminLayout({
         </div>
       </div>
     );
+  }
+
+  if (!isAuthorized) {
+    // This part should ideally not be reached due to the redirect, but it's a good fallback.
+    return null; 
   }
 
   return (
