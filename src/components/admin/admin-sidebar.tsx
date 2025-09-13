@@ -6,26 +6,30 @@ import { usePathname } from 'next/navigation';
 import { Home, Package, ShoppingCart, LayoutGrid, Settings, UtensilsCrossed, ArrowUpRightFromSquare, Tag, Users, Building, CheckSquare } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Separator } from '@/components/ui/separator';
+import { User } from 'firebase/auth';
 
-const navItems = [
-  { href: '/admin/dashboard', label: 'Dashboard', icon: Home },
-  { href: '/admin/products', label: 'Products', icon: Package },
-  { href: '/admin/orders', label: 'Orders', icon: ShoppingCart },
-  { href: '/admin/categories', label: 'Categories', icon: LayoutGrid },
-  { href: '/admin/offers', label: 'Offers', icon: Tag },
-  { href: '/admin/appearance', label: 'Appearance', icon: Settings },
-  { href: '/admin/employee', label: 'Employee', icon: Users },
-  { href: '/admin/shops', label: 'Shops', icon: Building },
-  { href: '/admin/approval-requests', label: 'Approval Requests', icon: CheckSquare },
-  { href: '/', label: 'Home', icon: Home },
+const ADMIN_EMAIL = 'dhandesaurav52@gmail.com';
+
+const allNavItems = [
+  { href: '/admin/dashboard', label: 'Dashboard', icon: Home, adminOnly: false },
+  { href: '/admin/products', label: 'Products', icon: Package, adminOnly: false },
+  { href: '/admin/orders', label: 'Orders', icon: ShoppingCart, adminOnly: false },
+  { href: '/admin/categories', label: 'Categories', icon: LayoutGrid, adminOnly: false },
+  { href: '/admin/offers', label: 'Offers', icon: Tag, adminOnly: false },
+  { href: '/admin/appearance', label: 'Appearance', icon: Settings, adminOnly: true },
+  { href: '/admin/employee', label: 'Employee', icon: Users, adminOnly: true },
+  { href: '/admin/shops', label: 'Shops', icon: Building, adminOnly: true },
+  { href: '/admin/approval-requests', label: 'Approval Requests', icon: CheckSquare, adminOnly: true },
+  { href: '/', label: 'Home', icon: Home, adminOnly: false },
 ];
 
 type AdminSidebarProps = {
   isMobile?: boolean;
   onLinkClick?: () => void;
+  user: User | null;
 };
 
-export default function AdminSidebar({ isMobile = false, onLinkClick }: AdminSidebarProps) {
+export default function AdminSidebar({ isMobile = false, onLinkClick, user }: AdminSidebarProps) {
   const pathname = usePathname();
   
   const handleLinkClick = () => {
@@ -33,6 +37,11 @@ export default function AdminSidebar({ isMobile = false, onLinkClick }: AdminSid
       onLinkClick();
     }
   }
+  
+  const isMainAdmin = user?.email === ADMIN_EMAIL;
+  
+  const navItems = allNavItems.filter(item => !item.adminOnly || isMainAdmin);
+
 
   return (
     <aside className={cn(

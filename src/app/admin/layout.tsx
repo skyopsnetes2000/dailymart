@@ -9,6 +9,7 @@ import AdminSidebar from '@/components/admin/admin-sidebar';
 import { Loader2, PanelLeft } from 'lucide-react';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
+import { User } from 'firebase/auth';
 
 const ADMIN_EMAIL = 'dhandesaurav52@gmail.com';
 
@@ -42,7 +43,7 @@ export default function AdminLayout({
 
   return (
     <div className="flex min-h-screen">
-      <AdminSidebar />
+      <AdminSidebar user={user} />
       <main className="flex-1 p-4 sm:p-6">
         <header className="md:hidden border-b pb-4 mb-4 flex justify-between items-center">
              <Sheet open={isMobileSheetOpen} onOpenChange={setIsMobileSheetOpen}>
@@ -56,7 +57,7 @@ export default function AdminLayout({
                   <SheetHeader className='p-4'>
                     <SheetTitle className="sr-only">Menu</SheetTitle>
                   </SheetHeader>
-                  <AdminSidebar isMobile={true} onLinkClick={() => setIsMobileSheetOpen(false)} />
+                  <AdminSidebar isMobile={true} onLinkClick={() => setIsMobileSheetOpen(false)} user={user} />
                 </SheetContent>
               </Sheet>
         </header>
