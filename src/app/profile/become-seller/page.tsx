@@ -49,6 +49,12 @@ export default function BecomeSellerPage() {
 
   const form = useForm<SellerFormValues>({
     resolver: zodResolver(sellerSchema),
+    defaultValues: {
+      shopName: '',
+      contactNumber: '',
+      contactEmail: '',
+      gstinNumber: '',
+    }
   });
 
   async function onSubmit(data: SellerFormValues) {
