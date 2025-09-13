@@ -29,6 +29,8 @@ import Link from 'next/link';
 const sellerSchema = z.object({
   shopName: z.string().min(3, 'Shop name must be at least 3 characters.'),
   contactNumber: z.string().min(10, 'Please enter a valid contact number.'),
+  contactEmail: z.string().email('Please enter a valid email address.'),
+  gstinNumber: z.string().optional(),
   aadharFront: z.instanceof(File).refine(file => file.size > 0, 'Aadhar front is required.'),
   aadharBack: z.instanceof(File).refine(file => file.size > 0, 'Aadhar back is required.'),
   electricityBill: z.instanceof(File).refine(file => file.size > 0, 'Electricity bill is required.'),
@@ -77,6 +79,8 @@ export default function BecomeSellerPage() {
         userId: user.uid,
         shopName: data.shopName,
         contactNumber: data.contactNumber,
+        contactEmail: data.contactEmail,
+        gstinNumber: data.gstinNumber,
         documents: uploadedUrls,
       });
 
@@ -128,32 +132,60 @@ export default function BecomeSellerPage() {
                 <Form {...form}>
                 <form onSubmit={form.handleSubmit(onSubmit)}>
                     <CardContent className="space-y-6">
-                    <FormField
-                        control={form.control}
-                        name="shopName"
-                        render={({ field }) => (
-                            <FormItem>
-                            <FormLabel>Shop / Business Name</FormLabel>
-                            <FormControl>
-                                <Input placeholder="Your Shop's Name" {...field} />
-                            </FormControl>
-                            <FormMessage />
-                            </FormItem>
-                        )}
-                    />
-                     <FormField
-                        control={form.control}
-                        name="contactNumber"
-                        render={({ field }) => (
-                            <FormItem>
-                            <FormLabel>Contact Number</FormLabel>
-                            <FormControl>
-                                <Input type="tel" placeholder="Your primary contact number" {...field} />
-                            </FormControl>
-                            <FormMessage />
-                            </FormItem>
-                        )}
-                    />
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <FormField
+                                control={form.control}
+                                name="shopName"
+                                render={({ field }) => (
+                                    <FormItem>
+                                    <FormLabel>Shop / Business Name</FormLabel>
+                                    <FormControl>
+                                        <Input placeholder="Your Shop's Name" {...field} />
+                                    </FormControl>
+                                    <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
+                            <FormField
+                                control={form.control}
+                                name="contactNumber"
+                                render={({ field }) => (
+                                    <FormItem>
+                                    <FormLabel>Contact Number</FormLabel>
+                                    <FormControl>
+                                        <Input type="tel" placeholder="Your primary contact number" {...field} />
+                                    </FormControl>
+                                    <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
+                            <FormField
+                                control={form.control}
+                                name="contactEmail"
+                                render={({ field }) => (
+                                    <FormItem>
+                                    <FormLabel>Contact Email</FormLabel>
+                                    <FormControl>
+                                        <Input type="email" placeholder="your.business@email.com" {...field} />
+                                    </FormControl>
+                                    <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
+                             <FormField
+                                control={form.control}
+                                name="gstinNumber"
+                                render={({ field }) => (
+                                    <FormItem>
+                                    <FormLabel>GSTIN Number (Optional)</FormLabel>
+                                    <FormControl>
+                                        <Input placeholder="Your business GSTIN" {...field} />
+                                    </FormControl>
+                                    <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
+                        </div>
 
                     <div className='space-y-2'>
                         <h3 className='text-sm font-medium'>Upload Documents</h3>

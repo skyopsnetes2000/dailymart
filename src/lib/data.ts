@@ -43,6 +43,8 @@ export type ShopRequest = {
     userId: string;
     shopName: string;
     contactNumber: string;
+    contactEmail: string;
+    gstinNumber?: string;
     status: 'pending' | 'approved' | 'rejected';
     submittedAt: string;
     documents: {
