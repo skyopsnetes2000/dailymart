@@ -3,7 +3,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Home, Package, ShoppingCart, LayoutGrid, Settings, UtensilsCrossed, ArrowUpRightFromSquare, Tag, Store } from 'lucide-react';
+import { Home, Package, ShoppingCart, LayoutGrid, Settings, UtensilsCrossed, ArrowUpRightFromSquare, Tag, Users, Building } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Separator } from '@/components/ui/separator';
 
@@ -14,7 +14,9 @@ const navItems = [
   { href: '/admin/categories', label: 'Categories', icon: LayoutGrid },
   { href: '/admin/offers', label: 'Offers', icon: Tag },
   { href: '/admin/appearance', label: 'Appearance', icon: Settings },
-  { href: '/', label: 'Home', icon: Store },
+  { href: '/admin/employee', label: 'Employee', icon: Users },
+  { href: '/admin/shops', label: 'Shops', icon: Building },
+  { href: '/', label: 'Home', icon: Home },
 ];
 
 type AdminSidebarProps = {
