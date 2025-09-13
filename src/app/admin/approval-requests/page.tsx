@@ -94,6 +94,8 @@ export default function AdminApprovalRequestsPage() {
         filterStatus === 'all' || req.status === filterStatus
     );
 
+    const approvedRequests = requests.filter(req => req.status === 'approved');
+
     if (loading) {
         return <div className="flex h-full items-center justify-center"><Loader2 className="h-8 w-8 animate-spin" /></div>
     }
@@ -185,6 +187,66 @@ export default function AdminApprovalRequestsPage() {
                             <TableRow>
                                 <TableCell colSpan={5} className="text-center h-24">
                                     No requests with status &quot;{filterStatus}&quot;.
+                                </TableCell>
+                            </TableRow>
+                           )}
+                        </TableBody>
+                    </Table>
+                </CardContent>
+            </Card>
+            
+            <Card>
+                <CardHeader>
+                    <CardTitle>Approved Sellers</CardTitle>
+                    <CardDescription>A list of all businesses that have been approved.</CardDescription>
+                </CardHeader>
+                <CardContent>
+                    <Table>
+                        <TableHeader>
+                            <TableRow>
+                                <TableHead>Shop Name</TableHead>
+                                <TableHead>Contact</TableHead>
+                                <TableHead>Submitted On</TableHead>
+                                <TableHead className="text-right">Actions</TableHead>
+                            </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                           {approvedRequests.length > 0 ? approvedRequests.map(req => (
+                            <TableRow key={req.id}>
+                                <TableCell className="font-medium">{req.shopName}</TableCell>
+                                <TableCell>
+                                    <div>{req.contactEmail}</div>
+                                    <div className="text-sm text-muted-foreground">{req.contactNumber}</div>
+                                </TableCell>
+                                <TableCell>{format(new Date(req.submittedAt), 'PP')}</TableCell>
+                                <TableCell className="text-right">
+                                     <Dialog>
+                                        <DialogTrigger asChild>
+                                            <Button variant="outline" size="sm"><FileText className="mr-2 h-4 w-4" />View Docs</Button>
+                                        </DialogTrigger>
+                                        <DialogContent className="max-w-4xl">
+                                            <DialogHeader>
+                                                <DialogTitle>Documents for {req.shopName}</DialogTitle>
+                                                <DialogDescription>GSTIN: {req.gstinNumber || 'N/A'}</DialogDescription>
+                                            </DialogHeader>
+                                            <div className="grid grid-cols-2 md:grid-cols-3 gap-4 py-4 max-h-[70vh] overflow-y-auto">
+                                                {Object.entries(req.documents).map(([key, url]) => (
+                                                    <div key={key} className="space-y-2">
+                                                        <h4 className="font-semibold text-sm capitalize">{key.replace(/([A-Z])/g, ' $1').trim()}</h4>
+                                                        <a href={url} target="_blank" rel="noopener noreferrer">
+                                                            <Image src={url} alt={key} width={300} height={200} className="rounded-md object-cover border" />
+                                                        </a>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </DialogContent>
+                                    </Dialog>
+                                </TableCell>
+                            </TableRow>
+                           )) : (
+                            <TableRow>
+                                <TableCell colSpan={4} className="text-center h-24">
+                                    No sellers have been approved yet.
                                 </TableCell>
                             </TableRow>
                            )}
