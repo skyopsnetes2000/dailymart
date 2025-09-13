@@ -3,61 +3,69 @@ rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
+  
+    function isUser(uid) {
+      return request.auth != null && request.auth.uid == uid;
+    }
 
     function isAdmin() {
-      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.roles[0] == 'admin';
+      // Check if the user document exists and if 'admin' is in their roles array.
+      return request.auth != null && exists(/databases/$(database)/documents/users/$(request.auth.uid)) && 
+             get(/databases/$(database)/documents/users/$(request.auth.uid)).data.roles.hasAny(['admin']);
     }
 
     match /users/{userId} {
+      allow read, update, create: if isUser(userId) || isAdmin();
+      
+      match /addresses/{addressId} {
+        allow read, create, update, delete: if isUser(userId);
+      }
+    }
+
+    match /carts/{userId} {
+      allow read, write: if isUser(userId);
+    }
+    
+    match /orders/{orderId} {
+      allow create: if isUser(request.resource.data.userId);
+      allow read, update: if isUser(resource.data.userId) || isAdmin();
+    }
+    
+    match /shopRequests/{requestId} {
+      // Allow reading one's own request by document ID
+      allow get: if isUser(resource.data.userId) || isAdmin();
+      // Allow querying for one's own requests
+      allow list: if request.auth != null && request.query.limit <= 10 && request.query.offset == null && request.query.wheres[0].field == 'userId' && request.query.wheres[0].op == '==' && request.query.wheres[0].value == request.auth.uid;
+      // Allow creating a request for oneself
+      allow create: if isUser(request.resource.data.userId);
+      // Only admins can modify requests
+      allow update, delete: if isAdmin();
+    }
+
+    match /categories/{categoryId} {
       allow read: if true;
-      allow create: if request.auth.uid == userId;
-      allow update: if request.auth.uid == userId || isAdmin();
+      allow write: if isAdmin();
     }
     
     match /products/{productId} {
       allow read: if true;
-      allow create, update, delete: if isAdmin();
-    }
-    
-    match /categories/{categoryId} {
-      allow read: if true;
-      allow create, update, delete: if isAdmin();
-    }
-    
-    match /orders/{orderId} {
-      allow read, update: if request.auth.uid == resource.data.userId || isAdmin();
-      allow create: if request.auth.uid == request.resource.data.userId;
-    }
-    
-    match /carts/{userId} {
-      allow read, write: if request.auth.uid == userId;
-    }
-    
-    match /users/{userId}/addresses/{addressId} {
-        allow read, write: if request.auth.uid == userId;
+      allow write: if isAdmin();
     }
 
     match /appearance/{docId} {
-        allow read: if true;
-        allow write: if isAdmin();
+      allow read: if true;
+      allow write: if isAdmin();
     }
     
     match /settings/{docId} {
-        allow read: if true;
-        allow write: if isAdmin();
+      allow read: if true;
+      allow write: if isAdmin();
     }
 
-    match /shopRequests/{requestId} {
-      allow list: if request.auth != null;
-      allow read: if request.auth.uid == resource.data.userId || isAdmin();
-      allow create: if request.auth.uid == request.resource.data.userId;
-      allow update, delete: if isAdmin();
-    }
-    
     match /employees/{employeeId} {
       allow read, write: if isAdmin();
     }
-    
+
     match /teams/{teamId} {
       allow read, write: if isAdmin();
     }
