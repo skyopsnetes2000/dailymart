@@ -39,8 +39,8 @@ import {
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { type Employee, type Team } from '@/lib/data';
-import { Loader2, Pencil, PlusCircle, Search, Trash2, Users } from 'lucide-react';
+import { type Employee, type Team, type Holiday } from '@/lib/data';
+import { Loader2, Pencil, PlusCircle, Search, Trash2, Users, Calendar as CalendarIcon, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -50,6 +50,8 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
 import { cn } from '@/lib/utils';
 import { Check } from 'lucide-react';
+import { Calendar } from '@/components/ui/calendar';
+import { format, startOfMonth, endOfMonth, eachDayOfInterval, getDay, isSameDay, addMonths, subMonths, getDaysInMonth } from 'date-fns';
 
 
 const employeeSchema = z.object({
@@ -79,6 +81,129 @@ const staticTeams: Team[] = [
     { id: '3', name: 'Backend', memberIds: ['3'] },
     { id: '4', name: 'Logistics', memberIds: ['4'] },
 ];
+
+type AttendanceStatus = 'present' | 'absent' | 'holiday';
+type AttendanceRecord = { [date: string]: AttendanceStatus }; // date is YYYY-MM-DD
+type EmployeeAttendance = { [employeeId: string]: AttendanceRecord };
+
+function AttendanceManager() {
+    const [currentDate, setCurrentDate] = useState(new Date());
+    const [holidays, setHolidays] = useState<Holiday[]>([
+        { date: new Date('2024-08-15'), name: 'Independence Day' },
+        { date: new Date('2024-10-02'), name: 'Gandhi Jayanti'}
+    ]);
+    const [attendance, setAttendance] = useState<EmployeeAttendance>({});
+    const [employees] = useState<Employee[]>(staticEmployees);
+
+    const monthStart = startOfMonth(currentDate);
+    const monthEnd = endOfMonth(currentDate);
+    const daysInMonth = eachDayOfInterval({ start: monthStart, end: monthEnd });
+    const totalDays = getDaysInMonth(currentDate);
+
+    const toggleAttendance = (employeeId: string, day: Date) => {
+        const dateKey = format(day, 'yyyy-MM-dd');
+        setAttendance(prev => {
+            const newAttendance = { ...prev };
+            if (!newAttendance[employeeId]) newAttendance[employeeId] = {};
+            
+            const currentStatus = newAttendance[employeeId][dateKey];
+            if(currentStatus === 'present') {
+                newAttendance[employeeId][dateKey] = 'absent';
+            } else if (currentStatus === 'absent') {
+                delete newAttendance[employeeId][dateKey]; // Back to default (present)
+            } else {
+                 newAttendance[employeeId][dateKey] = 'absent';
+            }
+            return newAttendance;
+        });
+    };
+
+    const getAttendanceStatus = (employeeId: string, day: Date): AttendanceStatus => {
+        const dateKey = format(day, 'yyyy-MM-dd');
+        if (holidays.some(h => isSameDay(h.date, day))) return 'holiday';
+        if (getDay(day) === 0) return 'holiday'; // Sunday
+        return attendance[employeeId]?.[dateKey] || 'present';
+    };
+
+    const calculateSummary = (employeeId: string) => {
+        const workingDays = daysInMonth.filter(day => getDay(day) !== 0 && !holidays.some(h => isSameDay(h.date, day))).length;
+        let absentDays = 0;
+        let presentDays = 0;
+
+        daysInMonth.forEach(day => {
+            const status = getAttendanceStatus(employeeId, day);
+            if (status === 'absent') absentDays++;
+            else if (status === 'present') presentDays++;
+        });
+
+        return { workingDays, absentDays, presentDays };
+    }
+
+    return (
+        <Card>
+            <CardHeader>
+                <div className="flex justify-between items-center">
+                    <CardTitle>Employee Attendance</CardTitle>
+                    <div className="flex items-center gap-2">
+                        <Button variant="outline" size="icon" onClick={() => setCurrentDate(subMonths(currentDate, 1))}><ChevronLeft /></Button>
+                        <span className="font-semibold text-lg">{format(currentDate, 'MMMM yyyy')}</span>
+                        <Button variant="outline" size="icon" onClick={() => setCurrentDate(addMonths(currentDate, 1))}><ChevronRight /></Button>
+                    </div>
+                </div>
+                <CardDescription>Click on a date to mark an employee as absent. Sundays and public holidays are marked.</CardDescription>
+            </CardHeader>
+            <CardContent>
+                <div className="overflow-x-auto">
+                    <Table>
+                        <TableHeader>
+                            <TableRow>
+                                <TableHead className='min-w-[200px] sticky left-0 bg-background z-10'>Employee</TableHead>
+                                {daysInMonth.map(day => (
+                                    <TableHead key={day.toISOString()} className='text-center'>
+                                        <div>{format(day, 'E')}</div>
+                                        <div>{format(day, 'd')}</div>
+                                    </TableHead>
+                                ))}
+                                <TableHead className='min-w-[200px] text-right sticky right-0 bg-background z-10'>Summary (Days)</TableHead>
+                            </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                            {employees.map(employee => {
+                                const summary = calculateSummary(employee.id);
+                                return (
+                                <TableRow key={employee.id}>
+                                    <TableCell className='font-medium sticky left-0 bg-background z-10'>{employee.name}</TableCell>
+                                    {daysInMonth.map(day => {
+                                        const status = getAttendanceStatus(employee.id, day);
+                                        return (
+                                        <TableCell key={day.toISOString()} className="p-0">
+                                            <div 
+                                                className={cn(
+                                                    "h-12 w-12 flex items-center justify-center cursor-pointer border-l",
+                                                    status === 'present' && "bg-green-100 dark:bg-green-900/50",
+                                                    status === 'absent' && "bg-red-200 dark:bg-red-900/50 font-bold text-red-700 dark:text-red-300",
+                                                    status === 'holiday' && "bg-gray-200 dark:bg-gray-700/50 cursor-not-allowed"
+                                                )}
+                                                onClick={() => status !== 'holiday' && toggleAttendance(employee.id, day)}
+                                            >
+                                                {status === 'absent' ? 'A' : ''}
+                                            </div>
+                                        </TableCell>
+                                    )})}
+                                    <TableCell className='text-right sticky right-0 bg-background z-10'>
+                                        <div>P: <span className='font-bold'>{summary.presentDays}</span></div>
+                                        <div>A: <span className='font-bold text-destructive'>{summary.absentDays}</span></div>
+                                        <div>W: <span className='font-bold'>{summary.workingDays}</span></div>
+                                    </TableCell>
+                                </TableRow>
+                            )})}
+                        </TableBody>
+                    </Table>
+                </div>
+            </CardContent>
+        </Card>
+    );
+}
 
 export default function AdminEmployeePage() {
   const [employees, setEmployees] = useState<Employee[]>(staticEmployees);
@@ -212,7 +337,7 @@ export default function AdminEmployeePage() {
           <TabsTrigger value="employees">All Employees</TabsTrigger>
           <TabsTrigger value="teams">Teams</TabsTrigger>
           <TabsTrigger value="leave">Leave Requests</TabsTrigger>
-          <TabsTrigger value="holidays">Holidays</TabsTrigger>
+          <TabsTrigger value="attendance">Attendance</TabsTrigger>
         </TabsList>
         <TabsContent value="employees" className="mt-6">
             <Card>
@@ -364,16 +489,8 @@ export default function AdminEmployeePage() {
                 </CardContent>
             </Card>
         </TabsContent>
-        <TabsContent value="holidays" className="mt-6">
-            <Card>
-                <CardHeader>
-                    <CardTitle>Holidays</CardTitle>
-                    <CardDescription>Manage company-wide holidays. Coming soon!</CardDescription>
-                </CardHeader>
-                <CardContent>
-                    <p>This section will allow you to set and announce holidays for all employees.</p>
-                </CardContent>
-            </Card>
+        <TabsContent value="attendance" className="mt-6">
+            <AttendanceManager />
         </TabsContent>
       </Tabs>
       

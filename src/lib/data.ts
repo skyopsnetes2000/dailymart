@@ -103,6 +103,11 @@ export type LeaveRequest = {
     status: 'Pending' | 'Approved' | 'Rejected';
 }
 
+export type Holiday = {
+    date: Date;
+    name: string;
+}
+
 
 export const categories: Category[] = [
   { id: '1', name: 'Vegetables', slug: 'vegetables', imageId: 'category-veg' },
