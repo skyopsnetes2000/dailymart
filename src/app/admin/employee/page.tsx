@@ -212,7 +212,7 @@ export default function AdminEmployeePage() {
           <TabsTrigger value="employees">All Employees</TabsTrigger>
           <TabsTrigger value="teams">Teams</TabsTrigger>
           <TabsTrigger value="leave">Leave Requests</TabsTrigger>
-          <TabsTrigger value="payroll">Payroll</TabsTrigger>
+          <TabsTrigger value="holidays">Holidays</TabsTrigger>
         </TabsList>
         <TabsContent value="employees" className="mt-6">
             <Card>
@@ -364,14 +364,14 @@ export default function AdminEmployeePage() {
                 </CardContent>
             </Card>
         </TabsContent>
-        <TabsContent value="payroll" className="mt-6">
+        <TabsContent value="holidays" className="mt-6">
             <Card>
                 <CardHeader>
-                    <CardTitle>Payroll</CardTitle>
-                    <CardDescription>Manage employee payments. Coming soon!</CardDescription>
+                    <CardTitle>Holidays</CardTitle>
+                    <CardDescription>Manage company-wide holidays. Coming soon!</CardDescription>
                 </CardHeader>
                 <CardContent>
-                    <p>This section will allow you to manage employee salaries and payments.</p>
+                    <p>This section will allow you to set and announce holidays for all employees.</p>
                 </CardContent>
             </Card>
         </TabsContent>
