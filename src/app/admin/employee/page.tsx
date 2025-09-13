@@ -51,7 +51,8 @@ import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, Command
 import { cn } from '@/lib/utils';
 import { Check } from 'lucide-react';
 import { Calendar } from '@/components/ui/calendar';
-import { format, startOfMonth, endOfMonth, eachDayOfInterval, getDay, isSameDay, addMonths, subMonths, getDaysInMonth } from 'date-fns';
+import { format, startOfMonth, endOfMonth, eachDayOfInterval, getDay, isSameDay, addMonths, subMonths, getDaysInMonth, startOfWeek, endOfWeek, isSameMonth } from 'date-fns';
+import { Switch } from '@/components/ui/switch';
 
 
 const employeeSchema = z.object({
@@ -90,51 +91,59 @@ function AttendanceManager() {
     const [currentDate, setCurrentDate] = useState(new Date());
     const [holidays, setHolidays] = useState<Holiday[]>([
         { date: new Date('2024-08-15'), name: 'Independence Day' },
-        { date: new Date('2024-10-02'), name: 'Gandhi Jayanti'}
+        { date: new Date('2024-10-02'), name: 'Gandhi Jayanti' }
     ]);
     const [attendance, setAttendance] = useState<EmployeeAttendance>({});
     const [employees] = useState<Employee[]>(staticEmployees);
+    const [selectedDay, setSelectedDay] = useState<Date | null>(null);
+    const [isAttendanceDialogOpen, setIsAttendanceDialogOpen] = useState(false);
 
     const monthStart = startOfMonth(currentDate);
     const monthEnd = endOfMonth(currentDate);
-    const daysInMonth = eachDayOfInterval({ start: monthStart, end: monthEnd });
-    const totalDays = getDaysInMonth(currentDate);
-
-    const toggleAttendance = (employeeId: string, day: Date) => {
-        const dateKey = format(day, 'yyyy-MM-dd');
-        setAttendance(prev => {
-            const newAttendance = { ...prev };
-            if (!newAttendance[employeeId]) newAttendance[employeeId] = {};
-            
-            const currentStatus = newAttendance[employeeId][dateKey];
-            if(currentStatus === 'present') {
-                newAttendance[employeeId][dateKey] = 'absent';
-            } else if (currentStatus === 'absent') {
-                delete newAttendance[employeeId][dateKey]; // Back to default (present)
-            } else {
-                 newAttendance[employeeId][dateKey] = 'absent';
-            }
-            return newAttendance;
-        });
-    };
+    const weekStartsOn = 1; // Monday
+    const calendarStart = startOfWeek(monthStart, { weekStartsOn });
+    const calendarEnd = endOfWeek(monthEnd, { weekStartsOn });
+    const calendarDays = eachDayOfInterval({ start: calendarStart, end: calendarEnd });
+    const weekdays = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
     const getAttendanceStatus = (employeeId: string, day: Date): AttendanceStatus => {
         const dateKey = format(day, 'yyyy-MM-dd');
         if (holidays.some(h => isSameDay(h.date, day))) return 'holiday';
-        if (getDay(day) === 0) return 'holiday'; // Sunday
+        if (getDay(day) === 0) return 'holiday'; // Sunday is a holiday
         return attendance[employeeId]?.[dateKey] || 'present';
     };
 
+    const handleDayClick = (day: Date) => {
+        const isSunday = getDay(day) === 0;
+        const isHoliday = holidays.some(h => isSameDay(h.date, day));
+        if (isSunday || isHoliday) return;
+        
+        setSelectedDay(day);
+        setIsAttendanceDialogOpen(true);
+    };
+
+    const handleAttendanceChange = (employeeId: string, isPresent: boolean) => {
+        if (!selectedDay) return;
+        const dateKey = format(selectedDay, 'yyyy-MM-dd');
+        setAttendance(prev => {
+            const newAttendance = { ...prev };
+            if (!newAttendance[employeeId]) newAttendance[employeeId] = {};
+            newAttendance[employeeId][dateKey] = isPresent ? 'present' : 'absent';
+            return newAttendance;
+        });
+    }
+    
     const calculateSummary = (employeeId: string) => {
+        const daysInMonth = eachDayOfInterval({start: monthStart, end: monthEnd});
         const workingDays = daysInMonth.filter(day => getDay(day) !== 0 && !holidays.some(h => isSameDay(h.date, day))).length;
         let absentDays = 0;
-        let presentDays = 0;
 
         daysInMonth.forEach(day => {
-            const status = getAttendanceStatus(employeeId, day);
-            if (status === 'absent') absentDays++;
-            else if (status === 'present') presentDays++;
+            if (getAttendanceStatus(employeeId, day) === 'absent') {
+                absentDays++;
+            }
         });
+        const presentDays = workingDays - absentDays;
 
         return { workingDays, absentDays, presentDays };
     }
@@ -150,56 +159,100 @@ function AttendanceManager() {
                         <Button variant="outline" size="icon" onClick={() => setCurrentDate(addMonths(currentDate, 1))}><ChevronRight /></Button>
                     </div>
                 </div>
-                <CardDescription>Click on a date to mark an employee as absent. Sundays and public holidays are marked.</CardDescription>
+                <CardDescription>Click on a date to mark attendance for that day. Sundays and public holidays are excluded.</CardDescription>
             </CardHeader>
             <CardContent>
-                <div className="overflow-x-auto">
-                    <Table>
-                        <TableHeader>
-                            <TableRow>
-                                <TableHead className='min-w-[200px] sticky left-0 bg-background z-10'>Employee</TableHead>
-                                {daysInMonth.map(day => (
-                                    <TableHead key={day.toISOString()} className='text-center'>
-                                        <div>{format(day, 'E')}</div>
-                                        <div>{format(day, 'd')}</div>
-                                    </TableHead>
-                                ))}
-                                <TableHead className='min-w-[200px] text-right sticky right-0 bg-background z-10'>Summary (Days)</TableHead>
-                            </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                            {employees.map(employee => {
-                                const summary = calculateSummary(employee.id);
-                                return (
-                                <TableRow key={employee.id}>
-                                    <TableCell className='font-medium sticky left-0 bg-background z-10'>{employee.name}</TableCell>
-                                    {daysInMonth.map(day => {
-                                        const status = getAttendanceStatus(employee.id, day);
-                                        return (
-                                        <TableCell key={day.toISOString()} className="p-0">
-                                            <div 
-                                                className={cn(
-                                                    "h-12 w-12 flex items-center justify-center cursor-pointer border-l",
-                                                    status === 'present' && "bg-green-100 dark:bg-green-900/50",
-                                                    status === 'absent' && "bg-red-200 dark:bg-red-900/50 font-bold text-red-700 dark:text-red-300",
-                                                    status === 'holiday' && "bg-gray-200 dark:bg-gray-700/50 cursor-not-allowed"
-                                                )}
-                                                onClick={() => status !== 'holiday' && toggleAttendance(employee.id, day)}
-                                            >
-                                                {status === 'absent' ? 'A' : ''}
-                                            </div>
-                                        </TableCell>
-                                    )})}
-                                    <TableCell className='text-right sticky right-0 bg-background z-10'>
-                                        <div>P: <span className='font-bold'>{summary.presentDays}</span></div>
-                                        <div>A: <span className='font-bold text-destructive'>{summary.absentDays}</span></div>
-                                        <div>W: <span className='font-bold'>{summary.workingDays}</span></div>
-                                    </TableCell>
-                                </TableRow>
-                            )})}
-                        </TableBody>
-                    </Table>
+                <div className="grid grid-cols-7 text-center font-semibold text-sm text-muted-foreground border-b pb-2 mb-2">
+                    {weekdays.map(day => <div key={day}>{day}</div>)}
                 </div>
+                <div className="grid grid-cols-7">
+                    {calendarDays.map((day) => {
+                        const isCurrentMonth = isSameMonth(day, currentDate);
+                        const isSunday = getDay(day) === 0;
+                        const isHoliday = holidays.some(h => isSameDay(h.date, day));
+                        
+                        return (
+                            <div
+                                key={day.toString()}
+                                onClick={() => isCurrentMonth && handleDayClick(day)}
+                                className={cn(
+                                    "h-16 border-t border-l p-2 text-sm flex flex-col",
+                                    !isCurrentMonth && "text-muted-foreground/50 bg-muted/20",
+                                    (isSunday || isHoliday) && isCurrentMonth && "bg-muted/50 cursor-not-allowed",
+                                    isCurrentMonth && !(isSunday || isHoliday) && "cursor-pointer hover:bg-accent"
+                                )}
+                            >
+                                <span className="font-semibold">{format(day, 'd')}</span>
+                                {isHoliday && isCurrentMonth && <span className="text-xs text-blue-600 truncate">{holidays.find(h=>isSameDay(h.date, day))?.name}</span>}
+                            </div>
+                        );
+                    })}
+                </div>
+
+                 <Dialog open={isAttendanceDialogOpen} onOpenChange={setIsAttendanceDialogOpen}>
+                    <DialogContent>
+                        <DialogHeader>
+                            <DialogTitle>Attendance for {selectedDay && format(selectedDay, 'do MMMM, yyyy')}</DialogTitle>
+                            <DialogDescription>Toggle the switch to mark an employee as absent.</DialogDescription>
+                        </DialogHeader>
+                        <div className="py-4">
+                            <ScrollArea className="h-64">
+                                <div className="space-y-4 pr-4">
+                                {employees.map(employee => {
+                                    const status = selectedDay ? getAttendanceStatus(employee.id, selectedDay) : 'present';
+                                    const isPresent = status === 'present' || status === 'holiday';
+                                    return (
+                                        <div key={employee.id} className="flex items-center justify-between rounded-md border p-3">
+                                            <Label htmlFor={`att-${employee.id}`} className="font-medium">{employee.name}</Label>
+                                            <div className='flex items-center gap-2'>
+                                                <span className={cn('text-sm', isPresent ? 'text-green-600' : 'text-red-600')}>
+                                                    {isPresent ? 'Present' : 'Absent'}
+                                                </span>
+                                                <Switch
+                                                    id={`att-${employee.id}`}
+                                                    checked={isPresent}
+                                                    onCheckedChange={(checked) => handleAttendanceChange(employee.id, checked)}
+                                                />
+                                            </div>
+                                        </div>
+                                    )
+                                })}
+                                </div>
+                            </ScrollArea>
+                        </div>
+                    </DialogContent>
+                </Dialog>
+                
+                 <Card className="mt-6">
+                    <CardHeader>
+                        <CardTitle className='text-lg'>Monthly Summary</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                        <Table>
+                            <TableHeader>
+                                <TableRow>
+                                    <TableHead>Employee</TableHead>
+                                    <TableHead className='text-right'>Working Days</TableHead>
+                                    <TableHead className='text-right'>Present</TableHead>
+                                    <TableHead className='text-right'>Absent</TableHead>
+                                </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                                {employees.map(employee => {
+                                    const summary = calculateSummary(employee.id);
+                                    return (
+                                        <TableRow key={employee.id}>
+                                            <TableCell className="font-medium">{employee.name}</TableCell>
+                                            <TableCell className="text-right font-medium">{summary.workingDays}</TableCell>
+                                            <TableCell className="text-right text-green-600 font-bold">{summary.presentDays}</TableCell>
+                                            <TableCell className="text-right text-red-600 font-bold">{summary.absentDays}</TableCell>
+                                        </TableRow>
+                                    );
+                                })}
+                            </TableBody>
+                        </Table>
+                    </CardContent>
+                 </Card>
             </CardContent>
         </Card>
     );
@@ -678,3 +731,6 @@ export default function AdminEmployeePage() {
     </div>
   );
 }
+
+
+    
