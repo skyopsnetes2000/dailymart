@@ -3,7 +3,7 @@
 import { initializeApp, getApp, getApps } from 'firebase/app';
 import { getFirestore, collection, getDocs, doc, addDoc, updateDoc, deleteDoc, query, where, writeBatch, orderBy, getDoc, setDoc, onSnapshot, runTransaction } from 'firebase/firestore';
 import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
-import { Product, Category, Offer, Order, OrderStatus, Address, CartItem, ReturnRequestItem } from './data';
+import { Product, Category, Offer, Order, OrderStatus, Address, CartItem, ReturnRequestItem, Employee, Team, Holiday } from './data';
 import { firebaseConfig } from './firebase';
 
 const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
@@ -321,4 +321,67 @@ export async function mergeLocalCart(userId: string, localItems: CartItem[]) {
 
         transaction.set(cartRef, { items: serverItems }, { merge: true });
     });
+}
+
+// --- Employee Management Functions ---
+
+export async function getEmployees(): Promise<Employee[]> {
+  const employeesCol = collection(db, 'employees');
+  const snapshot = await getDocs(employeesCol);
+  return snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id } as Employee));
+}
+
+export async function addEmployee(employee: Omit<Employee, 'id'>): Promise<string> {
+  const docRef = await addDoc(collection(db, 'employees'), employee);
+  return docRef.id;
+}
+
+export async function updateEmployee(id: string, employee: Partial<Employee>): Promise<void> {
+  await updateDoc(doc(db, 'employees', id), employee);
+}
+
+export async function deleteEmployee(id: string): Promise<void> {
+  await deleteDoc(doc(db, 'employees', id));
+}
+
+// --- Team Management Functions ---
+
+export async function getTeams(): Promise<Team[]> {
+  const teamsCol = collection(db, 'teams');
+  const snapshot = await getDocs(teamsCol);
+  return snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id } as Team));
+}
+
+export async function addTeam(team: Omit<Team, 'id'>): Promise<string> {
+  const docRef = await addDoc(collection(db, 'teams'), team);
+  return docRef.id;
+}
+
+export async function updateTeam(id: string, team: Partial<Team>): Promise<void> {
+  await updateDoc(doc(db, 'teams', id), team);
+}
+
+export async function deleteTeam(id: string): Promise<void> {
+  await deleteDoc(doc(db, 'teams', id));
+}
+
+// --- Holiday Management Functions ---
+const HOLIDAY_DOC_ID = 'company-holidays';
+
+export async function getHolidays(): Promise<Holiday[]> {
+  const docRef = doc(db, 'settings', HOLIDAY_DOC_ID);
+  const docSnap = await getDoc(docRef);
+  if (docSnap.exists()) {
+    const data = docSnap.data();
+    // Firestore stores timestamps, so we need to convert them back to Date objects
+    return (data.holidays || []).map((h: any) => ({ ...h, date: h.date.toDate() }));
+  }
+  return [];
+}
+
+export async function saveHolidays(holidays: Holiday[]): Promise<void> {
+  const docRef = doc(db, 'settings', HOLIDAY_DOC_ID);
+  // Convert Date objects to Firestore Timestamps for storing
+  const holidaysToStore = holidays.map(h => ({ ...h, date: h.date }));
+  await setDoc(docRef, { holidays: holidaysToStore });
 }

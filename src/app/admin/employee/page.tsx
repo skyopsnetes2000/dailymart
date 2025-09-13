@@ -1,7 +1,8 @@
 
+
 'use client';
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import {
@@ -53,6 +54,18 @@ import { Calendar } from '@/components/ui/calendar';
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, getDay, isSameDay, addMonths, subMonths, getDaysInMonth, startOfWeek, endOfWeek, isSameMonth } from 'date-fns';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
+import {
+    addEmployee,
+    addTeam,
+    deleteEmployee,
+    deleteTeam,
+    getEmployees,
+    getHolidays,
+    getTeams,
+    saveHolidays,
+    updateEmployee,
+    updateTeam
+} from '@/lib/firestore';
 
 
 const employeeSchema = z.object({
@@ -69,28 +82,9 @@ const teamSchema = z.object({
     memberIds: z.array(z.string()),
 })
 
-const staticEmployees: Employee[] = [
-    { id: '1', name: 'Saurav Dhande', email: 'saurav@example.com', phone: '123-456-7890', role: 'Manager', salary: 75000, team: 'Operations', avatarUrl: 'https://i.pravatar.cc/150?u=a042581f4e29026704d' },
-    { id: '2', name: 'Jane Smith', email: 'jane@example.com', phone: '234-567-8901', role: 'Cashier', salary: 45000, team: 'Frontend', avatarUrl: 'https://i.pravatar.cc/150?u=a042581f4e29026705d' },
-    { id: '3', name: 'Mike Johnson', email: 'mike@example.com', phone: '345-678-9012', role: 'Stocker', salary: 42000, team: 'Backend', avatarUrl: 'https://i.pravatar.cc/150?u=a-042581f4e29026706d' },
-    { id: '4', name: 'Emily Davis', email: 'emily@example.com', phone: '456-789-0123', role: 'Delivery Driver', salary: 50000, team: 'Logistics', avatarUrl: 'https://i.pravatar.cc/150?u=a042581f4e29026707d' },
-];
-
-const staticTeams: Team[] = [
-    { id: '1', name: 'Operations', memberIds: ['1'] },
-    { id: '2', name: 'Frontend', memberIds: ['2'] },
-    { id: '3', name: 'Backend', memberIds: ['3'] },
-    { id: '4', name: 'Logistics', memberIds: ['4'] },
-];
-
 type AttendanceStatus = 'present' | 'absent' | 'holiday';
 type AttendanceRecord = { [date: string]: AttendanceStatus }; // date is YYYY-MM-DD
 type EmployeeAttendance = { [employeeId: string]: AttendanceRecord };
-
-const initialHolidays: Holiday[] = [
-    { date: new Date('2024-08-15'), name: 'Independence Day' },
-    { date: new Date('2024-10-02'), name: 'Gandhi Jayanti' }
-];
 
 type HolidayManagerProps = {
     holidays: Holiday[];
@@ -172,7 +166,7 @@ function HolidayManager({ holidays, onAddHoliday, onDeleteHoliday }: HolidayMana
                     <h3 className="font-semibold">Upcoming Holidays</h3>
                     <ScrollArea className="h-96">
                         <div className="space-y-2 pr-4">
-                        {holidays.length > 0 ? holidays.map((holiday, index) => (
+                        {holidays.length > 0 ? holidays.sort((a,b) => a.date.getTime() - b.date.getTime()).map((holiday, index) => (
                             <div key={index} className="flex items-center justify-between rounded-md border p-3">
                                 <div>
                                     <p className="font-medium">{holiday.name}</p>
@@ -193,10 +187,9 @@ function HolidayManager({ holidays, onAddHoliday, onDeleteHoliday }: HolidayMana
     )
 }
 
-function AttendanceManager({ holidays }: { holidays: Holiday[] }) {
+function AttendanceManager({ holidays, employees }: { holidays: Holiday[], employees: Employee[] }) {
     const [currentDate, setCurrentDate] = useState(new Date());
     const [attendance, setAttendance] = useState<EmployeeAttendance>({});
-    const [employees] = useState<Employee[]>(staticEmployees);
     const [selectedDay, setSelectedDay] = useState<Date | null>(null);
     const [isAttendanceDialogOpen, setIsAttendanceDialogOpen] = useState(false);
 
@@ -361,16 +354,39 @@ function AttendanceManager({ holidays }: { holidays: Holiday[] }) {
 }
 
 export default function AdminEmployeePage() {
-  const [employees, setEmployees] = useState<Employee[]>(staticEmployees);
-  const [teams, setTeams] = useState<Team[]>(staticTeams);
-  const [holidays, setHolidays] = useState<Holiday[]>(initialHolidays);
+  const [employees, setEmployees] = useState<Employee[]>([]);
+  const [teams, setTeams] = useState<Team[]>([]);
+  const [holidays, setHolidays] = useState<Holiday[]>([]);
   const [isEmployeeDialogOpen, setIsEmployeeDialogOpen] = useState(false);
   const [isTeamDialogOpen, setIsTeamDialogOpen] = useState(false);
   const [editingEmployee, setEditingEmployee] = useState<Employee | null>(null);
   const [editingTeam, setEditingTeam] = useState<Team | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
+  
+  useEffect(() => {
+    async function fetchData() {
+        setIsLoading(true);
+        try {
+            const [employeesData, teamsData, holidaysData] = await Promise.all([
+                getEmployees(),
+                getTeams(),
+                getHolidays(),
+            ]);
+            setEmployees(employeesData);
+            setTeams(teamsData);
+            setHolidays(holidaysData);
+        } catch (error) {
+            console.error("Failed to fetch employee data:", error);
+            toast({ title: 'Error', description: 'Could not load data.', variant: 'destructive' });
+        } finally {
+            setIsLoading(false);
+        }
+    }
+    fetchData();
+  }, [toast]);
 
   const employeeForm = useForm<z.infer<typeof employeeSchema>>({
     resolver: zodResolver(employeeSchema),
@@ -380,7 +396,7 @@ export default function AdminEmployeePage() {
     resolver: zodResolver(teamSchema)
   })
 
-  const handleAddHoliday = (date: Date, name: string) => {
+  const handleAddHoliday = async (date: Date, name: string) => {
     if (holidays.some(h => isSameDay(h.date, date))) {
         toast({
             title: 'Date Already Marked',
@@ -390,9 +406,9 @@ export default function AdminEmployeePage() {
         return;
     }
     
-    const newHolidays = [...holidays, { date, name }]
-        .sort((a,b) => a.date.getTime() - b.date.getTime());
+    const newHolidays = [...holidays, { date, name }];
     
+    await saveHolidays(newHolidays);
     setHolidays(newHolidays);
     toast({
         title: 'Holiday Added',
@@ -400,8 +416,10 @@ export default function AdminEmployeePage() {
     });
   };
 
-  const handleDeleteHoliday = (dateToDelete: Date) => {
-      setHolidays(holidays.filter(h => !isSameDay(h.date, dateToDelete)));
+  const handleDeleteHoliday = async (dateToDelete: Date) => {
+      const newHolidays = holidays.filter(h => !isSameDay(h.date, dateToDelete));
+      await saveHolidays(newHolidays);
+      setHolidays(newHolidays);
       toast({
           title: 'Holiday Removed',
           description: 'The holiday has been removed.',
@@ -428,9 +446,22 @@ export default function AdminEmployeePage() {
   };
 
   const handleDeleteEmployee = async (employeeId: string) => {
-    // In a real app, you would also remove the employee from any teams
-    setEmployees(employees.filter((e) => e.id !== employeeId));
-    toast({ title: "Success", description: "Employee removed." });
+    try {
+        await deleteEmployee(employeeId);
+        setEmployees(employees.filter((e) => e.id !== employeeId));
+        // Also remove employee from any teams they were in
+        const updatedTeams = teams.map(team => ({
+            ...team,
+            memberIds: team.memberIds.filter(id => id !== employeeId)
+        }));
+        setTeams(updatedTeams);
+        // In a real app, you might want to batch these Firestore updates
+        updatedTeams.forEach(team => updateTeam(team.id, { memberIds: team.memberIds }));
+        
+        toast({ title: "Success", description: "Employee removed." });
+    } catch (error) {
+        toast({ title: "Error", description: "Could not remove employee.", variant: "destructive"});
+    }
   };
   
   const handleAddNewTeam = () => {
@@ -445,56 +476,72 @@ export default function AdminEmployeePage() {
     setIsTeamDialogOpen(true);
   }
 
-  const handleDeleteTeam = (teamId: string) => {
-    setTeams(teams.filter(t => t.id !== teamId));
-    // Also update employees who were in this team
-    setEmployees(employees.map(e => e.team === teams.find(t=>t.id===teamId)?.name ? {...e, team: undefined} : e));
-    toast({ title: "Success", description: "Team deleted." });
+  const handleDeleteTeam = async (teamId: string) => {
+    try {
+        await deleteTeam(teamId);
+        const teamName = teams.find(t => t.id === teamId)?.name;
+        setTeams(teams.filter(t => t.id !== teamId));
+        setEmployees(employees.map(e => e.team === teamName ? {...e, team: undefined} : e));
+        toast({ title: "Success", description: "Team deleted." });
+    } catch (error) {
+         toast({ title: "Error", description: "Could not delete team.", variant: "destructive"});
+    }
   }
 
   const onEmployeeSubmit = async (data: z.infer<typeof employeeSchema>) => {
     setIsSubmitting(true);
-    await new Promise(resolve => setTimeout(resolve, 500));
-    
-    if (editingEmployee) {
-      setEmployees(employees.map(e => e.id === editingEmployee.id ? { ...editingEmployee, ...data } : e));
-      toast({ title: "Success", description: "Employee details updated." });
-    } else {
-      const newEmployee: Employee = {
-        id: `emp_${Date.now()}`,
-        ...data,
-        avatarUrl: `https://i.pravatar.cc/150?u=${Date.now()}`
-      }
-      setEmployees([...employees, newEmployee]);
-      toast({ title: "Success", description: "New employee added." });
+    try {
+        if (editingEmployee) {
+          await updateEmployee(editingEmployee.id, data);
+          setEmployees(employees.map(e => e.id === editingEmployee.id ? { ...editingEmployee, ...data } : e));
+          toast({ title: "Success", description: "Employee details updated." });
+        } else {
+          const newEmployee: Omit<Employee, 'id'> = {
+            ...data,
+            avatarUrl: `https://i.pravatar.cc/150?u=${Date.now()}`
+          }
+          const newId = await addEmployee(newEmployee);
+          setEmployees([...employees, { id: newId, ...newEmployee }]);
+          toast({ title: "Success", description: "New employee added." });
+        }
+        setIsEmployeeDialogOpen(false);
+    } catch (error) {
+        toast({ title: "Error", description: "Could not save employee.", variant: "destructive"});
+    } finally {
+        setIsSubmitting(false);
     }
-    
-    setIsEmployeeDialogOpen(false);
-    setIsSubmitting(false);
   };
   
   const onTeamSubmit = async (data: z.infer<typeof teamSchema>) => {
       setIsSubmitting(true);
-      await new Promise(resolve => setTimeout(resolve, 500));
-      
-      if(editingTeam) {
-          setTeams(teams.map(t => t.id === editingTeam.id ? {...editingTeam, ...data} : t));
-          toast({ title: "Success", description: "Team updated." });
-      } else {
-          const newTeam: Team = { id: `team_${Date.now()}`, ...data };
-          setTeams([...teams, newTeam]);
-          toast({ title: "Success", description: "Team created." });
+      try {
+          if(editingTeam) {
+              await updateTeam(editingTeam.id, data);
+              setTeams(teams.map(t => t.id === editingTeam.id ? {...editingTeam, ...data} : t));
+              toast({ title: "Success", description: "Team updated." });
+          } else {
+              const newId = await addTeam(data);
+              const newTeam: Team = { id: newId, ...data };
+              setTeams([...teams, newTeam]);
+              toast({ title: "Success", description: "Team created." });
+          }
+          
+          const updatedEmployees = employees.map(emp => {
+             const team = teams.find(t => t.memberIds.includes(emp.id));
+             const newTeamName = team?.name;
+             if (emp.team !== newTeamName) {
+                 updateEmployee(emp.id, { team: newTeamName });
+             }
+             return {...emp, team: newTeamName };
+          });
+          setEmployees(updatedEmployees);
+          
+          setIsTeamDialogOpen(false);
+      } catch(error) {
+          toast({ title: "Error", description: "Could not save team.", variant: "destructive"});
+      } finally {
+          setIsSubmitting(false);
       }
-      
-      // Update team assignment on employee records
-      const updatedEmployees = employees.map(emp => {
-         const team = teams.find(t => t.memberIds.includes(emp.id));
-         return {...emp, team: team?.name };
-      });
-      setEmployees(updatedEmployees);
-      
-      setIsTeamDialogOpen(false);
-      setIsSubmitting(false);
   }
 
   const filteredEmployees = useMemo(() => employees.filter(employee =>
@@ -510,6 +557,14 @@ export default function AdminEmployeePage() {
         return `${names[0][0]}${names[names.length - 1][0]}`.toUpperCase();
     }
     return name.substring(0, 2).toUpperCase();
+  }
+
+  if (isLoading) {
+    return (
+      <div className="flex h-screen items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin" />
+      </div>
+    );
   }
 
   return (
@@ -663,7 +718,7 @@ export default function AdminEmployeePage() {
             </Card>
         </TabsContent>
         <TabsContent value="attendance" className="mt-6">
-            <AttendanceManager holidays={holidays} />
+            <AttendanceManager holidays={holidays} employees={employees} />
         </TabsContent>
         <TabsContent value="holidays" className="mt-6">
             <HolidayManager holidays={holidays} onAddHoliday={handleAddHoliday} onDeleteHoliday={handleDeleteHoliday} />
