@@ -26,6 +26,16 @@ export type CartItem = {
     quantity: number;
 }
 
+export type Recipe = {
+    id: string;
+    title: string;
+    description: string;
+    imageUrl: string;
+    instructions: string;
+    videoUrl?: string;
+    productIds: string[];
+}
+
 export type Category = {
   id: string;
   name:string;
@@ -143,14 +153,14 @@ export const categories: Category[] = [
 ];
 
 export const products: Product[] = [
-    { id: '1', name: 'Organic Bananas', description: 'A bunch of fresh, organic bananas.', weight: 'Approx. 500g', price: 1.99, imageUrls: ['product-banana'], categorySlug: 'fruits', offer: { type: 'percentage', value: 10}, dietaryType: 'veg' },
-    { id: '2', name: 'Farm Fresh Eggs', description: 'A dozen large, brown eggs.', weight: '12-pack', price: 3.49, imageUrls: ['product-eggs'], categorySlug: 'dairy', dietaryType: 'egg' },
-    { id: '3', name: 'Whole Milk', description: 'A gallon of whole milk.', weight: '1 gallon', price: 2.99, imageUrls: ['product-milk'], categorySlug: 'dairy', offer: { type: 'fixed', value: 0.50}, dietaryType: 'veg' },
-    { id: '4', name: 'Sourdough Bread', description: 'A loaf of freshly baked sourdough bread.', weight: '1 loaf', price: 4.99, imageUrls: ['product-bread'], categorySlug: 'bakery', dietaryType: 'veg' },
-    { id: '5', name: 'Ripe Tomatoes', description: 'Vine-ripened tomatoes, perfect for salads.', weight: '1 lb', price: 2.49, imageUrls: ['product-tomatoes'], categorySlug: 'vegetables', dietaryType: 'veg' },
-    { id: '6', name: 'Crunchy Carrots', description: 'A bunch of organic carrots.', weight: '1 lb', price: 1.49, imageUrls: ['product-carrots'], categorySlug: 'vegetables', dietaryType: 'veg' },
-    { id: '7', name: 'Granny Smith Apples', description: 'Tart and crisp green apples.', weight: '1 lb', price: 1.99, imageUrls: ['product-apples'], categorySlug: 'fruits', dietaryType: 'veg' },
-    { id: '8', name: 'Chicken Breast', description: 'Boneless, skinless chicken breast.', weight: '1 lb', price: 5.99, imageUrls: ['product-chicken'], categorySlug: 'meat-fish', dietaryType: 'non-veg' },
+    { id: '1', name: 'Organic Bananas', brand: 'Organic', description: 'A bunch of fresh, organic bananas.', weight: 'Approx. 500g', price: 1.99, imageUrls: ['product-banana'], categorySlug: 'fruits', offer: { type: 'percentage', value: 10}, dietaryType: 'veg' },
+    { id: '2', name: 'Farm Fresh Eggs', brand: 'Happy Hen', description: 'A dozen large, brown eggs.', weight: '12-pack', price: 3.49, imageUrls: ['product-eggs'], categorySlug: 'dairy', dietaryType: 'egg' },
+    { id: '3', name: 'Whole Milk', brand: 'Daily Fresh', description: 'A gallon of whole milk.', weight: '1 gallon', price: 2.99, imageUrls: ['product-milk'], categorySlug: 'dairy', offer: { type: 'fixed', value: 0.50}, dietaryType: 'veg' },
+    { id: '4', name: 'Sourdough Bread', brand: 'Artisan Bakes', description: 'A loaf of freshly baked sourdough bread.', weight: '1 loaf', price: 4.99, imageUrls: ['product-bread'], categorySlug: 'bakery', dietaryType: 'veg' },
+    { id: '5', name: 'Ripe Tomatoes', brand: 'VineRipe', description: 'Vine-ripened tomatoes, perfect for salads.', weight: '1 lb', price: 2.49, imageUrls: ['product-tomatoes'], categorySlug: 'vegetables', dietaryType: 'veg' },
+    { id: '6', name: 'Crunchy Carrots', brand: 'Organic', description: 'A bunch of organic carrots.', weight: '1 lb', price: 1.49, imageUrls: ['product-carrots'], categorySlug: 'vegetables', dietaryType: 'veg' },
+    { id: '7', name: 'Granny Smith Apples', brand: 'Orchard Best', description: 'Tart and crisp green apples.', weight: '1 lb', price: 1.99, imageUrls: ['product-apples'], categorySlug: 'fruits', dietaryType: 'veg' },
+    { id: '8', name: 'Chicken Breast', brand: 'Free Range Co.', description: 'Boneless, skinless chicken breast.', weight: '1 lb', price: 5.99, imageUrls: ['product-chicken'], categorySlug: 'meat-fish', dietaryType: 'non-veg' },
 ];
 
 export const user = {

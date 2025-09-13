@@ -2,32 +2,10 @@ rules_version = '2';
 
 service firebase.storage {
   match /b/{bucket}/o {
-    
-    // Helper function to check ownership
-    function isAuthOwner(userId) {
-      return request.auth != null && request.auth.uid == userId;
-    }
-
-    // Products and Categories images are public
-    match /products/{allPaths=**} {
+    // Allow public read access to all files
+    match /{allPaths=**} {
       allow read: if true;
-      allow write: if request.auth != null; // Restrict to authenticated users (admins)
-    }
-
-    match /categories/{allPaths=**} {
-      allow read: if true;
-      allow write: if request.auth != null; // Restrict to authenticated users (admins)
-    }
-    
-    match /appearance/{allPaths=**} {
-      allow read: if true;
-      allow write: if request.auth != null; // Restrict to authenticated users (admins)
-    }
-
-    // Rules for shop request document uploads
-    // A user can only write to their own folder inside `shop-requests`
-    match /shop-requests/{userId}/{allPaths=**} {
-      allow read, write: if isAuthOwner(userId);
+      allow write: if request.auth != null;
     }
   }
 }

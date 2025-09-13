@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import Link from 'next/link';
@@ -13,6 +14,7 @@ const ADMIN_EMAIL = 'dhandesaurav52@gmail.com';
 const allNavItems = [
   { href: '/admin/dashboard', label: 'Dashboard', icon: Home, adminOnly: false },
   { href: '/admin/products', label: 'Products', icon: Package, adminOnly: false },
+  { href: '/admin/recipes', label: 'Recipes', icon: UtensilsCrossed, adminOnly: false },
   { href: '/admin/orders', label: 'Orders', icon: ShoppingCart, adminOnly: false },
   { href: '/admin/categories', label: 'Categories', icon: LayoutGrid, adminOnly: false },
   { href: '/admin/offers', label: 'Offers', icon: Tag, adminOnly: false },

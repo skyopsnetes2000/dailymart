@@ -3,7 +3,7 @@
 import { initializeApp, getApp, getApps } from 'firebase/app';
 import { getFirestore, collection, getDocs, doc, addDoc, updateDoc, deleteDoc, query, where, writeBatch, orderBy, getDoc, setDoc, onSnapshot, runTransaction, arrayUnion, arrayRemove } from 'firebase/firestore';
 import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
-import { Product, Category, Offer, Order, OrderStatus, Address, CartItem, ReturnRequestItem, Employee, Team, Holiday, ShopRequest } from './data';
+import { Product, Category, Offer, Order, OrderStatus, Address, CartItem, ReturnRequestItem, Employee, Team, Holiday, ShopRequest, Recipe } from './data';
 import { firebaseConfig } from './firebase';
 
 const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
@@ -428,4 +428,34 @@ export async function updateShopRequestStatus(requestId: string, userId: string,
     }
 
     await batch.commit();
+}
+
+
+// --- Recipe Functions ---
+export async function getRecipes(): Promise<Recipe[]> {
+    const recipesCol = collection(db, 'recipes');
+    const snapshot = await getDocs(recipesCol);
+    return snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id } as Recipe));
+}
+
+export async function getRecipe(id: string): Promise<Recipe | null> {
+    const docRef = doc(db, 'recipes', id);
+    const docSnap = await getDoc(docRef);
+    if (docSnap.exists()) {
+        return { ...docSnap.data(), id: docSnap.id } as Recipe;
+    }
+    return null;
+}
+
+export async function addRecipe(recipe: Omit<Recipe, 'id'>): Promise<string> {
+    const docRef = await addDoc(collection(db, 'recipes'), recipe);
+    return docRef.id;
+}
+
+export async function updateRecipe(id: string, recipe: Partial<Recipe>): Promise<void> {
+    await updateDoc(doc(db, 'recipes', id), recipe);
+}
+
+export async function deleteRecipe(id: string): Promise<void> {
+    await deleteDoc(doc(db, 'recipes', id));
 }

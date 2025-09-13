@@ -1,90 +1,65 @@
-
 rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
-
-    function isAuth() {
-      return request.auth != null;
-    }
-
-    function isOwner(userId) {
-      return isAuth() && request.auth.uid == userId;
-    }
-
-    function isMainAdmin() {
-      return isAuth() && request.auth.token.email == 'dhandesaurav52@gmail.com';
-    }
-
-    // A user can manage their own user document
-    match /users/{userId} {
-      allow read, write: if isOwner(userId) || isMainAdmin();
-    }
-    
-    // A user can manage their own addresses
-    match /users/{userId}/addresses/{addressId} {
-        allow read, write, delete: if isOwner(userId);
-    }
-    
-    // A user can only access their own cart
-    match /carts/{userId} {
-      allow read, write: if isOwner(userId) || isMainAdmin();
-    }
-
-    // Products and Categories are public to read, but only admins can write
+    // Publicly readable collections
     match /products/{productId} {
-      allow read;
-      allow write: if isMainAdmin();
+      allow read: if true;
+      allow write: if get(/databases/$(database)/documents/users/$(request.auth.uid)).data.roles.hasAny(['admin', 'seller']);
     }
-
     match /categories/{categoryId} {
-      allow read;
-      allow write: if isMainAdmin();
+      allow read: if true;
+      allow write: if get(/databases/$(database)/documents/users/$(request.auth.uid)).data.roles.hasAny(['admin', 'seller']);
     }
-
-    // Appearance settings are public to read, admin to write
+    match /recipes/{recipeId} {
+      allow read: if true;
+      allow write: if get(/databases/$(database)/documents/users/$(request.auth.uid)).data.roles.hasAny(['admin', 'seller']);
+    }
     match /appearance/{docId} {
-      allow read;
-      allow write: if isMainAdmin();
+      allow read: if true;
+      allow write: if get(/databases/$(database)/documents/users/$(request.auth.uid)).data.roles.hasAny(['admin']);
     }
 
-    // Main admin can manage employees, teams, and holidays
-    match /employees/{employeeId} {
-        allow read, write: if isMainAdmin();
-    }
-    match /teams/{teamId} {
-        allow read, write: if isMainAdmin();
-    }
-    match /settings/{settingId} {
-        allow read, write: if isMainAdmin();
+    // User-specific data
+    match /users/{userId} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+      // Admins can read any user document
+      allow read: if get(/databases/$(database)/documents/users/$(request.auth.uid)).data.roles.hasAny(['admin']);
+      // Allow user creation
+      allow create: if request.auth != null;
     }
 
+    match /users/{userId}/addresses/{addressId} {
+      allow read, write, delete: if request.auth != null && request.auth.uid == userId;
+    }
 
+    match /carts/{userId} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
+
+    // Orders can be created by users, but only read by the user or an admin/seller
     match /orders/{orderId} {
-      // Allow user to create their own order
-      allow create: if isAuth() && request.resource.data.userId == request.auth.uid;
-      // Allow user to read/update their own order, or admin to do so
-      allow read, update: if isAuth() && (resource.data.userId == request.auth.uid || isMainAdmin());
+      allow create: if request.auth != null;
+      allow read: if (request.auth != null && request.auth.uid == resource.data.userId) || get(/databases/$(database)/documents/users/$(request.auth.uid)).data.roles.hasAny(['admin', 'seller']);
+      allow update: if get(/databases/$(database)/documents/users/$(request.auth.uid)).data.roles.hasAny(['admin', 'seller']);
     }
-
-    match /orders/{allOrders} {
-        // Allow a user to query for their own orders.
-        // The client-side query MUST include `where('userId', '==', request.auth.uid)`
-        allow list: if isAuth();
-    }
-
+    
+    // Seller and Employee management by Admins only
     match /shopRequests/{requestId} {
-      // Allow authenticated users to create a request
-      allow create: if isAuth();
-      // Allow admin to read/update any request
-      allow read, update: if isMainAdmin();
+        allow read, write, create: if get(/databases/$(database)/documents/users/$(request.auth.uid)).data.roles.hasAny(['admin']);
+        allow create: if request.auth != null; // Users can submit requests
+    }
+    
+    match /employees/{employeeId} {
+      allow read, write, create, delete: if get(/databases/$(database)/documents/users/$(request.auth.uid)).data.roles.hasAny(['admin']);
+    }
+    
+    match /teams/{teamId} {
+        allow read, write, create, delete: if get(/databases/$(database)/documents/users/$(request.auth.uid)).data.roles.hasAny(['admin']);
     }
 
-    match /shopRequests/{allRequests} {
-        // Allow main admin to list all requests.
-        // Allow authenticated users to list requests, which enables them to
-        // query for their own request using `where('userId', '==', request.auth.uid)`.
-        allow list: if isMainAdmin() || isAuth();
+    match /settings/{settingId} {
+        allow read, write: if get(/databases/$(database)/documents/users/$(request.auth.uid)).data.roles.hasAny(['admin']);
     }
   }
 }

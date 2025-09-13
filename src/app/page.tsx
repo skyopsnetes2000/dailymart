@@ -1,4 +1,5 @@
 
+
 import React from 'react';
 import HomeHeader from '@/components/home-header';
 import CategoryCard from '@/components/category-card';
@@ -9,12 +10,35 @@ import {
   CarouselContent,
   CarouselItem,
 } from '@/components/ui/carousel';
-import { Product, Category, AppearanceSettings } from '@/lib/data';
-import { getCategories, getProducts, getSpecialOfferProducts, getAppearanceSettings } from '@/lib/firestore';
+import { Product, Category, AppearanceSettings, Recipe } from '@/lib/data';
+import { getCategories, getProducts, getSpecialOfferProducts, getAppearanceSettings, getRecipes } from '@/lib/firestore';
 import AdCarousel from '@/components/ad-carousel';
 import SearchBar from '@/components/shared/search-bar';
 import { Button } from '@/components/ui/button';
 import HeroCarousel from '@/components/hero-carousel';
+import { Card, CardContent } from '@/components/ui/card';
+import Image from 'next/image';
+
+async function RecipeCard({ recipe }: { recipe: Recipe }) {
+    return (
+        <Link href={`/recipes/${recipe.id}`} className="group block">
+            <Card className="overflow-hidden transition-all duration-300 group-hover:shadow-lg group-hover:-translate-y-1">
+                <div className="relative aspect-video">
+                    <Image
+                        src={recipe.imageUrl}
+                        alt={recipe.title}
+                        fill
+                        className="object-cover transition-transform duration-300 group-hover:scale-105"
+                    />
+                </div>
+                <CardContent className="p-3">
+                    <h3 className="font-semibold text-sm truncate group-hover:text-primary">{recipe.title}</h3>
+                    <p className="text-xs text-muted-foreground line-clamp-2">{recipe.description}</p>
+                </CardContent>
+            </Card>
+        </Link>
+    )
+}
 
 export default async function Home() {
   const [
@@ -22,11 +46,13 @@ export default async function Home() {
     categories,
     specialOffers,
     appearance,
+    recipes,
   ] = await Promise.all([
     getProducts(),
     getCategories(),
     getSpecialOfferProducts(),
     getAppearanceSettings(),
+    getRecipes(),
   ]);
 
   const topCategories = categories.slice(0, 4);
@@ -39,7 +65,7 @@ export default async function Home() {
     <>
       <HomeHeader />
       <div className="space-y-8 p-4 pt-0 sm:p-6 sm:pt-0">
-        <section className="relative -mx-4 -mt-4 sm:-mx-6 sm:-mt-6 h-64 w-auto overflow-hidden rounded-b-2xl">
+        <section className="relative -mx-4 -mt-4 sm:-mx-6 h-64 w-auto overflow-hidden rounded-b-2xl">
             <HeroCarousel images={heroImageUrls} />
             <div className="absolute inset-0 bg-black/50" />
             <div className="absolute inset-0 flex flex-col items-center justify-center text-center text-white p-4">
@@ -123,6 +149,17 @@ export default async function Home() {
             <p className="text-muted-foreground">No best-selling products yet.</p>
           )}
         </section>
+
+        {recipes.length > 0 && (
+          <section className="space-y-4">
+            <h2 className="font-headline text-xl font-bold">Inspiration for your next meal</h2>
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+                {recipes.map((recipe) => (
+                    <RecipeCard key={recipe.id} recipe={recipe} />
+                ))}
+            </div>
+          </section>
+        )}
       </div>
     </>
   );
