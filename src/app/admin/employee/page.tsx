@@ -92,13 +92,19 @@ const initialHolidays: Holiday[] = [
     { date: new Date('2024-10-02'), name: 'Gandhi Jayanti' }
 ];
 
-function HolidayManager() {
-    const [holidays, setHolidays] = useState<Holiday[]>(initialHolidays);
+type HolidayManagerProps = {
+    holidays: Holiday[];
+    onAddHoliday: (date: Date, name: string) => void;
+    onDeleteHoliday: (date: Date) => void;
+};
+
+
+function HolidayManager({ holidays, onAddHoliday, onDeleteHoliday }: HolidayManagerProps) {
     const [selectedDate, setSelectedDate] = useState<Date | undefined>();
     const [holidayName, setHolidayName] = useState('');
     const { toast } = useToast();
 
-    const handleAddHoliday = () => {
+    const handleAddClick = () => {
         if (!selectedDate || !holidayName.trim()) {
             toast({
                 title: 'Missing Information',
@@ -107,34 +113,9 @@ function HolidayManager() {
             });
             return;
         }
-
-        if (holidays.some(h => isSameDay(h.date, selectedDate))) {
-            toast({
-                title: 'Date Already Marked',
-                description: 'This date is already set as a holiday.',
-                variant: 'destructive',
-            });
-            return;
-        }
-        
-        const newHolidays = [...holidays, { date: selectedDate, name: holidayName.trim() }]
-            .sort((a,b) => a.date.getTime() - b.date.getTime());
-
-        setHolidays(newHolidays);
+        onAddHoliday(selectedDate, holidayName.trim());
         setHolidayName('');
         setSelectedDate(undefined);
-        toast({
-            title: 'Holiday Added',
-            description: `${holidayName.trim()} has been added to the calendar.`,
-        });
-    };
-
-    const handleDeleteHoliday = (dateToDelete: Date) => {
-        setHolidays(holidays.filter(h => !isSameDay(h.date, dateToDelete)));
-        toast({
-            title: 'Holiday Removed',
-            description: 'The holiday has been removed.',
-        });
     };
 
     return (
@@ -157,7 +138,7 @@ function HolidayManager() {
                         value={holidayName}
                         onChange={(e) => setHolidayName(e.target.value)}
                     />
-                    <Button onClick={handleAddHoliday} className="w-full">
+                    <Button onClick={handleAddClick} className="w-full">
                         <PlusCircle className="mr-2 h-4 w-4" /> Add Holiday
                     </Button>
                 </div>
@@ -171,7 +152,7 @@ function HolidayManager() {
                                     <p className="font-medium">{holiday.name}</p>
                                     <p className="text-sm text-muted-foreground">{format(holiday.date, 'MMMM do, yyyy')}</p>
                                 </div>
-                                <Button variant="ghost" size="icon" onClick={() => handleDeleteHoliday(holiday.date)}>
+                                <Button variant="ghost" size="icon" onClick={() => onDeleteHoliday(holiday.date)}>
                                     <Trash2 className="h-4 w-4 text-destructive" />
                                 </Button>
                             </div>
@@ -186,9 +167,8 @@ function HolidayManager() {
     )
 }
 
-function AttendanceManager() {
+function AttendanceManager({ holidays }: { holidays: Holiday[] }) {
     const [currentDate, setCurrentDate] = useState(new Date());
-    const [holidays, setHolidays] = useState<Holiday[]>(initialHolidays);
     const [attendance, setAttendance] = useState<EmployeeAttendance>({});
     const [employees] = useState<Employee[]>(staticEmployees);
     const [selectedDay, setSelectedDay] = useState<Date | null>(null);
@@ -357,6 +337,7 @@ function AttendanceManager() {
 export default function AdminEmployeePage() {
   const [employees, setEmployees] = useState<Employee[]>(staticEmployees);
   const [teams, setTeams] = useState<Team[]>(staticTeams);
+  const [holidays, setHolidays] = useState<Holiday[]>(initialHolidays);
   const [isEmployeeDialogOpen, setIsEmployeeDialogOpen] = useState(false);
   const [isTeamDialogOpen, setIsTeamDialogOpen] = useState(false);
   const [editingEmployee, setEditingEmployee] = useState<Employee | null>(null);
@@ -372,6 +353,34 @@ export default function AdminEmployeePage() {
   const teamForm = useForm<z.infer<typeof teamSchema>>({
     resolver: zodResolver(teamSchema)
   })
+
+  const handleAddHoliday = (date: Date, name: string) => {
+    if (holidays.some(h => isSameDay(h.date, date))) {
+        toast({
+            title: 'Date Already Marked',
+            description: 'This date is already set as a holiday.',
+            variant: 'destructive',
+        });
+        return;
+    }
+    
+    const newHolidays = [...holidays, { date, name }]
+        .sort((a,b) => a.date.getTime() - b.date.getTime());
+    
+    setHolidays(newHolidays);
+    toast({
+        title: 'Holiday Added',
+        description: `${name} has been added to the calendar.`,
+    });
+  };
+
+  const handleDeleteHoliday = (dateToDelete: Date) => {
+      setHolidays(holidays.filter(h => !isSameDay(h.date, dateToDelete)));
+      toast({
+          title: 'Holiday Removed',
+          description: 'The holiday has been removed.',
+      });
+  };
 
   const handleAddNewEmployee = () => {
     setEditingEmployee(null);
@@ -628,10 +637,10 @@ export default function AdminEmployeePage() {
             </Card>
         </TabsContent>
         <TabsContent value="attendance" className="mt-6">
-            <AttendanceManager />
+            <AttendanceManager holidays={holidays} />
         </TabsContent>
         <TabsContent value="holidays" className="mt-6">
-            <HolidayManager />
+            <HolidayManager holidays={holidays} onAddHoliday={handleAddHoliday} onDeleteHoliday={handleDeleteHoliday} />
         </TabsContent>
       </Tabs>
       
