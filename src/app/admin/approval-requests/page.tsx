@@ -1,7 +1,7 @@
 
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import {
@@ -28,7 +28,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { type ShopRequest } from '@/lib/data';
-import { Loader2, CheckCircle, XCircle, FileText } from 'lucide-react';
+import { Loader2, CheckCircle, XCircle, FileText, RefreshCw } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { getShopRequests, updateShopRequestStatus } from '@/lib/firestore';
 import { format } from 'date-fns';
@@ -45,26 +45,30 @@ export default function AdminApprovalRequestsPage() {
     const [requests, setRequests] = useState<ShopRequest[]>([]);
     const [loading, setLoading] = useState(true);
     const [filterStatus, setFilterStatus] = useState<'pending' | 'approved' | 'rejected' | 'all'>('pending');
+    const [isRefreshing, setIsRefreshing] = useState(false);
     const { toast } = useToast();
 
-    useEffect(() => {
-        const fetchRequests = async () => {
-            try {
-                const allRequests = await getShopRequests();
-                setRequests(allRequests);
-            } catch (error) {
-                console.error("Failed to fetch shop requests:", error);
-                toast({
-                    title: 'Error',
-                    description: 'Could not load approval requests.',
-                    variant: 'destructive',
-                });
-            } finally {
-                setLoading(false);
-            }
-        };
-        fetchRequests();
+    const fetchRequests = useCallback(async () => {
+        setIsRefreshing(true);
+        try {
+            const allRequests = await getShopRequests();
+            setRequests(allRequests);
+        } catch (error) {
+            console.error("Failed to fetch shop requests:", error);
+            toast({
+                title: 'Error',
+                description: 'Could not load approval requests.',
+                variant: 'destructive',
+            });
+        } finally {
+            setLoading(false);
+            setIsRefreshing(false);
+        }
     }, [toast]);
+
+    useEffect(() => {
+        fetchRequests();
+    }, [fetchRequests]);
     
     const handleStatusChange = async (requestId: string, userId: string, newStatus: 'approved' | 'rejected') => {
         try {
@@ -97,7 +101,12 @@ export default function AdminApprovalRequestsPage() {
     return (
         <div className="space-y-6">
             <div className='flex justify-between items-center'>
-                <h1 className="text-3xl font-bold">Approval Requests</h1>
+                 <div className="flex items-center gap-4">
+                    <h1 className="text-3xl font-bold">Approval Requests</h1>
+                    <Button variant="outline" size="icon" onClick={fetchRequests} disabled={isRefreshing}>
+                        <RefreshCw className={isRefreshing ? "h-4 w-4 animate-spin" : "h-4 w-4"} />
+                    </Button>
+                </div>
                 <Select onValueChange={(value) => setFilterStatus(value as any)} defaultValue="pending">
                     <SelectTrigger className="w-[180px] h-10">
                         <SelectValue placeholder="Filter by status" />
