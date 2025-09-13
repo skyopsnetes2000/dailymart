@@ -47,6 +47,7 @@ export default function AdminOrdersPage() {
   const [openOrderId, setOpenOrderId] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState<OrderStatus | 'all'>('all');
+  const [filterCategory, setFilterCategory] = useState<string>('all');
   const [isRefreshing, setIsRefreshing] = useState(false);
   const { toast } = useToast();
 
@@ -113,12 +114,21 @@ export default function AdminOrdersPage() {
     'Cancelled',
   ];
 
+  const productToCategorySlugMap = new Map<string, string>();
+  products.forEach(prod => {
+    productToCategorySlugMap.set(prod.name, prod.categorySlug);
+  });
+
   const filteredOrders = orders.filter(order => {
     const matchesStatus = filterStatus === 'all' || order.status === filterStatus;
     const matchesSearch =
       order.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
       order.customerName.toLowerCase().includes(searchTerm.toLowerCase());
-    return matchesStatus && matchesSearch;
+    
+    const matchesCategory = filterCategory === 'all' || 
+        order.items.some(item => productToCategorySlugMap.get(item.productName) === filterCategory);
+        
+    return matchesStatus && matchesSearch && matchesCategory;
   });
 
   const productCategoryMap = new Map<string, string>();
@@ -139,8 +149,8 @@ export default function AdminOrdersPage() {
           <RefreshCw className={isRefreshing ? "h-4 w-4 animate-spin" : "h-4 w-4"} />
         </Button>
       </div>
-       <div className="flex gap-2">
-        <div className="relative flex-1">
+       <div className="flex flex-wrap gap-2">
+        <div className="relative flex-1 min-w-[200px]">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
           <Input
             placeholder="Search by Order ID or Customer..."
@@ -149,8 +159,21 @@ export default function AdminOrdersPage() {
             onChange={(e) => setSearchTerm(e.target.value)}
           />
         </div>
+        <Select onValueChange={setFilterCategory} defaultValue="all">
+          <SelectTrigger className="w-full sm:w-[180px] h-10">
+            <SelectValue placeholder="Category" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All Categories</SelectItem>
+            {categories.map((cat) => (
+              <SelectItem key={cat.id} value={cat.slug}>
+                {cat.name}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
         <Select onValueChange={(value) => setFilterStatus(value as OrderStatus | 'all')} defaultValue="all">
-          <SelectTrigger className="w-[180px] h-10">
+          <SelectTrigger className="w-full sm:w-[180px] h-10">
             <SelectValue placeholder="Status" />
           </SelectTrigger>
           <SelectContent>
