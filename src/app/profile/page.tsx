@@ -10,7 +10,7 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { LogIn, Loader2, ChevronRight, UserCog, LogOut } from "lucide-react";
 import { useAuthState } from "react-firebase-hooks/auth";
-import { auth } from "@/lib/firebase";
+import { auth, db } from "@/lib/firebase";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
@@ -20,6 +20,7 @@ import { signOut } from "firebase/auth";
 import { useToast } from "@/hooks/use-toast";
 import AccountSettings from "@/components/profile/account-settings";
 import { getOrders } from "@/lib/firestore";
+import { doc, getDoc } from "firebase/firestore";
 
 const ADMIN_EMAIL = 'dhandesaurav52@gmail.com';
 
@@ -30,6 +31,7 @@ export default function ProfilePage() {
   const { toast } = useToast();
   const [activeTab, setActiveTab] = useState('profile');
   const [orders, setOrders] = useState<Order[]>([]);
+  const [userRoles, setUserRoles] = useState<string[]>([]);
   
   useEffect(() => {
     if (!loading && !user) {
@@ -38,17 +40,25 @@ export default function ProfilePage() {
   }, [user, loading, router]);
   
   useEffect(() => {
-      const fetchOrders = async () => {
+      const fetchUserData = async () => {
         if (user) {
             try {
-                const userOrders = await getOrders(user.uid);
+                const userOrdersPromise = getOrders(user.uid);
+                const userDocPromise = getDoc(doc(db, 'users', user.uid));
+                
+                const [userOrders, userDoc] = await Promise.all([userOrdersPromise, userDocPromise]);
+
                 setOrders(userOrders);
+
+                if (userDoc.exists()) {
+                    setUserRoles(userDoc.data().roles || []);
+                }
             } catch (error) {
-                console.error("Could not fetch orders.", error);
+                console.error("Could not fetch user data.", error);
             }
         }
       }
-      fetchOrders();
+      fetchUserData();
   }, [user]);
 
   const handleLogout = async () => {
@@ -118,7 +128,7 @@ export default function ProfilePage() {
   }
 
   const recentOrders = orders.slice(0, 3);
-  const isAdmin = user.email === ADMIN_EMAIL;
+  const isAdmin = userRoles.includes('admin') || userRoles.includes('seller');
 
   return (
     <div>
