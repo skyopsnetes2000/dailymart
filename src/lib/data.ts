@@ -10,6 +10,7 @@ export type Offer = {
 export type Product = {
   id: string;
   name: string;
+  brand?: string;
   description: string;
   weight: string;
   price: number;
@@ -30,6 +31,7 @@ export type Category = {
   name:string;
   slug: string;
   imageId: string;
+  parentId?: string | null;
 };
 
 export type OrderStatus = 'Pending' | 'Packed' | 'Out for Delivery' | 'Delivered' | 'Return Initiated' | 'Return Successful' | 'Refund Completed' | 'Cancelled' | 'Return Requested';

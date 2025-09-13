@@ -108,6 +108,7 @@ export default function ProductDetailPage() {
                         </Card>
                         <Card>
                              <CardHeader>
+                                {product.brand && <p className="text-sm text-muted-foreground font-medium">{product.brand}</p>}
                                 <div className="flex items-center gap-2">
                                   <CardTitle className="text-3xl">{product.name}</CardTitle>
                                   <DietarySymbol type={product.dietaryType} size='lg' />

@@ -51,6 +51,7 @@ const ProductCard: FC<ProductCardProps> = ({ product }) => {
             </div>
         <CardContent className="flex-1 p-2 md:p-3 flex flex-col justify-between">
             <div>
+                {product.brand && <p className="text-xs text-muted-foreground truncate">{product.brand}</p>}
                 <p className="text-xs text-muted-foreground">{product.weight}</p>
                 <h3 className="mb-1 text-sm font-medium leading-tight line-clamp-2">{product.name}</h3>
             </div>

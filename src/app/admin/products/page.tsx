@@ -50,6 +50,7 @@ import { DietarySymbol } from '@/components/dietary-symbol';
 
 const productSchema = z.object({
   name: z.string().min(1, 'Name is required'),
+  brand: z.string().optional(),
   description: z.string().min(1, 'Description is required'),
   price: z.coerce.number().min(0.01, 'Price must be greater than 0'),
   weight: z.string().min(1, 'Weight is required'),
@@ -90,6 +91,7 @@ export default function AdminProductsPage() {
     setImagePreviews(product.imageUrls || []);
     form.reset({
       name: product.name,
+      brand: product.brand,
       description: product.description,
       price: product.price,
       weight: product.weight,
@@ -106,6 +108,7 @@ export default function AdminProductsPage() {
     setImagePreviews([]);
     form.reset({
       name: '',
+      brand: '',
       description: '',
       price: 0,
       weight: '',
@@ -171,6 +174,7 @@ export default function AdminProductsPage() {
       
       const productData: Omit<Product, 'id'> = {
         name: data.name,
+        brand: data.brand,
         description: data.description,
         price: data.price,
         weight: data.weight,
@@ -271,6 +275,19 @@ export default function AdminProductsPage() {
                           <FormLabel>Product Name</FormLabel>
                           <FormControl>
                             <Input {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="brand"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Brand Name</FormLabel>
+                          <FormControl>
+                            <Input placeholder="e.g. DailyMart Farms" {...field} />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
