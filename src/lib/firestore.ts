@@ -422,7 +422,8 @@ export async function updateShopRequestStatus(requestId: string, userId: string,
     batch.update(requestDoc, { status: status });
 
     if (status === 'approved') {
-        batch.update(userDoc, { roles: arrayUnion('seller') });
+        // Use set with merge to create the doc if it doesn't exist, or update it if it does.
+        batch.set(userDoc, { roles: arrayUnion('seller') }, { merge: true });
     }
 
     await batch.commit();
