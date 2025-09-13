@@ -1,8 +1,9 @@
+
 rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
-    
+
     function isAuth() {
       return request.auth != null;
     }
@@ -12,85 +13,87 @@ service cloud.firestore {
     }
     
     function isMainAdmin() {
-      return isAuth() && request.auth.token.email == 'dhandesaurav52@gmail.com';
+        return isAuth() && request.auth.token.email == 'dhandesaurav52@gmail.com';
     }
-    
-    function getUserRoles() {
-      // This get() can only succeed if the rules for the `users` collection allow it.
+
+    function getRoles() {
+      // Allow reading user's own roles
       return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.roles;
     }
 
     function isAdmin() {
-      return isAuth() && (isMainAdmin() || getUserRoles().hasAny(['admin']));
+      return isAuth() && getRoles().hasAny(['admin']);
     }
-    
+
     function isSeller() {
-        return isAuth() && (isAdmin() || getUserRoles().hasAny(['seller']));
+      return isAuth() && getRoles().hasAny(['seller']);
+    }
+
+    // Default deny all
+    match /{document=**} {
+      allow read, write: if false;
     }
 
     // Publicly readable collections
-    match /products/{productId} {
-      allow read: if true;
-      allow write: if isSeller();
-    }
-
     match /categories/{categoryId} {
       allow read: if true;
-      allow write: if isSeller();
+      allow write: if isAdmin() || isMainAdmin();
     }
-    
-    match /recipes/{recipeId} {
+
+    match /products/{productId} {
       allow read: if true;
-      allow write: if isSeller();
+      allow write: if isAdmin() || isMainAdmin() || isSeller();
+    }
+
+    match /recipes/{recipeId} {
+        allow read: if true;
+        allow write: if isAdmin() || isMainAdmin();
     }
     
     match /appearance/{docId} {
         allow read: if true;
-        allow write: if isAdmin();
+        allow write: if isAdmin() || isMainAdmin();
     }
     
     match /settings/{docId} {
         allow read: if true;
-        allow write: if isAdmin();
+        allow write: if isAdmin() || isMainAdmin();
     }
 
     // User-specific collections
     match /users/{userId} {
-      // A user can read their own document (to get roles). Admins can read any.
-      allow get: if isOwner(userId) || isAdmin();
-      allow list: if isAdmin();
-      // Only admins can create/update user roles.
-      allow write: if isAdmin();
+      allow read: if isOwner(userId) || isAdmin() || isMainAdmin();
+      allow create: if isAuth(); // Allow user creation on signup
+      allow update: if isOwner(userId) || isAdmin() || isMainAdmin(); // Admins or owners can update
+      allow delete: if isAdmin() || isMainAdmin(); // Only admins can delete users
     }
 
     match /carts/{userId} {
       allow read, write: if isOwner(userId);
-    }
-    
-    match /orders/{orderId} {
-        allow create: if isAuth(); // Allow any authenticated user to create an order
-        allow read: if isOwner(resource.data.userId) || isSeller();
-        allow update: if isSeller(); // Only sellers can update order status
     }
 
     match /users/{userId}/addresses/{addressId} {
       allow read, write, delete: if isOwner(userId);
     }
     
-    // Admin & Seller specific collections
+    match /orders/{orderId} {
+        allow read: if get(/databases/$(database)/documents/orders/$(orderId)).data.userId == request.auth.uid || isAdmin() || isMainAdmin() || isSeller();
+        allow create: if isAuth(); // Allow users to create their own orders
+        allow update: if isAdmin() || isMainAdmin() || isSeller();
+    }
+    
     match /shopRequests/{requestId} {
-      // Users can read their own request, admins can read any.
-      allow read: if isAuth() && (resource.data.userId == request.auth.uid || isAdmin());
-      allow create: if isAuth();
-      allow update: if isAdmin();
+        allow read: if isAuth(); // Allow users to read their own request status, and admins to read all
+        allow create: if isAuth();
+        allow update, delete: if isAdmin() || isMainAdmin();
     }
     
     match /employees/{employeeId} {
-        allow read, write: if isAdmin();
+        allow read, write, create, delete: if isAdmin() || isMainAdmin();
     }
     
     match /teams/{teamId} {
-        allow read, write: if isAdmin();
+        allow read, write, create, delete: if isAdmin() || isMainAdmin();
     }
   }
 }
