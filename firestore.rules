@@ -2,57 +2,46 @@ rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
-    
-    // PUBLIC: Products and Categories can be read by anyone.
-    // ADMIN: Only admins should be able to create, update, or delete them.
+    // Publicly readable data
     match /products/{productId} {
       allow read: if true;
-      allow write: if request.auth != null && request.auth.token.email == 'dhandesaurav52@gmail.com';
+      allow write: if request.auth != null; // Only authenticated users can write
     }
 
     match /categories/{categoryId} {
       allow read: if true;
-      allow write: if request.auth != null && request.auth.token.email == 'dhandesaurav52@gmail.com';
+      allow write: if request.auth != null;
     }
 
-    // PUBLIC: Appearance settings can be read by anyone.
-    // ADMIN: Only admins can change the appearance.
     match /appearance/{docId} {
-        allow read: if true;
-        allow write: if request.auth != null && request.auth.token.email == 'dhandesaurav52@gmail.com';
+      allow read: if true;
+      allow write: if request.auth != null;
     }
     
-    // USER-SPECIFIC: Users can only access their own data.
-    match /users/{userId} {
-      // A user can create their own user document and read/update it.
-      allow create, read, update: if request.auth != null && request.auth.uid == userId;
-      
-      // A user can manage their own addresses.
-      match /addresses/{addressId} {
-        allow read, write: if request.auth != null && request.auth.uid == userId;
-      }
-    }
-    
-    // CARTS: Users can only read and write to their own cart.
-    match /carts/{userId} {
+    // User-specific data
+    match /users/{userId}/{document=**} {
       allow read, write: if request.auth != null && request.auth.uid == userId;
     }
+    
+    match /carts/{userId} {
+       allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
 
-    // ORDERS:
     match /orders/{orderId} {
-        // Users can create their own orders.
-        allow create: if request.auth != null && request.resource.data.userId == request.auth.uid;
-        
-        // Users can read their own orders. Admins can read all orders.
-        allow read: if request.auth != null && (request.auth.uid == resource.data.userId || request.auth.token.email == 'dhandesaurav52@gmail.com');
-        
-        // Users can update their own order to request a return.
-        // Admins can update any order's status.
-        allow update: if request.auth != null && 
-                      (
-                        (request.auth.uid == resource.data.userId && request.resource.data.status == 'Return Requested') ||
-                        (request.auth.token.email == 'dhandesaurav52@gmail.com')
-                      );
+      allow read, write: if request.auth != null;
+    }
+    
+    // Admin-specific data
+    match /employees/{employeeId} {
+        allow read, write: if request.auth != null;
+    }
+    
+    match /teams/{teamId} {
+        allow read, write: if request.auth != null;
+    }
+    
+    match /settings/{settingId} {
+        allow read, write: if request.auth != null;
     }
   }
 }
