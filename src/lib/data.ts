@@ -77,6 +77,33 @@ export type AppearanceSettings = {
     ads: AdBanner[];
 }
 
+export type Employee = {
+    id: string;
+    name: string;
+    email: string;
+    phone: string;
+    role: string;
+    salary: number;
+    team?: string;
+    avatarUrl?: string;
+};
+
+export type Team = {
+    id: string;
+    name: string;
+    memberIds: string[];
+}
+
+export type LeaveRequest = {
+    id: string;
+    employeeId: string;
+    startDate: string;
+    endDate: string;
+    reason: string;
+    status: 'Pending' | 'Approved' | 'Rejected';
+}
+
+
 export const categories: Category[] = [
   { id: '1', name: 'Vegetables', slug: 'vegetables', imageId: 'category-veg' },
   { id: '2', name: 'Fruits', slug: 'fruits', imageId: 'category-fruits' },
