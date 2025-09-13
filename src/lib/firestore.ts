@@ -157,6 +157,16 @@ export async function submitReturnRequest(orderId: string, returnData: { items: 
   });
 }
 
+export async function deleteAllOrders(): Promise<void> {
+    const ordersCol = collection(db, 'orders');
+    const orderSnapshot = await getDocs(ordersCol);
+    const batch = writeBatch(db);
+    orderSnapshot.docs.forEach(doc => {
+        batch.delete(doc.ref);
+    });
+    await batch.commit();
+}
+
 // --- Address Functions (Authenticated) ---
 
 export async function getAddresses(userId: string): Promise<Address[]> {
