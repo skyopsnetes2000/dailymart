@@ -125,14 +125,16 @@ function HolidayManager({ holidays, onAddHoliday, onDeleteHoliday }: HolidayMana
                 <CardDescription>Add or remove company-wide public holidays.</CardDescription>
             </CardHeader>
             <CardContent className="grid md:grid-cols-2 gap-8">
-                <div className="space-y-4">
+                <div className="space-y-4 flex flex-col">
                     <h3 className="font-semibold">Add New Holiday</h3>
-                    <Calendar
-                        mode="single"
-                        selected={selectedDate}
-                        onSelect={setSelectedDate}
-                        className="rounded-md border"
-                    />
+                    <div className="flex justify-center">
+                        <Calendar
+                            mode="single"
+                            selected={selectedDate}
+                            onSelect={setSelectedDate}
+                            className="rounded-md border w-full max-w-sm"
+                        />
+                    </div>
                     <Input 
                         placeholder="Holiday Name (e.g., Diwali)"
                         value={holidayName}
