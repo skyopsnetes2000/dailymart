@@ -20,7 +20,7 @@ import { auth } from '@/lib/firebase';
 import { EmailAuthProvider, reauthenticateWithCredential, updatePassword } from 'firebase/auth';
 import { useToast } from '@/hooks/use-toast';
 import { useEffect, useState } from 'react';
-import { Loader2, Monitor, Moon, Sun, Download, Store, CheckCircle } from 'lucide-react';
+import { Loader2, Monitor, Moon, Sun, Download, Store, CheckCircle, XCircle } from 'lucide-react';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import Link from 'next/link';
@@ -227,45 +227,66 @@ export default function AccountSettings() {
     }
 
     if (shopRequest) {
-      if (shopRequest.status === 'pending') {
-        return (
-          <Card>
-            <CardHeader>
-              <CardTitle>Application Submitted</CardTitle>
-              <CardDescription>
-                Your application to become a seller is currently under review.
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <Button disabled className="w-full">
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Pending Approval
-              </Button>
-            </CardContent>
-          </Card>
-        );
-      }
-      if (shopRequest.status === 'approved') {
-         return (
-          <Card>
-            <CardHeader>
-              <CardTitle>Application Approved!</CardTitle>
-              <CardDescription>
-                Congratulations! You are now a registered seller on DailyMart.
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <Button disabled className="w-full bg-green-600 hover:bg-green-700">
-                <CheckCircle className="mr-2 h-4 w-4" />
-                Seller Account Activated
-              </Button>
-            </CardContent>
-          </Card>
-        );
+      switch (shopRequest.status) {
+        case 'pending':
+          return (
+            <Card>
+              <CardHeader>
+                <CardTitle>Application Submitted</CardTitle>
+                <CardDescription>
+                  Your application to become a seller is currently under review.
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <Button disabled className="w-full">
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Pending Approval
+                </Button>
+              </CardContent>
+            </Card>
+          );
+        case 'approved':
+          return (
+            <Card>
+              <CardHeader>
+                <CardTitle>Application Approved!</CardTitle>
+                <CardDescription>
+                  Congratulations! You are now a registered seller on DailyMart.
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <Button disabled className="w-full bg-green-600 hover:bg-green-700">
+                  <CheckCircle className="mr-2 h-4 w-4" />
+                  Seller Account Activated
+                </Button>
+              </CardContent>
+            </Card>
+          );
+        case 'rejected':
+          return (
+            <Card>
+              <CardHeader>
+                <CardTitle>Application Status</CardTitle>
+                <CardDescription className="text-destructive">
+                  Unfortunately, your recent application was not approved. You may re-apply if you have corrected the issues.
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <Button asChild className="w-full">
+                  <Link href="/profile/become-seller">
+                    <XCircle className="mr-2 h-4 w-4" />
+                    Re-apply to be a Seller
+                  </Link>
+                </Button>
+              </CardContent>
+            </Card>
+          );
+        default:
+          break;
       }
     }
     
-    // Default case: no request or a rejected one (for now)
+    // Default case: no request
     return (
        <Card>
         <CardHeader>
