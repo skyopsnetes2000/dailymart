@@ -12,81 +12,78 @@ service cloud.firestore {
       return request.auth.uid == userId;
     }
 
-    function getRole(userId) {
-        return get(/databases/$(database)/documents/users/$(userId)).data.roles;
-    }
-    
-    function isMainAdmin() {
-        return request.auth.token.email == 'dhandesaurav52@gmail.com';
+    function getRoles() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.roles;
     }
 
+    function isMainAdmin() {
+      return request.auth.token.email == 'dhandesaurav52@gmail.com';
+    }
+    
     function isAdmin() {
-        // Use hasAny to check for 'admin' in the list of roles.
-        return getRole(request.auth.uid).hasAny(['admin']);
+      return isSignedIn() && ('admin' in getRoles());
     }
 
     function isSeller() {
-        // Use hasAny to check for 'seller' or 'admin'
-        return getRole(request.auth.uid).hasAny(['seller', 'admin']);
-    }
-
-    // Publicly readable collections
-    match /categories/{categoryId} {
-      allow read: if true;
-      allow write: if isSignedIn() && (isAdmin() || isMainAdmin());
-    }
-
-    match /products/{productId} {
-      allow read: if true;
-      allow write: if isSignedIn() && (isSeller() || isMainAdmin());
+      return isSignedIn() && ('seller' in getRoles());
     }
     
-    match /recipes/{recipeId} {
-        allow read: if true;
-        allow write: if isSignedIn() && (isAdmin() || isMainAdmin());
-    }
+    // --- Collection Rules ---
 
-    match /appearance/{docId} {
-        allow read: if true;
-        allow write: if isSignedIn() && (isAdmin() || isMainAdmin());
-    }
-    
-    match /settings/{docId} {
-      allow read, write: if isSignedIn() && (isAdmin() || isMainAdmin());
-    }
-
-    // User-specific collections
+    // Users can be read by anyone, but only the owner or an admin can write.
     match /users/{userId} {
-      allow read, update: if isSignedIn() && isOwner(userId);
-      allow create: if isSignedIn();
-      // Admins can update any user's roles
-      allow update: if isSignedIn() && (isAdmin() || isMainAdmin());
+      allow read;
+      allow write: if isOwner(userId) || isAdmin() || isMainAdmin();
     }
 
+    // Public collections readable by anyone
+    match /products/{productId} {
+      allow read;
+      allow write: if isAdmin() || isSeller() || isMainAdmin();
+    }
+    match /categories/{categoryId} {
+      allow read;
+      allow write: if isAdmin() || isMainAdmin();
+    }
+    match /recipes/{recipeId} {
+      allow read;
+      allow write: if isAdmin() || isMainAdmin();
+    }
+     match /appearance/{docId} {
+      allow read;
+      allow write: if isAdmin() || isMainAdmin();
+    }
+    match /settings/{docId} {
+      allow read;
+      allow write: if isAdmin() || isMainAdmin();
+    }
+
+    // User-specific data
     match /carts/{userId} {
-      allow read, write: if isSignedIn() && isOwner(userId);
+      allow read, write: if isOwner(userId);
     }
-    
+    match /orders/{orderId} {
+      allow read: if isOwner(get(/databases/$(database)/documents/orders/$(orderId)).data.userId);
+      allow create: if isSignedIn();
+      allow update: if isAdmin() || isSeller() || isMainAdmin() || (isOwner(get(/databases/$(database)/documents/orders/$(orderId)).data.userId));
+    }
     match /users/{userId}/addresses/{addressId} {
-      allow read, write: if isSignedIn() && isOwner(userId);
+      allow read, write: if isOwner(userId);
     }
 
-    match /orders/{orderId} {
-      allow create, update: if isSignedIn(); // Allow create/update for authenticated users to place/update their own orders.
-      allow read: if isSignedIn() && (isOwner(resource.data.userId) || isSeller() || isMainAdmin());
+    // Admin/Seller only collections
+    match /employees/{employeeId} {
+      allow read, write: if isAdmin() || isMainAdmin();
     }
-    
+    match /teams/{teamId} {
+      allow read, write: if isAdmin() || isMainAdmin();
+    }
+
+    // Shop Requests
     match /shopRequests/{requestId} {
       allow create: if isSignedIn();
-      allow read, update: if isSignedIn() && (isAdmin() || isMainAdmin());
-    }
-    
-    match /employees/{employeeId} {
-        allow read, write: if isSignedIn() && (isAdmin() || isMainAdmin());
-    }
-
-    match /teams/{teamId} {
-        allow read, write: if isSignedIn() && (isAdmin() || isMainAdmin());
+      allow read: if isAdmin() || isMainAdmin() || isOwner(resource.data.userId);
+      allow update: if isAdmin() || isMainAdmin();
     }
   }
 }
