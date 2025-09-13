@@ -18,12 +18,12 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Card, CardContent } from '@/components/ui/card';
-import { Order, OrderStatus } from '@/lib/data';
+import { Order, OrderStatus, Product, Category } from '@/lib/data';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { format } from 'date-fns';
 import { ChevronDown, ChevronUp, RefreshCw, Search } from 'lucide-react';
-import { getOrders, updateOrderStatus } from '@/lib/firestore';
+import { getOrders, updateOrderStatus, getProducts, getCategories } from '@/lib/firestore';
 import { useToast } from '@/hooks/use-toast';
 import { Input } from '@/components/ui/input';
 
@@ -42,6 +42,8 @@ const statusColors: { [key in OrderStatus]: string } = {
 
 export default function AdminOrdersPage() {
   const [orders, setOrders] = useState<Order[]>([]);
+  const [products, setProducts] = useState<Product[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
   const [openOrderId, setOpenOrderId] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState<OrderStatus | 'all'>('all');
@@ -51,13 +53,19 @@ export default function AdminOrdersPage() {
   const fetchOrders = useCallback(async () => {
     setIsRefreshing(true);
     try {
-        const fetchedOrders = await getOrders();
+        const [fetchedOrders, fetchedProducts, fetchedCategories] = await Promise.all([
+          getOrders(),
+          getProducts(),
+          getCategories()
+        ]);
         setOrders(fetchedOrders);
+        setProducts(fetchedProducts);
+        setCategories(fetchedCategories);
     } catch (error) {
-        console.error("Could not fetch orders.", error);
+        console.error("Could not fetch data.", error);
         toast({
             title: "Error",
-            description: "Failed to fetch orders from the database.",
+            description: "Failed to fetch data from the database.",
             variant: "destructive"
         });
     } finally {
@@ -111,6 +119,16 @@ export default function AdminOrdersPage() {
       order.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
       order.customerName.toLowerCase().includes(searchTerm.toLowerCase());
     return matchesStatus && matchesSearch;
+  });
+
+  const productCategoryMap = new Map<string, string>();
+  const categorySlugMap = new Map<string, string>();
+  categories.forEach(cat => categorySlugMap.set(cat.slug, cat.name));
+  products.forEach(prod => {
+    const categoryName = categorySlugMap.get(prod.categorySlug);
+    if (categoryName) {
+      productCategoryMap.set(prod.name, categoryName);
+    }
   });
 
   return (
@@ -232,9 +250,14 @@ export default function AdminOrdersPage() {
                                   <p className="text-muted-foreground">Shipping address not available for this order.</p>
                                 )}
                                 <h4 className='font-semibold mt-4 mb-2'>Order Items</h4>
-                                <ul>
+                                <ul className="space-y-1">
                                     {order.items.map((item, index) => (
-                                        <li key={index}>{item.productName} (x{item.quantity})</li>
+                                        <li key={index} className="flex justify-between">
+                                            <div>
+                                                {item.productName} (x{item.quantity})
+                                                <p className="text-xs text-muted-foreground">{productCategoryMap.get(item.productName) || 'Unknown Category'}</p>
+                                            </div>
+                                        </li>
                                     ))}
                                 </ul>
                             </div>
