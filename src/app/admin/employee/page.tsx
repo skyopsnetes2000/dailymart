@@ -103,6 +103,7 @@ function HolidayManager({ holidays, onAddHoliday, onDeleteHoliday }: HolidayMana
     const [selectedDate, setSelectedDate] = useState<Date | undefined>();
     const [holidayName, setHolidayName] = useState('');
     const { toast } = useToast();
+    const [isCalendarOpen, setIsCalendarOpen] = useState(false);
 
     const handleAddClick = () => {
         if (!selectedDate || !holidayName.trim()) {
@@ -127,19 +128,42 @@ function HolidayManager({ holidays, onAddHoliday, onDeleteHoliday }: HolidayMana
             <CardContent className="grid md:grid-cols-2 gap-8">
                 <div className="space-y-4">
                     <h3 className="font-semibold">Add New Holiday</h3>
-                    <div>
-                        <Calendar
-                            mode="single"
-                            selected={selectedDate}
-                            onSelect={setSelectedDate}
-                            className="rounded-md border w-full max-w-sm"
+                    <div className='space-y-2'>
+                        <Label>Date</Label>
+                        <Popover open={isCalendarOpen} onOpenChange={setIsCalendarOpen}>
+                            <PopoverTrigger asChild>
+                                <Button
+                                variant={"outline"}
+                                className={cn(
+                                    "w-full justify-start text-left font-normal",
+                                    !selectedDate && "text-muted-foreground"
+                                )}
+                                >
+                                <CalendarIcon className="mr-2 h-4 w-4" />
+                                {selectedDate ? format(selectedDate, "PPP") : <span>Pick a date</span>}
+                                </Button>
+                            </PopoverTrigger>
+                            <PopoverContent className="w-auto p-0">
+                                <Calendar
+                                    mode="single"
+                                    selected={selectedDate}
+                                    onSelect={(date) => {
+                                        setSelectedDate(date);
+                                        setIsCalendarOpen(false);
+                                    }}
+                                    initialFocus
+                                />
+                            </PopoverContent>
+                        </Popover>
+                    </div>
+                     <div className='space-y-2'>
+                        <Label>Name</Label>
+                        <Input 
+                            placeholder="Holiday Name (e.g., Diwali)"
+                            value={holidayName}
+                            onChange={(e) => setHolidayName(e.target.value)}
                         />
                     </div>
-                    <Input 
-                        placeholder="Holiday Name (e.g., Diwali)"
-                        value={holidayName}
-                        onChange={(e) => setHolidayName(e.target.value)}
-                    />
                     <Button onClick={handleAddClick} className="w-full">
                         <PlusCircle className="mr-2 h-4 w-4" /> Add Holiday
                     </Button>
@@ -147,7 +171,7 @@ function HolidayManager({ holidays, onAddHoliday, onDeleteHoliday }: HolidayMana
                  <div className="space-y-4">
                     <h3 className="font-semibold">Upcoming Holidays</h3>
                     <ScrollArea className="h-96">
-                        <div className="space-y-2">
+                        <div className="space-y-2 pr-4">
                         {holidays.length > 0 ? holidays.map((holiday, index) => (
                             <div key={index} className="flex items-center justify-between rounded-md border p-3">
                                 <div>
