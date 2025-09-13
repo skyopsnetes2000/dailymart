@@ -1,15 +1,19 @@
+
 rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
-  
-    function isAdmin() {
-      // Check if the user has an 'admin' or 'super-admin' role.
-      // Use '.get' which returns a resource that might not exist, then check .data.
-      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.roles.hasAny(['admin', 'super-admin']);
+
+    // Helper functions
+    function isAuthOwner(userId) {
+      return request.auth != null && request.auth.uid == userId;
     }
 
-    // Publicly readable collections
+    function isAdmin() {
+      return request.auth != null && 'admin' in get(/databases/$(database)/documents/users/$(request.auth.uid)).data.roles;
+    }
+
+    // Public collections, readable by all
     match /products/{productId} {
       allow read: if true;
       allow write: if isAdmin();
@@ -22,46 +26,43 @@ service cloud.firestore {
       allow read: if true;
       allow write: if isAdmin();
     }
-    match /settings/{docId} {
-        allow read: if true;
-        allow write: if isAdmin();
+     match /settings/{settingId} {
+      allow read: if true;
+      allow write: if isAdmin();
     }
 
     // User-specific data
     match /users/{userId} {
-      allow read, update: if request.auth.uid == userId || isAdmin();
-      // Allow a user to create their own user document during signup
-      allow create: if request.auth.uid == userId;
-    }
-
-    match /users/{userId}/addresses/{addressId} {
-        allow read, write: if request.auth.uid == userId;
+      allow read, update: if isAuthOwner(userId) || isAdmin();
+      allow create: if isAuthOwner(userId);
     }
     
     match /carts/{userId} {
-      allow read, write: if request.auth.uid == userId;
-    }
-    
-    match /orders/{orderId} {
-        allow read: if request.auth.uid == resource.data.userId || isAdmin();
-        allow create: if request.auth.uid == request.resource.data.userId;
-        allow update: if isAdmin();
+      allow read, write: if isAuthOwner(userId);
     }
 
-    // Admin & shop-specific collections
+    match /users/{userId}/addresses/{addressId} {
+        allow read, write, delete: if isAuthOwner(userId);
+    }
+
+    // Order data
+    match /orders/{orderId} {
+      allow read, create: if isAuthOwner(get(/databases/$(database)/documents/orders/$(orderId)).data.userId);
+      allow write: if isAdmin(); // Only admins can update status
+    }
+
+    // Admin-only collections
     match /shopRequests/{requestId} {
-      // Any authenticated user can create a request.
-      allow create: if request.auth != null;
-      // Only admins can read or update (approve/reject) requests.
-      allow read, update: if isAdmin();
+      allow create: if request.auth != null; // Any authenticated user can create a request.
+      allow read, update, delete: if isAdmin();
     }
     
     match /employees/{employeeId} {
-        allow read, write: if isAdmin();
+      allow read, write: if isAdmin();
     }
     
     match /teams/{teamId} {
-        allow read, write: if isAdmin();
+      allow read, write: if isAdmin();
     }
   }
 }
