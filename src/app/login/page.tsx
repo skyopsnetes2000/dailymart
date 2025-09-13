@@ -1,3 +1,4 @@
+
 'use client';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
@@ -95,13 +96,19 @@ export default function LoginPage() {
       const userCredential = await createUserWithEmailAndPassword(auth, data.email, data.password);
       await updateProfile(userCredential.user, { displayName: data.name });
 
-      // Create a document in the 'users' collection
       const userDocRef = doc(db, 'users', userCredential.user.uid);
+      const isMainAdmin = data.email === ADMIN_EMAIL;
+      
+      const roles = ['customer'];
+      if (isMainAdmin) {
+          roles.push('admin');
+      }
+
       await setDoc(userDocRef, {
         uid: userCredential.user.uid,
         email: data.email,
         name: data.name,
-        isAdmin: data.email === ADMIN_EMAIL,
+        roles: roles,
         createdAt: new Date().toISOString(),
       });
       

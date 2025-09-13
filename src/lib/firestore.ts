@@ -1,7 +1,7 @@
 
 
 import { initializeApp, getApp, getApps } from 'firebase/app';
-import { getFirestore, collection, getDocs, doc, addDoc, updateDoc, deleteDoc, query, where, writeBatch, orderBy, getDoc, setDoc, onSnapshot, runTransaction } from 'firebase/firestore';
+import { getFirestore, collection, getDocs, doc, addDoc, updateDoc, deleteDoc, query, where, writeBatch, orderBy, getDoc, setDoc, onSnapshot, runTransaction, arrayUnion } from 'firebase/firestore';
 import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { Product, Category, Offer, Order, OrderStatus, Address, CartItem, ReturnRequestItem, Employee, Team, Holiday, ShopRequest } from './data';
 import { firebaseConfig } from './firebase';
@@ -206,16 +206,16 @@ export async function deleteAddress(userId: string, addressId: string): Promise<
 // --- Appearance Settings ---
 const APPEARANCE_DOC_ID = 'homepage';
 
-export async function getAppearanceSettings(): Promise<AppearanceSettings | null> {
+export async function getAppearanceSettings(): Promise<any | null> {
     const docRef = doc(db, 'appearance', APPEARANCE_DOC_ID);
     const docSnap = await getDoc(docRef);
     if (docSnap.exists()) {
-        return docSnap.data() as AppearanceSettings;
+        return docSnap.data();
     }
     return null;
 }
 
-export async function saveAppearanceSettings(settings: Partial<AppearanceSettings>): Promise<void> {
+export async function saveAppearanceSettings(settings: Partial<any>): Promise<void> {
     const docRef = doc(db, 'appearance', APPEARANCE_DOC_ID);
     await setDoc(docRef, settings, { merge: true });
 }
@@ -405,4 +405,25 @@ export async function getShopRequestForUser(userId: string): Promise<ShopRequest
         return { ...doc.data(), id: doc.id } as ShopRequest;
     }
     return null;
+}
+
+export async function getShopRequests(): Promise<ShopRequest[]> {
+    const requestsQuery = query(collection(db, 'shopRequests'), orderBy('submittedAt', 'desc'));
+    const snapshot = await getDocs(requestsQuery);
+    return snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id } as ShopRequest));
+}
+
+export async function updateShopRequestStatus(requestId: string, userId: string, status: 'approved' | 'rejected'): Promise<void> {
+    const requestDoc = doc(db, 'shopRequests', requestId);
+    const userDoc = doc(db, 'users', userId);
+
+    const batch = writeBatch(db);
+
+    batch.update(requestDoc, { status: status });
+
+    if (status === 'approved') {
+        batch.update(userDoc, { roles: arrayUnion('seller') });
+    }
+
+    await batch.commit();
 }
