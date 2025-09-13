@@ -10,7 +10,8 @@ async function SearchResults({ query }: { query: string }) {
   const allProducts = await getProducts();
   const products = allProducts.filter(p => 
       p.name.toLowerCase().includes(query.toLowerCase()) || 
-      p.description.toLowerCase().includes(query.toLowerCase())
+      p.description.toLowerCase().includes(query.toLowerCase()) ||
+      (p.subCategory && p.subCategory.toLowerCase().includes(query.toLowerCase()))
   );
 
   if (products.length === 0) {
