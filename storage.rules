@@ -2,10 +2,31 @@ rules_version = '2';
 
 service firebase.storage {
   match /b/{bucket}/o {
-    // Allow public read access to all files
-    match /{allPaths=**} {
+    // Helper function to check for admin or seller roles
+    function isSellerOrAdmin(userId) {
+      return exists(/databases/(default)/documents/users/$(userId)) &&
+             (get(/databases/(default)/documents/users/$(userId)).data.roles.hasAny(['admin', 'seller']));
+    }
+
+    // Main admin check
+    function isMainAdmin(userId) {
+        return get(/databases/(default)/documents/users/$(userId)).data.email == 'dhandesaurav52@gmail.com';
+    }
+    
+    // Public read for appearance, categories, products, and recipes images
+    match /{folder:(appearance|categories|products|recipes)}/{allPaths=**} {
       allow read: if true;
-      allow write: if request.auth != null;
+      allow write: if request.auth != null && (isSellerOrAdmin(request.auth.uid) || isMainAdmin(request.auth.uid));
+    }
+    
+    // Users can only upload to their own shop request folder
+    match /shop-requests/{userId}/{allPaths=**} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
+    
+    // Default deny all other paths
+    match /{allPaths=**} {
+      allow read, write: if false;
     }
   }
 }
