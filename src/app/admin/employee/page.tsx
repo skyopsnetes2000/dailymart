@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import React, { useState, useMemo } from 'react';
@@ -53,6 +52,7 @@ import { Check } from 'lucide-react';
 import { Calendar } from '@/components/ui/calendar';
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, getDay, isSameDay, addMonths, subMonths, getDaysInMonth, startOfWeek, endOfWeek, isSameMonth } from 'date-fns';
 import { Switch } from '@/components/ui/switch';
+import { Label } from '@/components/ui/label';
 
 
 const employeeSchema = z.object({
@@ -389,8 +389,8 @@ export default function AdminEmployeePage() {
         <TabsList>
           <TabsTrigger value="employees">All Employees</TabsTrigger>
           <TabsTrigger value="teams">Teams</TabsTrigger>
-          <TabsTrigger value="leave">Leave Requests</TabsTrigger>
           <TabsTrigger value="attendance">Attendance</TabsTrigger>
+          <TabsTrigger value="holidays">Holidays</TabsTrigger>
         </TabsList>
         <TabsContent value="employees" className="mt-6">
             <Card>
@@ -531,19 +531,19 @@ export default function AdminEmployeePage() {
                 </CardContent>
             </Card>
         </TabsContent>
-        <TabsContent value="leave" className="mt-6">
-            <Card>
-                <CardHeader>
-                    <CardTitle>Leave Requests</CardTitle>
-                    <CardDescription>Manage employee holidays and leave. Coming soon!</CardDescription>
-                </CardHeader>
-                <CardContent>
-                    <p>This section will allow you to approve or reject leave requests.</p>
-                </CardContent>
-            </Card>
-        </TabsContent>
         <TabsContent value="attendance" className="mt-6">
             <AttendanceManager />
+        </TabsContent>
+        <TabsContent value="holidays" className="mt-6">
+            <Card>
+                <CardHeader>
+                    <CardTitle>Holidays</CardTitle>
+                    <CardDescription>Manage company-wide holidays. Coming soon!</CardDescription>
+                </CardHeader>
+                <CardContent>
+                    <p>This section will allow you to set public holidays for your company.</p>
+                </CardContent>
+            </Card>
         </TabsContent>
       </Tabs>
       
@@ -731,6 +731,5 @@ export default function AdminEmployeePage() {
     </div>
   );
 }
-
 
     
