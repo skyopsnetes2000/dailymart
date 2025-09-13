@@ -28,12 +28,14 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { type ShopRequest } from '@/lib/data';
-import { Loader2, CheckCircle, XCircle, FileText, RefreshCw } from 'lucide-react';
+import { Loader2, CheckCircle, XCircle, FileText, RefreshCw, AlertTriangle } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { getShopRequests, updateShopRequestStatus } from '@/lib/firestore';
 import { format } from 'date-fns';
 import { Badge } from '@/components/ui/badge';
 import Image from 'next/image';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
+
 
 const statusColors = {
     pending: 'bg-yellow-500',
@@ -89,6 +91,28 @@ export default function AdminApprovalRequestsPage() {
             });
         }
     }
+    
+    const handleRevoke = async (requestId: string, userId: string) => {
+        try {
+            // We can reuse the update function with 'rejected' status to revoke access
+            await updateShopRequestStatus(requestId, userId, 'rejected');
+             setRequests(prev => prev.map(req => 
+                req.id === requestId ? { ...req, status: 'rejected' } : req
+            ));
+            toast({
+                title: 'Access Revoked',
+                description: 'Seller access has been successfully revoked.',
+            });
+        } catch (error) {
+             console.error(`Failed to revoke access:`, error);
+             toast({
+                title: 'Action Failed',
+                description: 'Could not revoke seller access.',
+                variant: 'destructive',
+            });
+        }
+    }
+
 
     const filteredRequests = requests.filter(req => 
         filterStatus === 'all' || req.status === filterStatus
@@ -219,10 +243,10 @@ export default function AdminApprovalRequestsPage() {
                                     <div className="text-sm text-muted-foreground">{req.contactNumber}</div>
                                 </TableCell>
                                 <TableCell>{format(new Date(req.submittedAt), 'PP')}</TableCell>
-                                <TableCell className="text-right">
+                                <TableCell className="text-right space-x-2">
                                      <Dialog>
                                         <DialogTrigger asChild>
-                                            <Button variant="outline" size="sm"><FileText className="mr-2 h-4 w-4" />View Docs</Button>
+                                            <Button variant="outline" size="sm"><FileText className="mr-2 h-4 w-4" />Docs</Button>
                                         </DialogTrigger>
                                         <DialogContent className="max-w-4xl">
                                             <DialogHeader>
@@ -241,6 +265,33 @@ export default function AdminApprovalRequestsPage() {
                                             </div>
                                         </DialogContent>
                                     </Dialog>
+                                    <AlertDialog>
+                                        <AlertDialogTrigger asChild>
+                                             <Button variant="destructive" size="sm">
+                                                <XCircle className="mr-2 h-4 w-4" />
+                                                Revoke
+                                            </Button>
+                                        </AlertDialogTrigger>
+                                        <AlertDialogContent>
+                                            <AlertDialogHeader>
+                                            <AlertDialogTitle className="flex items-center gap-2">
+                                                <AlertTriangle className="text-destructive" /> Are you absolutely sure?
+                                            </AlertDialogTitle>
+                                            <AlertDialogDescription>
+                                                This action will revoke the seller's access to the admin panel. They will have to re-apply to regain access. This cannot be undone.
+                                            </AlertDialogDescription>
+                                            </AlertDialogHeader>
+                                            <AlertDialogFooter>
+                                            <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                            <AlertDialogAction
+                                                className="bg-destructive hover:bg-destructive/90"
+                                                onClick={() => handleRevoke(req.id, req.userId)}
+                                            >
+                                                Yes, revoke access
+                                            </AlertDialogAction>
+                                            </AlertDialogFooter>
+                                        </AlertDialogContent>
+                                    </AlertDialog>
                                 </TableCell>
                             </TableRow>
                            )) : (
