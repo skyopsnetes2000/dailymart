@@ -3,7 +3,7 @@
 import { initializeApp, getApp, getApps } from 'firebase/app';
 import { getFirestore, collection, getDocs, doc, addDoc, updateDoc, deleteDoc, query, where, writeBatch, orderBy, getDoc, setDoc, onSnapshot, runTransaction } from 'firebase/firestore';
 import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
-import { Product, Category, Offer, Order, OrderStatus, Address, CartItem, ReturnRequestItem, Employee, Team, Holiday } from './data';
+import { Product, Category, Offer, Order, OrderStatus, Address, CartItem, ReturnRequestItem, Employee, Team, Holiday, ShopRequest } from './data';
 import { firebaseConfig } from './firebase';
 
 const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
@@ -384,4 +384,15 @@ export async function saveHolidays(holidays: Holiday[]): Promise<void> {
   // Convert Date objects to Firestore Timestamps for storing
   const holidaysToStore = holidays.map(h => ({ ...h, date: h.date }));
   await setDoc(docRef, { holidays: holidaysToStore });
+}
+
+// --- Shop Request Functions ---
+
+export async function submitShopRequest(request: Omit<ShopRequest, 'id' | 'status' | 'submittedAt'>): Promise<void> {
+    const requestCol = collection(db, 'shopRequests');
+    await addDoc(requestCol, {
+        ...request,
+        status: 'pending',
+        submittedAt: new Date().toISOString(),
+    });
 }

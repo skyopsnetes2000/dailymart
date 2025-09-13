@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { z } from 'zod';
@@ -19,9 +20,10 @@ import { auth } from '@/lib/firebase';
 import { EmailAuthProvider, reauthenticateWithCredential, updatePassword } from 'firebase/auth';
 import { useToast } from '@/hooks/use-toast';
 import { useEffect, useState } from 'react';
-import { Loader2, Monitor, Moon, Sun, Download } from 'lucide-react';
+import { Loader2, Monitor, Moon, Sun, Download, Store } from 'lucide-react';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
+import Link from 'next/link';
 
 const passwordSchema = z.object({
   currentPassword: z.string().min(1, 'Current password is required.'),
@@ -192,6 +194,23 @@ export default function AccountSettings() {
 
   return (
     <div className="space-y-6">
+      <Card>
+        <CardHeader>
+          <CardTitle>Become a Seller</CardTitle>
+          <CardDescription>
+            Want to grow your business? Register your shop on DailyMart and reach more customers.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Button asChild className="w-full">
+            <Link href="/profile/become-seller">
+              <Store className="mr-2 h-4 w-4" />
+              Register Your Business
+            </Link>
+          </Button>
+        </CardContent>
+      </Card>
+
       <ThemeSelector />
       
       <PwaInstall />
