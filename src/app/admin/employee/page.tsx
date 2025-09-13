@@ -39,13 +39,17 @@ import {
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { type Employee } from '@/lib/data';
-import { Loader2, Pencil, PlusCircle, Search, Trash2 } from 'lucide-react';
+import { type Employee, type Team } from '@/lib/data';
+import { Loader2, Pencil, PlusCircle, Search, Trash2, Users } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
+import { cn } from '@/lib/utils';
+import { Check } from 'lucide-react';
 
 
 const employeeSchema = z.object({
@@ -57,6 +61,11 @@ const employeeSchema = z.object({
   team: z.string().optional(),
 });
 
+const teamSchema = z.object({
+    name: z.string().min(1, 'Team name is required'),
+    memberIds: z.array(z.string()),
+})
+
 const staticEmployees: Employee[] = [
     { id: '1', name: 'Saurav Dhande', email: 'saurav@example.com', phone: '123-456-7890', role: 'Manager', salary: 75000, team: 'Operations', avatarUrl: 'https://i.pravatar.cc/150?u=a042581f4e29026704d' },
     { id: '2', name: 'Jane Smith', email: 'jane@example.com', phone: '234-567-8901', role: 'Cashier', salary: 45000, team: 'Frontend', avatarUrl: 'https://i.pravatar.cc/150?u=a042581f4e29026705d' },
@@ -64,27 +73,41 @@ const staticEmployees: Employee[] = [
     { id: '4', name: 'Emily Davis', email: 'emily@example.com', phone: '456-789-0123', role: 'Delivery Driver', salary: 50000, team: 'Logistics', avatarUrl: 'https://i.pravatar.cc/150?u=a042581f4e29026707d' },
 ];
 
+const staticTeams: Team[] = [
+    { id: '1', name: 'Operations', memberIds: ['1'] },
+    { id: '2', name: 'Frontend', memberIds: ['2'] },
+    { id: '3', name: 'Backend', memberIds: ['3'] },
+    { id: '4', name: 'Logistics', memberIds: ['4'] },
+];
+
 export default function AdminEmployeePage() {
   const [employees, setEmployees] = useState<Employee[]>(staticEmployees);
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [teams, setTeams] = useState<Team[]>(staticTeams);
+  const [isEmployeeDialogOpen, setIsEmployeeDialogOpen] = useState(false);
+  const [isTeamDialogOpen, setIsTeamDialogOpen] = useState(false);
   const [editingEmployee, setEditingEmployee] = useState<Employee | null>(null);
+  const [editingTeam, setEditingTeam] = useState<Team | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { toast } = useToast();
 
-  const form = useForm<z.infer<typeof employeeSchema>>({
+  const employeeForm = useForm<z.infer<typeof employeeSchema>>({
     resolver: zodResolver(employeeSchema),
   });
+  
+  const teamForm = useForm<z.infer<typeof teamSchema>>({
+    resolver: zodResolver(teamSchema)
+  })
 
-  const handleAddNew = () => {
+  const handleAddNewEmployee = () => {
     setEditingEmployee(null);
-    form.reset({ name: '', email: '', phone: '', role: '', salary: 0, team: '' });
-    setIsDialogOpen(true);
+    employeeForm.reset({ name: '', email: '', phone: '', role: '', salary: 0, team: '' });
+    setIsEmployeeDialogOpen(true);
   };
 
-  const handleEdit = (employee: Employee) => {
+  const handleEditEmployee = (employee: Employee) => {
     setEditingEmployee(employee);
-    form.reset({
+    employeeForm.reset({
       name: employee.name,
       email: employee.email,
       phone: employee.phone,
@@ -92,19 +115,37 @@ export default function AdminEmployeePage() {
       salary: employee.salary,
       team: employee.team
     });
-    setIsDialogOpen(true);
+    setIsEmployeeDialogOpen(true);
   };
 
-  const handleDelete = async (employeeId: string) => {
-    // In a real app, you would call your Firestore delete function here
+  const handleDeleteEmployee = async (employeeId: string) => {
+    // In a real app, you would also remove the employee from any teams
     setEmployees(employees.filter((e) => e.id !== employeeId));
     toast({ title: "Success", description: "Employee removed." });
   };
+  
+  const handleAddNewTeam = () => {
+    setEditingTeam(null);
+    teamForm.reset({ name: '', memberIds: [] });
+    setIsTeamDialogOpen(true);
+  }
 
-  const onSubmit = async (data: z.infer<typeof employeeSchema>) => {
+  const handleEditTeam = (team: Team) => {
+    setEditingTeam(team);
+    teamForm.reset({ name: team.name, memberIds: team.memberIds });
+    setIsTeamDialogOpen(true);
+  }
+
+  const handleDeleteTeam = (teamId: string) => {
+    setTeams(teams.filter(t => t.id !== teamId));
+    // Also update employees who were in this team
+    setEmployees(employees.map(e => e.team === teams.find(t=>t.id===teamId)?.name ? {...e, team: undefined} : e));
+    toast({ title: "Success", description: "Team deleted." });
+  }
+
+  const onEmployeeSubmit = async (data: z.infer<typeof employeeSchema>) => {
     setIsSubmitting(true);
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 1000));
+    await new Promise(resolve => setTimeout(resolve, 500));
     
     if (editingEmployee) {
       setEmployees(employees.map(e => e.id === editingEmployee.id ? { ...editingEmployee, ...data } : e));
@@ -119,9 +160,33 @@ export default function AdminEmployeePage() {
       toast({ title: "Success", description: "New employee added." });
     }
     
-    setIsDialogOpen(false);
+    setIsEmployeeDialogOpen(false);
     setIsSubmitting(false);
   };
+  
+  const onTeamSubmit = async (data: z.infer<typeof teamSchema>) => {
+      setIsSubmitting(true);
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
+      if(editingTeam) {
+          setTeams(teams.map(t => t.id === editingTeam.id ? {...editingTeam, ...data} : t));
+          toast({ title: "Success", description: "Team updated." });
+      } else {
+          const newTeam: Team = { id: `team_${Date.now()}`, ...data };
+          setTeams([...teams, newTeam]);
+          toast({ title: "Success", description: "Team created." });
+      }
+      
+      // Update team assignment on employee records
+      const updatedEmployees = employees.map(emp => {
+         const team = teams.find(t => t.memberIds.includes(emp.id));
+         return {...emp, team: team?.name };
+      });
+      setEmployees(updatedEmployees);
+      
+      setIsTeamDialogOpen(false);
+      setIsSubmitting(false);
+  }
 
   const filteredEmployees = useMemo(() => employees.filter(employee =>
     employee.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -130,6 +195,7 @@ export default function AdminEmployeePage() {
   ), [employees, searchTerm]);
   
   const getInitials = (name: string) => {
+    if(!name) return '';
     const names = name.split(' ');
     if (names.length > 1) {
         return `${names[0][0]}${names[names.length - 1][0]}`.toUpperCase();
@@ -156,7 +222,7 @@ export default function AdminEmployeePage() {
                         <CardTitle>All Employees</CardTitle>
                         <CardDescription>View, add, edit, or remove employees.</CardDescription>
                     </div>
-                     <Button onClick={handleAddNew}>
+                     <Button onClick={handleAddNewEmployee}>
                         <PlusCircle className="mr-2 h-4 w-4" />
                         Add Employee
                     </Button>
@@ -209,14 +275,14 @@ export default function AdminEmployeePage() {
                                 <Button
                                   variant="outline"
                                   size="icon"
-                                  onClick={() => handleEdit(employee)}
+                                  onClick={() => handleEditEmployee(employee)}
                                 >
                                   <Pencil className="h-4 w-4" />
                                 </Button>
                                 <Button
                                   variant="destructive"
                                   size="icon"
-                                  onClick={() => handleDelete(employee.id)}
+                                  onClick={() => handleDeleteEmployee(employee.id)}
                                 >
                                   <Trash2 className="h-4 w-4" />
                                 </Button>
@@ -232,11 +298,58 @@ export default function AdminEmployeePage() {
         <TabsContent value="teams" className="mt-6">
             <Card>
                 <CardHeader>
-                    <CardTitle>Teams</CardTitle>
-                    <CardDescription>Manage employee teams. Coming soon!</CardDescription>
+                    <div className='flex justify-between items-center'>
+                      <div>
+                        <CardTitle>Teams</CardTitle>
+                        <CardDescription>Create and manage employee teams.</CardDescription>
+                      </div>
+                      <Button onClick={handleAddNewTeam}>
+                          <PlusCircle className="mr-2 h-4 w-4" />
+                          Create Team
+                      </Button>
+                    </div>
                 </CardHeader>
                 <CardContent>
-                    <p>This section will allow you to create and manage teams.</p>
+                    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                      {teams.map(team => {
+                        const members = employees.filter(e => team.memberIds.includes(e.id));
+                        return (
+                          <Card key={team.id}>
+                            <CardHeader>
+                              <div className='flex justify-between items-start'>
+                                <div>
+                                  <CardTitle className='text-lg'>{team.name}</CardTitle>
+                                  <CardDescription>{members.length} member(s)</CardDescription>
+                                </div>
+                                <div className='flex gap-1'>
+                                  <Button variant="ghost" size="icon" className='h-8 w-8' onClick={() => handleEditTeam(team)}>
+                                    <Pencil className="h-4 w-4" />
+                                  </Button>
+                                  <Button variant="ghost" size="icon" className='h-8 w-8 text-destructive' onClick={() => handleDeleteTeam(team.id)}>
+                                    <Trash2 className="h-4 w-4" />
+                                  </Button>
+                                </div>
+                              </div>
+                            </CardHeader>
+                            <CardContent>
+                              <div className="flex -space-x-2 overflow-hidden">
+                                {members.slice(0,5).map(member => (
+                                  <Avatar key={member.id} className='h-8 w-8 border-2 border-background'>
+                                    <AvatarImage src={member.avatarUrl} />
+                                    <AvatarFallback>{getInitials(member.name)}</AvatarFallback>
+                                  </Avatar>
+                                ))}
+                                {members.length > 5 && (
+                                    <Avatar className='h-8 w-8 border-2 border-background'>
+                                        <AvatarFallback>+{members.length - 5}</AvatarFallback>
+                                    </Avatar>
+                                )}
+                              </div>
+                            </CardContent>
+                          </Card>
+                        )
+                      })}
+                    </div>
                 </CardContent>
             </Card>
         </TabsContent>
@@ -264,7 +377,7 @@ export default function AdminEmployeePage() {
         </TabsContent>
       </Tabs>
       
-      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+      <Dialog open={isEmployeeDialogOpen} onOpenChange={setIsEmployeeDialogOpen}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle>{editingEmployee ? 'Edit Employee' : 'Add New Employee'}</DialogTitle>
@@ -272,12 +385,12 @@ export default function AdminEmployeePage() {
               {editingEmployee ? 'Update the details for this employee.' : 'Fill out the form to add a new employee.'}
             </DialogDescription>
           </DialogHeader>
-          <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+          <Form {...employeeForm}>
+            <form onSubmit={employeeForm.handleSubmit(onEmployeeSubmit)} className="space-y-4">
                 <ScrollArea className='h-96 p-4'>
                     <div className='space-y-4'>
                         <FormField
-                        control={form.control}
+                        control={employeeForm.control}
                         name="name"
                         render={({ field }) => (
                             <FormItem>
@@ -288,7 +401,7 @@ export default function AdminEmployeePage() {
                         )}
                         />
                         <FormField
-                        control={form.control}
+                        control={employeeForm.control}
                         name="email"
                         render={({ field }) => (
                             <FormItem>
@@ -299,7 +412,7 @@ export default function AdminEmployeePage() {
                         )}
                         />
                         <FormField
-                        control={form.control}
+                        control={employeeForm.control}
                         name="phone"
                         render={({ field }) => (
                             <FormItem>
@@ -310,7 +423,7 @@ export default function AdminEmployeePage() {
                         )}
                         />
                         <FormField
-                        control={form.control}
+                        control={employeeForm.control}
                         name="role"
                         render={({ field }) => (
                             <FormItem>
@@ -321,7 +434,7 @@ export default function AdminEmployeePage() {
                         )}
                         />
                         <FormField
-                        control={form.control}
+                        control={employeeForm.control}
                         name="salary"
                         render={({ field }) => (
                             <FormItem>
@@ -332,7 +445,7 @@ export default function AdminEmployeePage() {
                         )}
                         />
                         <FormField
-                        control={form.control}
+                        control={employeeForm.control}
                         name="team"
                         render={({ field }) => (
                         <FormItem>
@@ -344,10 +457,7 @@ export default function AdminEmployeePage() {
                               </SelectTrigger>
                             </FormControl>
                             <SelectContent>
-                              <SelectItem value="Frontend">Frontend</SelectItem>
-                              <SelectItem value="Backend">Backend</SelectItem>
-                              <SelectItem value="Logistics">Logistics</SelectItem>
-                              <SelectItem value="Operations">Operations</SelectItem>
+                              {teams.map(team => <SelectItem key={team.id} value={team.name}>{team.name}</SelectItem>)}
                             </SelectContent>
                           </Select>
                           <FormMessage />
@@ -364,6 +474,88 @@ export default function AdminEmployeePage() {
                 </div>
             </form>
           </Form>
+        </DialogContent>
+      </Dialog>
+      
+      <Dialog open={isTeamDialogOpen} onOpenChange={setIsTeamDialogOpen}>
+        <DialogContent>
+            <DialogHeader>
+                 <DialogTitle>{editingTeam ? 'Edit Team' : 'Create New Team'}</DialogTitle>
+                 <DialogDescription>
+                    {editingTeam ? 'Update the team name and members.' : 'Create a new team and assign members.'}
+                 </DialogDescription>
+            </DialogHeader>
+             <Form {...teamForm}>
+                <form onSubmit={teamForm.handleSubmit(onTeamSubmit)} className="space-y-6">
+                    <FormField
+                        control={teamForm.control}
+                        name="name"
+                        render={({ field }) => (
+                            <FormItem>
+                                <FormLabel>Team Name</FormLabel>
+                                <FormControl><Input {...field} /></FormControl>
+                                <FormMessage />
+                            </FormItem>
+                        )}
+                    />
+                    <FormField
+                        control={teamForm.control}
+                        name="memberIds"
+                        render={({ field }) => (
+                            <FormItem>
+                               <FormLabel>Members</FormLabel>
+                                <Popover>
+                                    <PopoverTrigger asChild>
+                                        <FormControl>
+                                            <Button variant="outline" role="combobox" className={cn("w-full justify-between", !field.value?.length && "text-muted-foreground")}>
+                                                <div className='flex gap-1'>
+                                                    <Users className='h-4 w-4' />
+                                                    {field.value?.length ? `${field.value.length} selected` : 'Select members'}
+                                                </div>
+                                            </Button>
+                                        </FormControl>
+                                    </PopoverTrigger>
+                                    <PopoverContent className="w-[300px] p-0">
+                                        <Command>
+                                            <CommandInput placeholder="Search employees..." />
+                                            <CommandList>
+                                                <CommandEmpty>No employees found.</CommandEmpty>
+                                                <CommandGroup>
+                                                    {employees.map(employee => (
+                                                        <CommandItem
+                                                            key={employee.id}
+                                                            onSelect={() => {
+                                                                const currentIds = field.value || [];
+                                                                if (currentIds.includes(employee.id)) {
+                                                                    field.onChange(currentIds.filter(id => id !== employee.id));
+                                                                } else {
+                                                                    field.onChange([...currentIds, employee.id]);
+                                                                }
+                                                            }}
+                                                        >
+                                                            <div className={cn("mr-2 flex h-4 w-4 items-center justify-center rounded-sm border border-primary", field.value?.includes(employee.id) ? "bg-primary text-primary-foreground" : "opacity-50 [&_svg]:invisible")}>
+                                                              <Check className={cn("h-4 w-4")} />
+                                                            </div>
+                                                            {employee.name}
+                                                        </CommandItem>
+                                                    ))}
+                                                </CommandGroup>
+                                            </CommandList>
+                                        </Command>
+                                    </PopoverContent>
+                                </Popover>
+                                <FormMessage />
+                            </FormItem>
+                        )}
+                    />
+                     <div className='flex justify-end'>
+                        <Button type="submit" disabled={isSubmitting}>
+                            {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                            {editingTeam ? 'Save Changes' : 'Create Team'}
+                        </Button>
+                    </div>
+                </form>
+             </Form>
         </DialogContent>
       </Dialog>
     </div>
