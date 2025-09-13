@@ -120,7 +120,7 @@ function HolidayManager({ holidays, onAddHoliday, onDeleteHoliday }: HolidayMana
                 <CardDescription>Add or remove company-wide public holidays.</CardDescription>
             </CardHeader>
             <CardContent className="grid md:grid-cols-2 gap-8">
-                <div className="space-y-4">
+                <div className="space-y-4 flex flex-col">
                     <h3 className="font-semibold">Add New Holiday</h3>
                     <div className='space-y-2'>
                         <Label>Date</Label>
@@ -478,10 +478,22 @@ export default function AdminEmployeePage() {
 
   const handleDeleteTeam = async (teamId: string) => {
     try {
+        const teamToDelete = teams.find(t => t.id === teamId);
+        if (!teamToDelete) return;
+
         await deleteTeam(teamId);
-        const teamName = teams.find(t => t.id === teamId)?.name;
+        
+        const updatedEmployees = employees.map(emp => {
+            if (teamToDelete.memberIds.includes(emp.id)) {
+                updateEmployee(emp.id, { team: '' });
+                return { ...emp, team: '' };
+            }
+            return emp;
+        });
+
+        setEmployees(updatedEmployees);
         setTeams(teams.filter(t => t.id !== teamId));
-        setEmployees(employees.map(e => e.team === teamName ? {...e, team: undefined} : e));
+
         toast({ title: "Success", description: "Team deleted." });
     } catch (error) {
          toast({ title: "Error", description: "Could not delete team.", variant: "destructive"});
@@ -491,13 +503,14 @@ export default function AdminEmployeePage() {
   const onEmployeeSubmit = async (data: z.infer<typeof employeeSchema>) => {
     setIsSubmitting(true);
     try {
+        const employeeData = { ...data, team: data.team || '' };
         if (editingEmployee) {
-          await updateEmployee(editingEmployee.id, data);
-          setEmployees(employees.map(e => e.id === editingEmployee.id ? { ...editingEmployee, ...data } : e));
+          await updateEmployee(editingEmployee.id, employeeData);
+          setEmployees(employees.map(e => e.id === editingEmployee.id ? { ...editingEmployee, ...employeeData } : e));
           toast({ title: "Success", description: "Employee details updated." });
         } else {
           const newEmployee: Omit<Employee, 'id'> = {
-            ...data,
+            ...employeeData,
             avatarUrl: `https://i.pravatar.cc/150?u=${Date.now()}`
           }
           const newId = await addEmployee(newEmployee);
@@ -515,20 +528,23 @@ export default function AdminEmployeePage() {
   const onTeamSubmit = async (data: z.infer<typeof teamSchema>) => {
       setIsSubmitting(true);
       try {
+          let updatedTeams = [...teams];
           if(editingTeam) {
               await updateTeam(editingTeam.id, data);
-              setTeams(teams.map(t => t.id === editingTeam.id ? {...editingTeam, ...data} : t));
+              updatedTeams = teams.map(t => t.id === editingTeam.id ? {...editingTeam, ...data} : t);
+              setTeams(updatedTeams);
               toast({ title: "Success", description: "Team updated." });
           } else {
               const newId = await addTeam(data);
               const newTeam: Team = { id: newId, ...data };
-              setTeams([...teams, newTeam]);
+              updatedTeams = [...teams, newTeam];
+              setTeams(updatedTeams);
               toast({ title: "Success", description: "Team created." });
           }
           
           const updatedEmployees = employees.map(emp => {
-             const team = teams.find(t => t.memberIds.includes(emp.id));
-             const newTeamName = team?.name;
+             const team = updatedTeams.find(t => t.memberIds.includes(emp.id));
+             const newTeamName = team?.name || '';
              if (emp.team !== newTeamName) {
                  updateEmployee(emp.id, { team: newTeamName });
              }
@@ -538,6 +554,7 @@ export default function AdminEmployeePage() {
           
           setIsTeamDialogOpen(false);
       } catch(error) {
+          console.error("Team submit error:", error);
           toast({ title: "Error", description: "Could not save team.", variant: "destructive"});
       } finally {
           setIsSubmitting(false);
