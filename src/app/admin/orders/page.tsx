@@ -23,12 +23,11 @@ import { Order, OrderStatus, Product, Category } from '@/lib/data';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { format } from 'date-fns';
-import { ChevronDown, ChevronUp, RefreshCw, Search, Trash2 } from 'lucide-react';
-import { getOrders, updateOrderStatus, getProducts, getCategories, deleteAllOrders } from '@/lib/firestore';
+import { ChevronDown, ChevronUp, RefreshCw, Search } from 'lucide-react';
+import { getOrders, updateOrderStatus, getProducts, getCategories } from '@/lib/firestore';
 import { useToast } from '@/hooks/use-toast';
 import { Input } from '@/components/ui/input';
 import { calculateDiscountedPrice } from '@/lib/utils';
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 
 
 const statusColors: { [key in OrderStatus]: string } = {
@@ -99,17 +98,6 @@ export default function AdminOrdersPage() {
     } catch (error) {
       console.error("Could not update order status.", error);
       toast({ title: "Error", description: "Failed to update order status.", variant: "destructive" });
-    }
-  };
-
-  const handleDeleteAll = async () => {
-    try {
-      await deleteAllOrders();
-      setOrders([]);
-      toast({ title: "Success", description: "All orders have been deleted." });
-    } catch (error) {
-      console.error("Could not delete all orders.", error);
-      toast({ title: "Error", description: "Failed to delete all orders.", variant: "destructive" });
     }
   };
   
@@ -205,26 +193,6 @@ export default function AdminOrdersPage() {
             ))}
           </SelectContent>
         </Select>
-        <AlertDialog>
-          <AlertDialogTrigger asChild>
-            <Button variant="destructive" className="h-10">
-              <Trash2 className="mr-2 h-4 w-4" />
-              Delete All
-            </Button>
-          </AlertDialogTrigger>
-          <AlertDialogContent>
-            <AlertDialogHeader>
-              <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
-              <AlertDialogDescription>
-                This action cannot be undone. This will permanently delete all orders from the database.
-              </AlertDialogDescription>
-            </AlertDialogHeader>
-            <AlertDialogFooter>
-              <AlertDialogCancel>Cancel</AlertDialogCancel>
-              <AlertDialogAction onClick={handleDeleteAll}>Continue</AlertDialogAction>
-            </AlertDialogFooter>
-          </AlertDialogContent>
-        </AlertDialog>
       </div>
       <Card>
         <CardContent className="mt-6">
