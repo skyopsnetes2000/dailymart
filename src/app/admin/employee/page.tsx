@@ -633,15 +633,9 @@ export default function AdminEmployeePage() {
                       {filteredEmployees.map((employee) => (
                           <TableRow key={employee.id}>
                             <TableCell>
-                                <div className="flex items-center gap-3">
-                                    <Avatar>
-                                        <AvatarImage src={employee.avatarUrl} alt={employee.name} />
-                                        <AvatarFallback>{getInitials(employee.name)}</AvatarFallback>
-                                    </Avatar>
-                                    <div>
-                                        <p className="font-medium">{employee.name}</p>
-                                        <p className="text-sm text-muted-foreground">{employee.email}</p>
-                                    </div>
+                                <div>
+                                    <p className="font-medium">{employee.name}</p>
+                                    <p className="text-sm text-muted-foreground">{employee.email}</p>
                                 </div>
                             </TableCell>
                             <TableCell>{employee.role}</TableCell>
