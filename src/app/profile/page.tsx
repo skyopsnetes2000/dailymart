@@ -143,7 +143,7 @@ export default function ProfilePage() {
               </CardHeader>
               <CardFooter>
                 <Button asChild>
-                  <Link href="/admin">
+                  <Link href="/admin/dashboard">
                     <UserCog className="mr-2 h-4 w-4" />
                     Go to Admin Panel
                   </Link>
