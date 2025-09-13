@@ -396,3 +396,13 @@ export async function submitShopRequest(request: Omit<ShopRequest, 'id' | 'statu
         submittedAt: new Date().toISOString(),
     });
 }
+
+export async function getShopRequestForUser(userId: string): Promise<ShopRequest | null> {
+    const q = query(collection(db, 'shopRequests'), where('userId', '==', userId));
+    const querySnapshot = await getDocs(q);
+    if (!querySnapshot.empty) {
+        const doc = querySnapshot.docs[0];
+        return { ...doc.data(), id: doc.id } as ShopRequest;
+    }
+    return null;
+}
