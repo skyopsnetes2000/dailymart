@@ -1,40 +1,62 @@
-
 rules_version = '2';
-
 service cloud.firestore {
   match /databases/{database}/documents {
 
     function isAdmin() {
-      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.roles in ['admin'];
+      let roles = get(/databases/$(database)/documents/users/$(request.auth.uid)).data.roles;
+      return request.auth != null && 'admin' in roles;
     }
 
     match /users/{userId} {
-      allow read, update, delete: if request.auth.uid == userId || isAdmin();
-      allow create: if request.auth.uid == userId;
+      allow read, update: if request.auth.uid == userId || isAdmin();
+      allow create: if request.auth != null;
     }
 
-    match /shopRequests/{requestId} {
-      allow read: if isAdmin() || get(/databases/$(database)/documents/shopRequests/$(requestId)).data.userId == request.auth.uid;
-      allow update, delete: if isAdmin();
-      allow create: if request.auth.uid != null && request.resource.data.userId == request.auth.uid;
-    }
-
-    match /carts/{userId} {
-      allow read, create, update, delete: if request.auth.uid == userId;
-    }
-    
     match /users/{userId}/addresses/{addressId} {
       allow read, create, update, delete: if request.auth.uid == userId;
     }
     
-    match /orders/{orderId} {
-      allow read, create, update, delete: if get(/databases/$(database)/documents/orders/$(orderId)).data.userId == request.auth.uid || isAdmin();
+    match /carts/{userId} {
+      allow read, write: if request.auth.uid == userId;
     }
 
-    // Default rules for other collections
-    match /{path=**} {
-       allow read: if true; // Be cautious with this in production
-       allow write: if isAdmin();
+    match /products/{productId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    match /categories/{categoryId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+    
+    match /appearance/{docId} {
+        allow read: if true;
+        allow write: if isAdmin();
+    }
+
+    match /orders/{orderId} {
+      allow read, create: if request.auth.uid == request.resource.data.userId;
+      allow update: if isAdmin();
+    }
+
+    match /shopRequests/{requestId} {
+      allow read: if isAdmin() || (request.auth.uid == get(/databases/$(database)/documents/shopRequests/$(requestId)).data.userId);
+      allow list: if isAdmin();
+      allow create: if request.auth.uid == request.resource.data.userId;
+      allow update: if isAdmin();
+    }
+    
+    match /employees/{employeeId} {
+      allow read, write: if isAdmin();
+    }
+
+    match /teams/{teamId} {
+      allow read, write: if isAdmin();
+    }
+
+    match /settings/{settingId} {
+      allow read, write: if isAdmin();
     }
   }
 }
