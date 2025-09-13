@@ -87,12 +87,108 @@ type AttendanceStatus = 'present' | 'absent' | 'holiday';
 type AttendanceRecord = { [date: string]: AttendanceStatus }; // date is YYYY-MM-DD
 type EmployeeAttendance = { [employeeId: string]: AttendanceRecord };
 
+const initialHolidays: Holiday[] = [
+    { date: new Date('2024-08-15'), name: 'Independence Day' },
+    { date: new Date('2024-10-02'), name: 'Gandhi Jayanti' }
+];
+
+function HolidayManager() {
+    const [holidays, setHolidays] = useState<Holiday[]>(initialHolidays);
+    const [selectedDate, setSelectedDate] = useState<Date | undefined>();
+    const [holidayName, setHolidayName] = useState('');
+    const { toast } = useToast();
+
+    const handleAddHoliday = () => {
+        if (!selectedDate || !holidayName.trim()) {
+            toast({
+                title: 'Missing Information',
+                description: 'Please select a date and enter a name for the holiday.',
+                variant: 'destructive',
+            });
+            return;
+        }
+
+        if (holidays.some(h => isSameDay(h.date, selectedDate))) {
+            toast({
+                title: 'Date Already Marked',
+                description: 'This date is already set as a holiday.',
+                variant: 'destructive',
+            });
+            return;
+        }
+        
+        const newHolidays = [...holidays, { date: selectedDate, name: holidayName.trim() }]
+            .sort((a,b) => a.date.getTime() - b.date.getTime());
+
+        setHolidays(newHolidays);
+        setHolidayName('');
+        setSelectedDate(undefined);
+        toast({
+            title: 'Holiday Added',
+            description: `${holidayName.trim()} has been added to the calendar.`,
+        });
+    };
+
+    const handleDeleteHoliday = (dateToDelete: Date) => {
+        setHolidays(holidays.filter(h => !isSameDay(h.date, dateToDelete)));
+        toast({
+            title: 'Holiday Removed',
+            description: 'The holiday has been removed.',
+        });
+    };
+
+    return (
+        <Card>
+            <CardHeader>
+                <CardTitle>Manage Holidays</CardTitle>
+                <CardDescription>Add or remove company-wide public holidays.</CardDescription>
+            </CardHeader>
+            <CardContent className="grid md:grid-cols-2 gap-8">
+                <div className="space-y-4">
+                    <h3 className="font-semibold">Add New Holiday</h3>
+                    <Calendar
+                        mode="single"
+                        selected={selectedDate}
+                        onSelect={setSelectedDate}
+                        className="rounded-md border"
+                    />
+                    <Input 
+                        placeholder="Holiday Name (e.g., Diwali)"
+                        value={holidayName}
+                        onChange={(e) => setHolidayName(e.target.value)}
+                    />
+                    <Button onClick={handleAddHoliday} className="w-full">
+                        <PlusCircle className="mr-2 h-4 w-4" /> Add Holiday
+                    </Button>
+                </div>
+                 <div className="space-y-4">
+                    <h3 className="font-semibold">Upcoming Holidays</h3>
+                    <ScrollArea className="h-96">
+                        <div className="space-y-2">
+                        {holidays.length > 0 ? holidays.map((holiday, index) => (
+                            <div key={index} className="flex items-center justify-between rounded-md border p-3">
+                                <div>
+                                    <p className="font-medium">{holiday.name}</p>
+                                    <p className="text-sm text-muted-foreground">{format(holiday.date, 'MMMM do, yyyy')}</p>
+                                </div>
+                                <Button variant="ghost" size="icon" onClick={() => handleDeleteHoliday(holiday.date)}>
+                                    <Trash2 className="h-4 w-4 text-destructive" />
+                                </Button>
+                            </div>
+                        )) : (
+                            <p className="text-center text-muted-foreground pt-10">No upcoming holidays scheduled.</p>
+                        )}
+                        </div>
+                    </ScrollArea>
+                </div>
+            </CardContent>
+        </Card>
+    )
+}
+
 function AttendanceManager() {
     const [currentDate, setCurrentDate] = useState(new Date());
-    const [holidays, setHolidays] = useState<Holiday[]>([
-        { date: new Date('2024-08-15'), name: 'Independence Day' },
-        { date: new Date('2024-10-02'), name: 'Gandhi Jayanti' }
-    ]);
+    const [holidays, setHolidays] = useState<Holiday[]>(initialHolidays);
     const [attendance, setAttendance] = useState<EmployeeAttendance>({});
     const [employees] = useState<Employee[]>(staticEmployees);
     const [selectedDay, setSelectedDay] = useState<Date | null>(null);
@@ -535,15 +631,7 @@ export default function AdminEmployeePage() {
             <AttendanceManager />
         </TabsContent>
         <TabsContent value="holidays" className="mt-6">
-            <Card>
-                <CardHeader>
-                    <CardTitle>Holidays</CardTitle>
-                    <CardDescription>Manage company-wide holidays. Coming soon!</CardDescription>
-                </CardHeader>
-                <CardContent>
-                    <p>This section will allow you to set public holidays for your company.</p>
-                </CardContent>
-            </Card>
+            <HolidayManager />
         </TabsContent>
       </Tabs>
       
