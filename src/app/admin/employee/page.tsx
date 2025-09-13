@@ -72,7 +72,7 @@ const teamSchema = z.object({
 const staticEmployees: Employee[] = [
     { id: '1', name: 'Saurav Dhande', email: 'saurav@example.com', phone: '123-456-7890', role: 'Manager', salary: 75000, team: 'Operations', avatarUrl: 'https://i.pravatar.cc/150?u=a042581f4e29026704d' },
     { id: '2', name: 'Jane Smith', email: 'jane@example.com', phone: '234-567-8901', role: 'Cashier', salary: 45000, team: 'Frontend', avatarUrl: 'https://i.pravatar.cc/150?u=a042581f4e29026705d' },
-    { id: '3', name: 'Mike Johnson', email: 'mike@example.com', phone: '345-678-9012', role: 'Stocker', salary: 42000, team: 'Backend', avatarUrl: 'https://i.pravatar.cc/150?u=a042581f4e29026706d' },
+    { id: '3', name: 'Mike Johnson', email: 'mike@example.com', phone: '345-678-9012', role: 'Stocker', salary: 42000, team: 'Backend', avatarUrl: 'https://i.pravatar.cc/150?u=a-042581f4e29026706d' },
     { id: '4', name: 'Emily Davis', email: 'emily@example.com', phone: '456-789-0123', role: 'Delivery Driver', salary: 50000, team: 'Logistics', avatarUrl: 'https://i.pravatar.cc/150?u=a042581f4e29026707d' },
 ];
 
@@ -819,5 +819,3 @@ export default function AdminEmployeePage() {
     </div>
   );
 }
-
-    
