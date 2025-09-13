@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import React, { useState, useEffect, useCallback } from 'react';
@@ -26,6 +27,7 @@ import { ChevronDown, ChevronUp, RefreshCw, Search } from 'lucide-react';
 import { getOrders, updateOrderStatus, getProducts, getCategories } from '@/lib/firestore';
 import { useToast } from '@/hooks/use-toast';
 import { Input } from '@/components/ui/input';
+import { calculateDiscountedPrice } from '@/lib/utils';
 
 const statusColors: { [key in OrderStatus]: string } = {
   Pending: 'bg-yellow-500',
@@ -117,6 +119,11 @@ export default function AdminOrdersPage() {
   const productToCategorySlugMap = new Map<string, string>();
   products.forEach(prod => {
     productToCategorySlugMap.set(prod.name, prod.categorySlug);
+  });
+  
+  const productMap = new Map<string, Product>();
+  products.forEach(prod => {
+    productMap.set(prod.name, prod);
   });
 
   const filteredOrders = orders.filter(order => {
@@ -249,9 +256,9 @@ export default function AdminOrdersPage() {
                     {openOrderId === order.id && (
                        <TableRow>
                          <TableCell colSpan={6} className='p-0'>
-                            <div className='bg-muted/50 p-4'>
+                            <div className='bg-muted/50 p-4 space-y-4'>
                                 {order.returnRequest && (
-                                    <div className="mb-4 rounded-md border border-yellow-300 bg-yellow-50 p-3">
+                                    <div className="rounded-md border border-yellow-300 bg-yellow-50 p-3">
                                         <h5 className="font-semibold text-yellow-800">Return Request</h5>
                                         <p className="text-sm text-yellow-700">
                                             <strong>Items:</strong> 
@@ -260,29 +267,57 @@ export default function AdminOrdersPage() {
                                         <p className="text-sm text-yellow-700"><strong>Reason:</strong> {order.returnRequest.reason}</p>
                                     </div>
                                 )}
-                                <h4 className='font-semibold mb-2'>Shipping Details</h4>
-                                {order.shippingAddress ? (
-                                  <>
-                                    <p>{order.customerName}</p>
-                                    <p>{order.shippingAddress.line1}</p>
-                                    {order.shippingAddress.landmark && <p>{order.shippingAddress.landmark}</p>}
-                                    <p>{order.shippingAddress.city}, {order.shippingAddress.state} {order.shippingAddress.zip}</p>
-                                    <p>Mobile: {order.shippingAddress.mobile}</p>
-                                  </>
-                                ) : (
-                                  <p className="text-muted-foreground">Shipping address not available for this order.</p>
-                                )}
-                                <h4 className='font-semibold mt-4 mb-2'>Order Items</h4>
-                                <ul className="space-y-1">
-                                    {order.items.map((item, index) => (
-                                        <li key={index} className="flex justify-between">
-                                            <div>
-                                                {item.productName} (x{item.quantity})
-                                                <p className="text-xs text-muted-foreground">{productCategoryMap.get(item.productName) || 'Unknown Category'}</p>
-                                            </div>
-                                        </li>
-                                    ))}
-                                </ul>
+                                
+                                <div>
+                                    <h4 className='font-semibold mb-2'>Shipping Details</h4>
+                                    {order.shippingAddress ? (
+                                      <div className='text-sm text-muted-foreground'>
+                                        <p className='font-medium text-foreground'>{order.customerName}</p>
+                                        <p>{order.shippingAddress.line1}</p>
+                                        {order.shippingAddress.landmark && <p>{order.shippingAddress.landmark}</p>}
+                                        <p>{order.shippingAddress.city}, {order.shippingAddress.state} {order.shippingAddress.zip}</p>
+                                        <p>Mobile: {order.shippingAddress.mobile}</p>
+                                      </div>
+                                    ) : (
+                                      <p className="text-muted-foreground">Shipping address not available for this order.</p>
+                                    )}
+                                </div>
+                                
+                                <div>
+                                    <h4 className='font-semibold mb-2'>Order Items</h4>
+                                    <Table>
+                                      <TableHeader>
+                                        <TableRow>
+                                          <TableHead>Product</TableHead>
+                                          <TableHead>Category</TableHead>
+                                          <TableHead>Weight</TableHead>
+                                          <TableHead className='text-right'>Price</TableHead>
+                                          <TableHead className='text-right'>Qty</TableHead>
+                                          <TableHead className='text-right'>Subtotal</TableHead>
+                                        </TableRow>
+                                      </TableHeader>
+                                      <TableBody>
+                                        {order.items.map((item, index) => {
+                                          const product = productMap.get(item.productName);
+                                          const price = product ? (calculateDiscountedPrice(product) ?? product.price) : 0;
+                                          const subtotal = price * item.quantity;
+                                          return (
+                                            <TableRow key={index}>
+                                              <TableCell>
+                                                <div className='font-medium'>{item.productName}</div>
+                                                <div className='text-xs text-muted-foreground'>{product?.brand || 'N/A'}</div>
+                                              </TableCell>
+                                              <TableCell>{productCategoryMap.get(item.productName) || 'N/A'}</TableCell>
+                                              <TableCell>{product?.weight || 'N/A'}</TableCell>
+                                              <TableCell className='text-right'>₹{price.toFixed(2)}</TableCell>
+                                              <TableCell className='text-right'>{item.quantity}</TableCell>
+                                              <TableCell className='text-right'>₹{subtotal.toFixed(2)}</TableCell>
+                                            </TableRow>
+                                          )
+                                        })}
+                                      </TableBody>
+                                    </Table>
+                                </div>
                             </div>
                          </TableCell>
                        </TableRow>
