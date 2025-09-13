@@ -3,31 +3,25 @@ rules_version = '2';
 service firebase.storage {
   match /b/{bucket}/o {
     
-    // Helper function to check for admin or seller roles
-    function isSellerOrAdmin(userId) {
-      return exists(/databases/$(database)/documents/users/$(userId)) &&
-             (get(/databases/$(database)/documents/users/$(userId)).data.roles.hasAny(['admin', 'seller']) || isMainAdmin());
-    }
-    
-    function isMainAdmin() {
-        return request.auth != null && request.auth.token.email == 'dhandesaurav52@gmail.com';
+    // Helper function to check if a user is authenticated
+    function isAuthed() {
+      return request.auth != null;
     }
 
-    // Public read access for public asset folders
-    match /{folder}/{allPaths=**} {
-      allow read: if folder in ['categories', 'products', 'recipes', 'appearance'];
-    }
-    
-    // Allow writes for admins/sellers to content folders
-    match /{folder}/{allPaths=**} {
-      allow write: if folder in ['categories', 'products', 'recipes', 'appearance'] && isSellerOrAdmin(request.auth.uid);
+    // Publicly readable folders
+    match /{folder:(categories|products|recipes|appearance)}/{allPaths=**} {
+      allow read;
+      allow write: if isAuthed();
     }
 
-    // Shop requests can be written by any authenticated user to their own folder
+    // Shop requests can be written by any authenticated user, but not read publicly
     match /shop-requests/{userId}/{allPaths=**} {
-      allow create: if request.auth != null && request.auth.uid == userId;
+      allow read, write: if isAuthed() && request.auth.uid == userId;
     }
     
-    // Default deny all other reads and writes
+    // Default deny all other paths
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
   }
 }
