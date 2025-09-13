@@ -153,11 +153,15 @@ export default async function Home() {
         {recipes.length > 0 && (
           <section className="space-y-4">
             <h2 className="font-headline text-xl font-bold">Inspiration for your next meal</h2>
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-                {recipes.map((recipe) => (
-                    <RecipeCard key={recipe.id} recipe={recipe} />
-                ))}
-            </div>
+            <Carousel opts={{ align: 'start', loop: recipes.length > 2 }}>
+                <CarouselContent className="-ml-4">
+                    {recipes.map((recipe) => (
+                        <CarouselItem key={recipe.id} className="pl-4 md:basis-1/2 lg:basis-1/3">
+                            <RecipeCard recipe={recipe} />
+                        </CarouselItem>
+                    ))}
+                </CarouselContent>
+            </Carousel>
           </section>
         )}
       </div>
