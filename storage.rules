@@ -2,31 +2,32 @@ rules_version = '2';
 
 service firebase.storage {
   match /b/{bucket}/o {
+    
     // Helper function to check for admin or seller roles
     function isSellerOrAdmin(userId) {
-      return exists(/databases/(default)/documents/users/$(userId)) &&
-             (get(/databases/(default)/documents/users/$(userId)).data.roles.hasAny(['admin', 'seller']));
+      return exists(/databases/$(database)/documents/users/$(userId)) &&
+             (get(/databases/$(database)/documents/users/$(userId)).data.roles.hasAny(['admin', 'seller']) || isMainAdmin());
+    }
+    
+    function isMainAdmin() {
+        return request.auth != null && request.auth.token.email == 'dhandesaurav52@gmail.com';
     }
 
-    // Main admin check
-    function isMainAdmin(userId) {
-        return get(/databases/(default)/documents/users/$(userId)).data.email == 'dhandesaurav52@gmail.com';
+    // Public read access for public asset folders
+    match /{folder}/{allPaths=**} {
+      allow read: if folder in ['categories', 'products', 'recipes', 'appearance'];
     }
     
-    // Public read for appearance, categories, products, and recipes images
-    match /{folder:(appearance|categories|products|recipes)}/{allPaths=**} {
-      allow read: if true;
-      allow write: if request.auth != null && (isSellerOrAdmin(request.auth.uid) || isMainAdmin(request.auth.uid));
+    // Allow writes for admins/sellers to content folders
+    match /{folder}/{allPaths=**} {
+      allow write: if folder in ['categories', 'products', 'recipes', 'appearance'] && isSellerOrAdmin(request.auth.uid);
     }
-    
-    // Users can only upload to their own shop request folder
+
+    // Shop requests can be written by any authenticated user to their own folder
     match /shop-requests/{userId}/{allPaths=**} {
-      allow read, write: if request.auth != null && request.auth.uid == userId;
+      allow create: if request.auth != null && request.auth.uid == userId;
     }
     
-    // Default deny all other paths
-    match /{allPaths=**} {
-      allow read, write: if false;
-    }
+    // Default deny all other reads and writes
   }
 }
