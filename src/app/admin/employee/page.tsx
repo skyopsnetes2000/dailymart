@@ -125,9 +125,9 @@ function HolidayManager({ holidays, onAddHoliday, onDeleteHoliday }: HolidayMana
                 <CardDescription>Add or remove company-wide public holidays.</CardDescription>
             </CardHeader>
             <CardContent className="grid md:grid-cols-2 gap-8">
-                <div className="space-y-4 flex flex-col">
+                <div className="space-y-4">
                     <h3 className="font-semibold">Add New Holiday</h3>
-                    <div className="flex justify-center">
+                    <div>
                         <Calendar
                             mode="single"
                             selected={selectedDate}
@@ -830,5 +830,3 @@ export default function AdminEmployeePage() {
     </div>
   );
 }
-
-    
