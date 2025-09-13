@@ -128,7 +128,7 @@ export default function ProfilePage() {
   }
 
   const recentOrders = orders.slice(0, 3);
-  const isAdmin = userRoles.includes('admin') || userRoles.includes('seller');
+  const isAdmin = userRoles.includes('admin') || userRoles.includes('seller') || user.email === ADMIN_EMAIL;
 
   return (
     <div>
