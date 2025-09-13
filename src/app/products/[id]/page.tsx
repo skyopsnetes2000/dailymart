@@ -22,6 +22,7 @@ import {
 import ProductCard from '@/components/product-card';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
+import { DietarySymbol } from '@/components/dietary-symbol';
 
 export default function ProductDetailPage() {
     const params = useParams();
@@ -107,7 +108,10 @@ export default function ProductDetailPage() {
                         </Card>
                         <Card>
                              <CardHeader>
-                                <CardTitle className="text-3xl">{product.name}</CardTitle>
+                                <div className="flex items-center gap-2">
+                                  <CardTitle className="text-3xl">{product.name}</CardTitle>
+                                  <DietarySymbol type={product.dietaryType} size='lg' />
+                                </div>
                                 <CardDescription>{product.weight}</CardDescription>
                              </CardHeader>
                              <CardContent className="space-y-4">

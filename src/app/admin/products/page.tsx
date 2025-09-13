@@ -38,13 +38,15 @@ import {
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { type Product, type Category } from '@/lib/data';
+import { type Product, type Category, type DietaryType } from '@/lib/data';
 import { Loader2, Pencil, PlusCircle, Search, Trash2, X } from 'lucide-react';
 import Image from 'next/image';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useToast } from '@/hooks/use-toast';
 import { addProduct, deleteProduct, getCategories, getProducts, updateProduct, uploadImage } from '@/lib/firestore';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { DietarySymbol } from '@/components/dietary-symbol';
 
 const productSchema = z.object({
   name: z.string().min(1, 'Name is required'),
@@ -52,6 +54,7 @@ const productSchema = z.object({
   price: z.coerce.number().min(0.01, 'Price must be greater than 0'),
   weight: z.string().min(1, 'Weight is required'),
   categorySlug: z.string().min(1, 'Category is required'),
+  dietaryType: z.enum(['veg', 'non-veg', 'egg']).optional(),
   images: z.any(),
 });
 
@@ -60,7 +63,7 @@ export default function AdminProductsPage() {
   const [products, setProducts] = useState<Product[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [editingProduct, setEditingProduct] = useState<Product | null>(null);
+  const [editingProduct, setEditingProduct] = useState<Product | null>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -90,6 +93,7 @@ export default function AdminProductsPage() {
       price: product.price,
       weight: product.weight,
       categorySlug: product.categorySlug,
+      dietaryType: product.dietaryType,
       images: null
     });
     setIsDialogOpen(true);
@@ -104,6 +108,7 @@ export default function AdminProductsPage() {
       price: 0,
       weight: '',
       categorySlug: '',
+      dietaryType: undefined,
       images: null,
     });
     setIsDialogOpen(true);
@@ -167,6 +172,7 @@ export default function AdminProductsPage() {
         price: data.price,
         weight: data.weight,
         categorySlug: data.categorySlug,
+        dietaryType: data.dietaryType,
         imageUrls: newImageUrls,
       };
 
@@ -334,6 +340,48 @@ export default function AdminProductsPage() {
                         </FormItem>
                       )}
                     />
+                    <FormField
+                      control={form.control}
+                      name="dietaryType"
+                      render={({ field }) => (
+                        <FormItem className="space-y-3">
+                          <FormLabel>Dietary Type</FormLabel>
+                          <FormControl>
+                            <RadioGroup
+                              onValueChange={field.onChange}
+                              defaultValue={field.value}
+                              className="flex items-center space-x-4"
+                            >
+                              <FormItem className="flex items-center space-x-2 space-y-0">
+                                <FormControl>
+                                  <RadioGroupItem value="veg" />
+                                </FormControl>
+                                <FormLabel className="font-normal flex items-center gap-2">
+                                  <DietarySymbol type="veg" /> Veg
+                                </FormLabel>
+                              </FormItem>
+                              <FormItem className="flex items-center space-x-2 space-y-0">
+                                <FormControl>
+                                  <RadioGroupItem value="non-veg" />
+                                </FormControl>
+                                <FormLabel className="font-normal flex items-center gap-2">
+                                  <DietarySymbol type="non-veg" /> Non-Veg
+                                </FormLabel>
+                              </FormItem>
+                              <FormItem className="flex items-center space-x-2 space-y-0">
+                                <FormControl>
+                                  <RadioGroupItem value="egg" />
+                                </FormControl>
+                                <FormLabel className="font-normal flex items-center gap-2">
+                                  <DietarySymbol type="egg" /> Egg
+                                </FormLabel>
+                              </FormItem>
+                            </RadioGroup>
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
                   <FormItem>
                       <FormLabel>Product Images</FormLabel>
                       {imagePreviews.length > 0 && (
@@ -374,6 +422,7 @@ export default function AdminProductsPage() {
                 <TableHead>Image</TableHead>
                 <TableHead>Name</TableHead>
                 <TableHead>Price</TableHead>
+                <TableHead>Type</TableHead>
                 <TableHead>Actions</TableHead>
               </TableRow>
             </TableHeader>
@@ -394,6 +443,9 @@ export default function AdminProductsPage() {
                     </TableCell>
                     <TableCell className="font-medium">{product.name}</TableCell>
                     <TableCell>₹{product.price.toFixed(2)}</TableCell>
+                    <TableCell>
+                        <DietarySymbol type={product.dietaryType} />
+                    </TableCell>
                     <TableCell>
                       <div className="flex gap-2">
                         <Button

@@ -16,6 +16,7 @@ import type { Product } from '@/lib/data';
 import useCart from '@/hooks/use-cart';
 import { calculateDiscountedPrice } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
+import { DietarySymbol } from './dietary-symbol';
 
 type ProductCardProps = {
   product: Product;
@@ -39,6 +40,9 @@ const ProductCard: FC<ProductCardProps> = ({ product }) => {
                 className="object-cover transition-transform duration-300 group-hover:scale-105"
                 />
             )}
+             <div className="absolute top-2 left-2">
+                <DietarySymbol type={product.dietaryType} />
+             </div>
             {hasOffer && (
                 <Badge variant="destructive" className="absolute top-2 right-2">
                 {product.offer?.type === 'percentage' ? `${product.offer.value}% OFF` : `₹${product.offer?.value} OFF`}
