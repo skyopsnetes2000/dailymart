@@ -1,4 +1,3 @@
-
 import ProductCard from '@/components/product-card';
 import PageHeader from '@/components/shared/page-header';
 import { type Category, type Product } from '@/lib/data';
@@ -20,7 +19,7 @@ async function getCategoryProducts(slug: string): Promise<Product[]> {
     return getProducts(slug);
 }
 
-export default async function CategoryProductsPage({ params }: CategoryProductsPageProps) {
+export default async function CategoryProductsPage({ params }: { params: { slug: string } }) {
   const slug = decodeURIComponent(params.slug);
   const category = await getCategory(slug);
 

@@ -1,5 +1,3 @@
-
-
 'use client';
 
 import PageHeader from "@/components/shared/page-header";
@@ -158,12 +156,12 @@ function ReturnRequestDialog({ order, onReturnSuccess, disabled, disabledReason 
 
 export default function OrderDetailsPage() {
     const params = useParams();
-    const { id } = params;
+    const id = params.id as string;
     const [order, setOrder] = useState<Order | null>(null);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        if (!id || typeof id !== 'string') {
+        if (!id) {
           setLoading(false);
           return;
         }
