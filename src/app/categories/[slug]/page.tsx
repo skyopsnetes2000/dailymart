@@ -7,10 +7,9 @@ import { getCategories, getProducts } from '@/lib/firestore';
 import SearchableProductList from './searchable-product-list';
 
 type CategoryProductsPageProps = {
-    params: {
-        slug: string;
-    }
-}
+  params: { slug: string };
+  searchParams: { [key: string]: string | string[] | undefined };
+};
 
 async function getCategory(slug: string): Promise<Category | undefined> {
     const allCategories = await getCategories();
