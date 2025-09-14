@@ -7,6 +7,13 @@ import BottomNav from '@/components/shared/bottom-nav';
 import { cn } from '@/lib/utils';
 import { usePathname } from 'next/navigation';
 import { useEffect } from 'react';
+import { Poppins } from 'next/font/google';
+
+const poppins = Poppins({
+  subsets: ['latin'],
+  weight: ['400', '500', '600', '700'],
+  variable: '--font-poppins',
+});
 
 
 export default function RootLayout({
@@ -30,13 +37,10 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-        <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet" />
         <link rel="manifest" href="/manifest.json" />
         <meta name="theme-color" content="#FF8C00" />
       </head>
-      <body className="font-body antialiased">
+      <body className={cn(poppins.variable, "font-body antialiased")}>
         <div className={cn(showBottomNav && "pb-20")}>{children}</div>
         <Toaster />
         {showBottomNav && <BottomNav />}

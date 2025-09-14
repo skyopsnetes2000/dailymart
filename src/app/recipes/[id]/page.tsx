@@ -43,7 +43,7 @@ export default function RecipePage() {
         }
 
         async function fetchRecipeData() {
-            const fetchedRecipe = await getRecipe(id);
+            const fetchedRecipe = await getRecipe(id as string);
             if (!fetchedRecipe) {
                 setRecipe(null); // Triggers notFound()
                 return;
@@ -111,5 +111,3 @@ export default function RecipePage() {
         </div>
     )
 }
-
-    
