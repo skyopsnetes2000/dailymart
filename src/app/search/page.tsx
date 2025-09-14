@@ -1,18 +1,40 @@
 
+'use client';
 import { Suspense } from 'react';
 import ProductCard from '@/components/product-card';
 import PageHeader from '@/components/shared/page-header';
 import { type Product } from '@/lib/data';
 import { getProducts } from '@/lib/firestore';
 import { Search } from 'lucide-react';
+import { useSearchParams } from 'next/navigation';
+import { useEffect, useState } from 'react';
 
-async function SearchResults({ query }: { query: string }) {
-  const allProducts = await getProducts();
-  const products = allProducts.filter(p => 
-      p.name.toLowerCase().includes(query.toLowerCase()) || 
-      p.description.toLowerCase().includes(query.toLowerCase()) ||
-      (p.subCategory && p.subCategory.toLowerCase().includes(query.toLowerCase()))
-  );
+function SearchResults() {
+  const searchParams = useSearchParams();
+  const query = searchParams.get('q') || '';
+  const [products, setProducts] = useState<Product[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchAndFilterProducts = async () => {
+      setLoading(true);
+      const allProducts = await getProducts();
+      const filtered = allProducts.filter(p => 
+          p.name.toLowerCase().includes(query.toLowerCase()) || 
+          p.description.toLowerCase().includes(query.toLowerCase()) ||
+          (p.subCategory && p.subCategory.toLowerCase().includes(query.toLowerCase()))
+      );
+      setProducts(filtered);
+      setLoading(false);
+    };
+
+    fetchAndFilterProducts();
+  }, [query]);
+
+
+  if (loading) {
+      return <div>Loading...</div>
+  }
 
   if (products.length === 0) {
     return (
@@ -33,14 +55,12 @@ async function SearchResults({ query }: { query: string }) {
   );
 }
 
-export default function SearchPage({ searchParams }: { searchParams: { q: string } }) {
-    const query = searchParams.q || '';
-    
+export default function SearchPage() {
     return (
       <div>
         <PageHeader title="Search Results" />
         <Suspense fallback={<div>Loading...</div>}>
-            <SearchResults query={query} />
+            <SearchResults />
         </Suspense>
       </div>
     );

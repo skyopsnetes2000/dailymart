@@ -136,7 +136,7 @@ export default function ProductDetailPage() {
                              <CardFooter>
                                  <Button size="lg" className="w-full" onClick={() => addItem(product)}>
                                     <Plus className="mr-2 h-5 w-5" /> Add to Cart
-                                </Button>
+                                 </Button>
                              </CardFooter>
                         </Card>
                     </div>
