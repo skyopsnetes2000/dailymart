@@ -1,3 +1,4 @@
+
 "use client"
 
 import * as React from "react"
@@ -91,9 +92,11 @@ const SidebarProvider = React.forwardRef<
 
     // Helper to toggle the sidebar.
     const toggleSidebar = React.useCallback(() => {
-      return isMobile
-        ? setOpenMobile((open) => !open)
-        : setOpen((open) => !open)
+      if (isMobile) {
+        setOpenMobile((current) => !current);
+      } else {
+        setOpen((current) => !current);
+      }
     }, [isMobile, setOpen, setOpenMobile])
 
     // Adds a keyboard shortcut to toggle the sidebar.
@@ -177,8 +180,9 @@ const Sidebar = React.forwardRef<
   ) => {
     const { isMobile, state, openMobile, setOpenMobile } = useSidebar()
     
+    // Render a skeleton on the server and initial client render to avoid hydration errors
     if (isMobile === undefined) {
-        return null; // or a loading skeleton
+        return <div className="hidden w-64 md:flex" />;
     }
 
     if (collapsible === "none") {

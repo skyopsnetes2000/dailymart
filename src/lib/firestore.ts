@@ -458,5 +458,3 @@ export async function updateRecipe(id: string, recipe: Partial<Recipe>): Promise
 export async function deleteRecipe(id: string): Promise<void> {
     await deleteDoc(doc(db, 'recipes', id));
 }
-
-    
