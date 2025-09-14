@@ -27,11 +27,11 @@ export default function BottomNav() {
   const [user, loading] = useAuthState(auth);
 
   // Do not render the nav on admin pages or the login page.
-  if (pathname.startsWith('/admin') || pathname === '/login') {
+  if (pathname.startsWith('/admin') || pathname.startsWith('/login')) {
     return null;
   }
   
-  if (loading) {
+  if (loading || !isInitialized) {
     return (
         <nav className="fixed bottom-0 left-0 right-0 z-50 h-16 border-t bg-background/95 backdrop-blur-sm">
             <div className="mx-auto grid h-full max-w-lg grid-cols-5 items-center justify-center">

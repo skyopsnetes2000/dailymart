@@ -5,13 +5,13 @@
 import Link from 'next/link';
 import PageHeader from '@/components/shared/page-header';
 import { Button } from '@/components/ui/button';
-import { ShoppingCart, Plus, Minus, Trash2 } from 'lucide-react';
+import { ShoppingCart, Plus, Minus, Trash2, Loader2 } from 'lucide-react';
 import useCart from '@/hooks/use-cart';
 import Image from 'next/image';
 import { Card, CardContent, CardFooter } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { calculateDiscountedPrice } from '@/lib/utils';
-import { useEffect, useState, useMemo } from 'react';
+import { useMemo } from 'react';
 
 const MINIMUM_ORDER_VALUE = 149;
 
@@ -46,7 +46,15 @@ export default function CartPage() {
   };
 
   if (!isInitialized) {
-    return null;
+    return (
+        <div>
+            <PageHeader title="Shopping Cart" />
+            <div className="flex h-[50vh] flex-col items-center justify-center gap-4 text-center">
+                <Loader2 className="h-16 w-16 animate-spin text-muted-foreground" />
+                <h2 className="text-xl font-semibold">Loading Cart...</h2>
+            </div>
+        </div>
+    );
   }
 
   if (items.length === 0) {
