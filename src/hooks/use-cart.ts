@@ -187,6 +187,8 @@ onAuthStateChanged(auth, (user) => {
     useCartStore.getState().initializeCart(user);
 });
 
+// This is the hook that components will use.
+// It handles the server-client hydration mismatch.
 const useCart = () => {
   // Get the Zustand store's state
   const store = useCartStore();
@@ -195,7 +197,11 @@ const useCart = () => {
 
   useEffect(() => {
     setHasMounted(true);
-  }, []);
+    // Initialize cart on mount if not already done.
+    if (!store.isInitialized) {
+      store.initializeCart(auth.currentUser);
+    }
+  }, [store]);
 
   // On the server, and on the initial client render, return a safe, empty, uninitialized state.
   // This ensures the server-rendered output and the first client render are identical.

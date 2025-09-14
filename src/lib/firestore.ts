@@ -371,18 +371,14 @@ export async function getHolidays(): Promise<Holiday[]> {
   const docRef = doc(db, 'settings', HOLIDAY_DOC_ID);
   const docSnap = await getDoc(docRef);
   if (docSnap.exists()) {
-    const data = docSnap.data();
-    // Firestore stores timestamps, so we need to convert them back to Date objects
-    return (data.holidays || []).map((h: any) => ({ ...h, date: h.date.toDate() }));
+    return (docSnap.data().holidays || []) as Holiday[];
   }
   return [];
 }
 
 export async function saveHolidays(holidays: Holiday[]): Promise<void> {
   const docRef = doc(db, 'settings', HOLIDAY_DOC_ID);
-  // Convert Date objects to Firestore Timestamps for storing
-  const holidaysToStore = holidays.map(h => ({ ...h, date: h.date }));
-  await setDoc(docRef, { holidays: holidaysToStore });
+  await setDoc(docRef, { holidays });
 }
 
 // --- Shop Request Functions ---
