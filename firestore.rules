@@ -1,99 +1,69 @@
-
 rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
-
-    function isAuth() {
-      return request.auth != null;
+  
+    // Helper function to check for admin/seller roles
+    function isSellerOrAdmin(userId) {
+      return get(/databases/$(database)/documents/users/$(userId)).data.roles.hasAny(['admin', 'seller']);
     }
 
-    function isOwner(userId) {
-      return isAuth() && request.auth.uid == userId;
-    }
-    
-    function isMainAdmin() {
-        return isAuth() && request.auth.token.email == 'dhandesaurav52@gmail.com';
-    }
-
-    function getRoles() {
-      // Allow reading user's own roles
-      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.roles;
-    }
-
-    function isAdmin() {
-      return isAuth() && getRoles().hasAny(['admin']);
-    }
-
-    function isSeller() {
-      return isAuth() && getRoles().hasAny(['seller']);
-    }
-
-    // Default deny all
-    match /{document=**} {
-      allow read, write: if false;
-    }
-
-    // Publicly readable collections
-    match /categories/{categoryId} {
-      allow read: if true;
-      allow write: if isAdmin() || isMainAdmin();
-    }
-
+    // Products, Categories, Recipes, and Appearance are public
     match /products/{productId} {
       allow read: if true;
-      allow write: if isAdmin() || isMainAdmin() || isSeller();
+      allow write: if request.auth != null && isSellerOrAdmin(request.auth.uid);
     }
-
+    match /categories/{categoryId} {
+      allow read: if true;
+      allow write: if request.auth != null && isSellerOrAdmin(request.auth.uid);
+    }
     match /recipes/{recipeId} {
-        allow read: if true;
-        allow write: if isAdmin() || isMainAdmin();
+      allow read: if true;
+      allow write: if request.auth != null && isSellerOrAdmin(request.auth.uid);
     }
-    
     match /appearance/{docId} {
         allow read: if true;
-        allow write: if isAdmin() || isMainAdmin();
+        allow write: if request.auth != null && isSellerOrAdmin(request.auth.uid);
     }
     
-    match /settings/{docId} {
-        allow read: if true;
-        allow write: if isAdmin() || isMainAdmin();
-    }
-
-    // User-specific collections
-    match /users/{userId} {
-      allow read: if isOwner(userId) || isAdmin() || isMainAdmin();
-      allow create: if isAuth(); // Allow user creation on signup
-      allow update: if isOwner(userId) || isAdmin() || isMainAdmin(); // Admins or owners can update
-      allow delete: if isAdmin() || isMainAdmin(); // Only admins can delete users
-    }
-
+    // Carts: Users can only access their own cart
     match /carts/{userId} {
-      allow read, write: if isOwner(userId);
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
+    
+    // Orders: Users can read their own orders, and create them. Sellers/Admins can read all.
+    match /orders/{orderId} {
+      allow read: if (request.auth != null && request.auth.uid == resource.data.userId) || (request.auth != null && isSellerOrAdmin(request.auth.uid));
+      allow create: if request.auth != null && request.resource.data.userId == request.auth.uid;
+      allow update: if request.auth != null && isSellerOrAdmin(request.auth.uid);
     }
 
-    match /users/{userId}/addresses/{addressId} {
-      allow read, write, delete: if isOwner(userId);
+    // Users can manage their own document and subcollections
+    match /users/{userId} {
+      allow read, update: if request.auth != null && request.auth.uid == userId;
+      allow create: if request.auth != null;
+
+      // Addresses: Users can manage their own addresses
+      match /addresses/{addressId} {
+        allow read, write, delete: if request.auth != null && request.auth.uid == userId;
+      }
     }
-    
-    match /orders/{orderId} {
-        allow read: if get(/databases/$(database)/documents/orders/$(orderId)).data.userId == request.auth.uid || isAdmin() || isMainAdmin() || isSeller();
-        allow create: if isAuth(); // Allow users to create their own orders
-        allow update: if isAdmin() || isMainAdmin() || isSeller();
-    }
-    
+
+    // Shop Requests: Users can create them, Admins/Sellers can manage them
     match /shopRequests/{requestId} {
-        allow read: if isAuth(); // Allow users to read their own request status, and admins to read all
-        allow create: if isAuth();
-        allow update, delete: if isAdmin() || isMainAdmin();
+        allow create: if request.auth != null;
+        allow read, update: if request.auth != null && isSellerOrAdmin(request.auth.uid);
     }
-    
+
+    // Admins/Sellers can manage Employee, Team, and general Settings data
     match /employees/{employeeId} {
-        allow read, write, create, delete: if isAdmin() || isMainAdmin();
+        allow read, write: if request.auth != null && isSellerOrAdmin(request.auth.uid);
     }
-    
-    match /teams/{teamId} {
-        allow read, write, create, delete: if isAdmin() || isMainAdmin();
+     match /teams/{teamId} {
+        allow read, write: if request.auth != null && isSellerOrAdmin(request.auth.uid);
+    }
+    match /settings/{settingId} {
+       allow read, write: if request.auth != null && isSellerOrAdmin(request.auth.uid);
     }
   }
 }
