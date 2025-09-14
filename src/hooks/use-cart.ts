@@ -44,9 +44,9 @@ const useCartStore = create<CartStore>((set, get) => ({
   userId: null,
 
   initializeCart: async (user) => {
-    const { isInitialized, userId: currentUserId } = get();
+    const { userId: currentUserId } = get();
 
-    if (isInitialized && currentUserId === user?.uid) {
+    if (get().isInitialized && currentUserId === user?.uid) {
         // Already initialized for the same user state, do nothing.
         return;
     }
@@ -57,8 +57,6 @@ const useCartStore = create<CartStore>((set, get) => ({
         firestoreUnsubscribe = null;
     }
     
-    set({ isInitialized: false });
-
     if (user) {
         // --- User is logged in ---
         set({ userId: user.uid });
@@ -191,15 +189,13 @@ onAuthStateChanged(auth, (user) => {
 // It handles the server-client hydration mismatch.
 const useCart = () => {
   // Get the Zustand store's state
-  const store = useCartStore();
-  const isInitialized = useCartStore((s) => s.isInitialized);
+  const { items, addItem, removeItem, updateQuantity, clearCart, isInitialized } = useCartStore();
   const initializeCart = useCartStore((s) => s.initializeCart);
   // State to track client-side mounting
   const [hasMounted, setHasMounted] = useState(false);
 
   useEffect(() => {
     setHasMounted(true);
-    // Initialize cart on mount if not already done.
     if (!isInitialized) {
       initializeCart(auth.currentUser);
     }
@@ -207,19 +203,19 @@ const useCart = () => {
 
   // On the server, and on the initial client render, return a safe, empty, uninitialized state.
   // This ensures the server-rendered output and the first client render are identical.
-  if (!hasMounted || !store.isInitialized) {
+  if (!hasMounted || !isInitialized) {
     return {
       items: [],
       isInitialized: false,
-      addItem: store.addItem,
-      removeItem: store.removeItem,
-      updateQuantity: store.updateQuantity,
-      clearCart: store.clearCart,
+      addItem,
+      removeItem,
+      updateQuantity,
+      clearCart,
     };
   }
 
   // Once mounted and initialized on the client, return the actual store state.
-  return store;
+  return { items, isInitialized, addItem, removeItem, updateQuantity, clearCart };
 };
 
 export default useCart;
