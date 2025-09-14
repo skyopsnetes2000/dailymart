@@ -1,5 +1,4 @@
 
-
 export type DietaryType = 'veg' | 'non-veg' | 'egg';
 
 export type Offer = {
@@ -138,7 +137,7 @@ export type LeaveRequest = {
 }
 
 export type Holiday = {
-    date: Date;
+    date: string;
     name: string;
 }
 

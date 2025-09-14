@@ -51,7 +51,7 @@ import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, Command
 import { cn } from '@/lib/utils';
 import { Check } from 'lucide-react';
 import { Calendar } from '@/components/ui/calendar';
-import { format, startOfMonth, endOfMonth, eachDayOfInterval, getDay, isSameDay, addMonths, subMonths, getDaysInMonth, startOfWeek, endOfWeek, isSameMonth } from 'date-fns';
+import { format, startOfMonth, endOfMonth, eachDayOfInterval, getDay, isSameDay, addMonths, subMonths, getDaysInMonth, startOfWeek, endOfWeek, isSameMonth, parseISO } from 'date-fns';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import {
@@ -166,13 +166,13 @@ function HolidayManager({ holidays, onAddHoliday, onDeleteHoliday }: HolidayMana
                     <h3 className="font-semibold">Upcoming Holidays</h3>
                     <ScrollArea className="h-96">
                         <div className="space-y-2 pr-4">
-                        {holidays.length > 0 ? holidays.sort((a,b) => a.date.getTime() - b.date.getTime()).map((holiday, index) => (
+                        {holidays.length > 0 ? [...holidays].sort((a,b) => parseISO(a.date).getTime() - parseISO(b.date).getTime()).map((holiday, index) => (
                             <div key={index} className="flex items-center justify-between rounded-md border p-3">
                                 <div>
                                     <p className="font-medium">{holiday.name}</p>
-                                    <p className="text-sm text-muted-foreground">{format(holiday.date, 'MMMM do, yyyy')}</p>
+                                    <p className="text-sm text-muted-foreground">{format(parseISO(holiday.date), 'MMMM do, yyyy')}</p>
                                 </div>
-                                <Button variant="ghost" size="icon" onClick={() => onDeleteHoliday(holiday.date)}>
+                                <Button variant="ghost" size="icon" onClick={() => onDeleteHoliday(parseISO(holiday.date))}>
                                     <Trash2 className="h-4 w-4 text-destructive" />
                                 </Button>
                             </div>
@@ -203,14 +203,14 @@ function AttendanceManager({ holidays, employees }: { holidays: Holiday[], emplo
 
     const getAttendanceStatus = (employeeId: string, day: Date): AttendanceStatus => {
         const dateKey = format(day, 'yyyy-MM-dd');
-        if (holidays.some(h => isSameDay(h.date, day))) return 'holiday';
+        if (holidays.some(h => isSameDay(parseISO(h.date), day))) return 'holiday';
         if (getDay(day) === 0) return 'holiday'; // Sunday is a holiday
         return attendance[employeeId]?.[dateKey] || 'present';
     };
 
     const handleDayClick = (day: Date) => {
         const isSunday = getDay(day) === 0;
-        const isHoliday = holidays.some(h => isSameDay(h.date, day));
+        const isHoliday = holidays.some(h => isSameDay(parseISO(h.date), day));
         if (isSunday || isHoliday) return;
         
         setSelectedDay(day);
@@ -230,7 +230,7 @@ function AttendanceManager({ holidays, employees }: { holidays: Holiday[], emplo
     
     const calculateSummary = (employeeId: string) => {
         const daysInMonth = eachDayOfInterval({start: monthStart, end: monthEnd});
-        const workingDays = daysInMonth.filter(day => getDay(day) !== 0 && !holidays.some(h => isSameDay(h.date, day))).length;
+        const workingDays = daysInMonth.filter(day => getDay(day) !== 0 && !holidays.some(h => isSameDay(parseISO(h.date), day))).length;
         let absentDays = 0;
 
         daysInMonth.forEach(day => {
@@ -264,7 +264,7 @@ function AttendanceManager({ holidays, employees }: { holidays: Holiday[], emplo
                     {calendarDays.map((day) => {
                         const isCurrentMonth = isSameMonth(day, currentDate);
                         const isSunday = getDay(day) === 0;
-                        const isHoliday = holidays.some(h => isSameDay(h.date, day));
+                        const isHoliday = holidays.some(h => isSameDay(parseISO(h.date), day));
                         
                         return (
                             <div
@@ -278,7 +278,7 @@ function AttendanceManager({ holidays, employees }: { holidays: Holiday[], emplo
                                 )}
                             >
                                 <span className="font-semibold">{format(day, 'd')}</span>
-                                {isHoliday && isCurrentMonth && <span className="text-xs text-blue-600 truncate">{holidays.find(h=>isSameDay(h.date, day))?.name}</span>}
+                                {isHoliday && isCurrentMonth && <span className="text-xs text-blue-600 truncate">{holidays.find(h=>isSameDay(parseISO(h.date), day))?.name}</span>}
                             </div>
                         );
                     })}
@@ -397,7 +397,7 @@ export default function AdminEmployeePage() {
   })
 
   const handleAddHoliday = async (date: Date, name: string) => {
-    if (holidays.some(h => isSameDay(h.date, date))) {
+    if (holidays.some(h => isSameDay(parseISO(h.date), date))) {
         toast({
             title: 'Date Already Marked',
             description: 'This date is already set as a holiday.',
@@ -406,7 +406,7 @@ export default function AdminEmployeePage() {
         return;
     }
     
-    const newHolidays = [...holidays, { date, name }];
+    const newHolidays = [...holidays, { date: date.toISOString(), name }];
     
     await saveHolidays(newHolidays);
     setHolidays(newHolidays);
@@ -417,7 +417,7 @@ export default function AdminEmployeePage() {
   };
 
   const handleDeleteHoliday = async (dateToDelete: Date) => {
-      const newHolidays = holidays.filter(h => !isSameDay(h.date, dateToDelete));
+      const newHolidays = holidays.filter(h => !isSameDay(parseISO(h.date), dateToDelete));
       await saveHolidays(newHolidays);
       setHolidays(newHolidays);
       toast({

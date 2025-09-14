@@ -12,7 +12,7 @@ export default function LayoutProvider({ children }: { children: React.ReactNode
 
   return (
     <>
-      <div className={cn(showBottomNav && "pb-20")}>{children}</div>
+      <main className={cn(showBottomNav && "pb-20")}>{children}</main>
       {showBottomNav && <BottomNav />}
     </>
   );
