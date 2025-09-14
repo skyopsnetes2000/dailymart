@@ -1,14 +1,10 @@
+
 import ProductCard from '@/components/product-card';
 import PageHeader from '@/components/shared/page-header';
 import { type Category, type Product } from '@/lib/data';
 import { notFound } from 'next/navigation';
 import { getCategories, getProducts } from '@/lib/firestore';
 import SearchableProductList from './searchable-product-list';
-
-type CategoryProductsPageProps = {
-  params: { slug: string };
-  searchParams: { [key: string]: string | string[] | undefined };
-};
 
 async function getCategory(slug: string): Promise<Category | undefined> {
     const allCategories = await getCategories();
