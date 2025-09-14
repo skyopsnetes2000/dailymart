@@ -187,28 +187,31 @@ onAuthStateChanged(auth, (user) => {
     useCartStore.getState().initializeCart(user);
 });
 
-// The public hook that components will use.
 const useCart = () => {
+  // Get the Zustand store's state
   const store = useCartStore();
-  
-  // This state helps prevent hydration errors by ensuring that
-  // the component only renders the cart state on the client.
-  const [isClient, setIsClient] = useState(false);
+  // State to track client-side mounting
+  const [hasMounted, setHasMounted] = useState(false);
+
   useEffect(() => {
-    setIsClient(true);
+    setHasMounted(true);
   }, []);
 
-  // On the server, or before the client has mounted and initialized,
-  // return a safe, empty, uninitialized state.
-  if (!isClient || !store.isInitialized) {
+  // On the server, and on the initial client render, return a safe, empty, uninitialized state.
+  // This ensures the server-rendered output and the first client render are identical.
+  if (!hasMounted || !store.isInitialized) {
     return {
-        ...store,
-        items: [],
-        isInitialized: false,
+      items: [],
+      isInitialized: false,
+      addItem: store.addItem,
+      removeItem: store.removeItem,
+      updateQuantity: store.updateQuantity,
+      clearCart: store.clearCart,
     };
   }
-  
+
+  // Once mounted and initialized on the client, return the actual store state.
   return store;
-}
+};
 
 export default useCart;

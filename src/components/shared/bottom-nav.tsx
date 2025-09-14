@@ -31,7 +31,7 @@ export default function BottomNav() {
     return null;
   }
   
-  if (loading || !isInitialized) {
+  if (loading) {
     return (
         <nav className="fixed bottom-0 left-0 right-0 z-50 h-16 border-t bg-background/95 backdrop-blur-sm">
             <div className="mx-auto grid h-full max-w-lg grid-cols-5 items-center justify-center">
@@ -70,7 +70,7 @@ export default function BottomNav() {
                 item.isActive && 'text-primary'
               )}
             >
-              {item.href === '/cart' && cartItemCount > 0 && (
+              {item.href === '/cart' && cartItemCount > 0 && isInitialized && (
                 <Badge className="absolute right-3 top-1 h-5 w-5 justify-center rounded-full p-0">
                   {cartItemCount}
                 </Badge>
