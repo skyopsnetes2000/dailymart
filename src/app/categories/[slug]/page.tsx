@@ -6,6 +6,12 @@ import { notFound } from 'next/navigation';
 import { getCategories, getProducts } from '@/lib/firestore';
 import SearchableProductList from './searchable-product-list';
 
+type CategoryProductsPageProps = {
+    params: {
+        slug: string;
+    }
+}
+
 async function getCategory(slug: string): Promise<Category | undefined> {
     const allCategories = await getCategories();
     return allCategories.find((c) => c.slug === slug);
@@ -15,7 +21,7 @@ async function getCategoryProducts(slug: string): Promise<Product[]> {
     return getProducts(slug);
 }
 
-export default async function CategoryProductsPage({ params }: { params: { slug: string } }) {
+export default async function CategoryProductsPage({ params }: CategoryProductsPageProps) {
   const slug = decodeURIComponent(params.slug);
   const category = await getCategory(slug);
 
