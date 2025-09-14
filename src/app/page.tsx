@@ -17,9 +17,10 @@ import { Button } from '@/components/ui/button';
 import HeroCarousel from '@/components/hero-carousel';
 import { Card, CardContent } from '@/components/ui/card';
 import HomePageClient from './home-page-client';
+import Image from 'next/image';
 
 
-async function RecipeCard({ recipe }: { recipe: Recipe }) {
+function RecipeCard({ recipe }: { recipe: Recipe }) {
     return (
         <Link href={`/recipes/${recipe.id}`} className="group block">
             <Card className="overflow-hidden transition-all duration-300 group-hover:shadow-lg group-hover:-translate-y-1">
