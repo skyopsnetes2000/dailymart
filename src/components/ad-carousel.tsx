@@ -38,13 +38,9 @@ export default function AdCarousel({ ads }: AdCarouselProps) {
 
     if (!isClient) {
         return (
-            <div className="w-full overflow-hidden">
-                <div className="flex -ml-2">
-                    <div className="pl-2">
-                        <Skeleton className="aspect-video w-[300px] sm:w-[400px]" />
-                    </div>
-                </div>
-            </div>
+            <section className="w-full overflow-hidden">
+                <Skeleton className="h-[171px] sm:h-[228px] w-[300px] sm:w-[400px]" />
+            </section>
         );
     }
 
