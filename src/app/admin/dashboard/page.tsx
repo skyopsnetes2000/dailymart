@@ -42,7 +42,14 @@ type TopItem = {
 }
 
 export default function AdminDashboardPage() {
-    const [stats, setStats] = useState<DashboardStats | null>(null);
+    const [stats, setStats] = useState<DashboardStats | null>({
+        totalRevenue: 0,
+        revenueChange: 0,
+        totalOrders: 0,
+        ordersChange: 0,
+        totalProducts: 0,
+        totalCategories: 0,
+    });
     const [monthlySales, setMonthlySales] = useState<MonthlySales[]>([]);
     const [topProducts, setTopProducts] = useState<TopItem[]>([]);
     const [topCategories, setTopCategories] = useState<TopItem[]>([]);
@@ -59,47 +66,21 @@ export default function AdminDashboardPage() {
                 const lastMonthEnd = endOfMonth(subMonths(now, 1));
                 const currentMonthStart = startOfMonth(now);
                 
-                const productMap = new Map(products.map(p => [p.name, p]));
-
-                const getRefundAmount = (order: Order): number => {
-                    if (!order.returnRequest || !['Return Successful', 'Refund Completed'].includes(order.status)) {
-                        return 0;
-                    }
-                    return order.returnRequest.items.reduce((sum, item) => {
-                        const product = productMap.get(item.productName);
-                        if (!product) return sum;
-                        const price = calculateDiscountedPrice(product) ?? product.price;
-                        return sum + (price * item.quantity);
-                    }, 0);
-                };
-
-                // Gross revenue is the total of all orders that have been successfully delivered or are in a post-delivery state.
-                const deliveredAndReturnedOrders = orders.filter(o => 
-                    ['Delivered', 'Return Requested', 'Return Initiated', 'Return Successful', 'Refund Completed'].includes(o.status)
+                // Simplified Revenue: Sum of all orders that are not pending or cancelled
+                const revenueOrders = orders.filter(o => 
+                    ['Packed', 'Out for Delivery', 'Delivered'].includes(o.status)
                 );
                 
-                const totalGrossRevenue = deliveredAndReturnedOrders.reduce((sum, order) => sum + order.total, 0);
+                const totalRevenue = revenueOrders.reduce((sum, order) => sum + order.total, 0);
                 
-                // Total refunds is the sum of money returned to customers for successfully returned items.
-                const totalRefunds = orders.reduce((sum, order) => sum + getRefundAmount(order), 0);
-                
-                // Net revenue is gross revenue minus refunds.
-                const totalRevenue = Math.max(0, totalGrossRevenue - totalRefunds);
-                
-                const calculateNetRevenueForPeriod = (start: Date, end: Date) => {
-                    const periodDeliveredOrders = deliveredAndReturnedOrders.filter(o => isWithinInterval(new Date(o.date), { start, end }));
-                    const periodRefundOrders = orders.filter(o => {
-                        return ['Return Successful', 'Refund Completed'].includes(o.status) && o.returnRequest?.date && isWithinInterval(new Date(o.returnRequest.date), { start, end })
-                    });
-                    
-                    const gross = periodDeliveredOrders.reduce((sum, order) => sum + order.total, 0);
-                    const refunds = periodRefundOrders.reduce((sum, order) => sum + getRefundAmount(order), 0);
-                    
-                    return Math.max(0, gross - refunds);
+                const calculateRevenueForPeriod = (start: Date, end: Date) => {
+                    return revenueOrders
+                        .filter(o => isWithinInterval(new Date(o.date), { start, end }))
+                        .reduce((sum, order) => sum + order.total, 0);
                 };
 
-                const currentMonthRevenue = calculateNetRevenueForPeriod(currentMonthStart, now);
-                const lastMonthRevenue = calculateNetRevenueForPeriod(lastMonthStart, lastMonthEnd);
+                const currentMonthRevenue = calculateRevenueForPeriod(currentMonthStart, now);
+                const lastMonthRevenue = calculateRevenueForPeriod(lastMonthStart, lastMonthEnd);
                 
                 const currentMonthOrdersCount = orders.filter(o => isWithinInterval(new Date(o.date), { start: currentMonthStart, end: now })).length;
                 const lastMonthOrdersCount = orders.filter(o => isWithinInterval(new Date(o.date), { start: lastMonthStart, end: lastMonthEnd })).length;
@@ -131,8 +112,8 @@ export default function AdminDashboardPage() {
                     const date = subMonths(now, i);
                     const monthStart = startOfMonth(date);
                     const monthEnd = endOfMonth(date);
-                    const monthNetRevenue = calculateNetRevenueForPeriod(monthStart, monthEnd);
-                    last6Months.push({ month: format(date, 'MMM'), total: Math.max(0, monthNetRevenue) });
+                    const monthRevenue = calculateRevenueForPeriod(monthStart, monthEnd);
+                    last6Months.push({ month: format(date, 'MMM'), total: Math.max(0, monthRevenue) });
                 }
                 setMonthlySales(last6Months);
 
@@ -256,7 +237,7 @@ export default function AdminDashboardPage() {
             <Card className="col-span-4">
             <CardHeader>
                 <CardTitle>Overview</CardTitle>
-                <CardDescription>Monthly net revenue for the last 6 months.</CardDescription>
+                <CardDescription>Monthly revenue for the last 6 months.</CardDescription>
             </CardHeader>
             <CardContent className="pl-2">
                 <ResponsiveContainer width="100%" height={350}>
