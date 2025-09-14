@@ -1,13 +1,10 @@
 
-'use client';
-
 import './globals.css';
 import { Toaster } from '@/components/ui/toaster';
-import BottomNav from '@/components/shared/bottom-nav';
 import { cn } from '@/lib/utils';
-import { usePathname } from 'next/navigation';
 import { Poppins } from 'next/font/google';
 import ThemeProvider from '@/components/theme-provider';
+import LayoutProvider from '@/components/layout-provider';
 
 const poppins = Poppins({
   subsets: ['latin'],
@@ -21,9 +18,6 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const pathname = usePathname();
-  // We only want to add the padding-bottom if the bottom nav is visible
-  const showBottomNav = !pathname.startsWith('/admin') && pathname !== '/login';
   
   return (
     <html lang="en" suppressHydrationWarning>
@@ -33,9 +27,10 @@ export default function RootLayout({
       </head>
       <body className={cn(poppins.variable, "font-body antialiased")}>
         <ThemeProvider>
-          <div className={cn(showBottomNav && "pb-20")}>{children}</div>
+          <LayoutProvider>
+            {children}
+          </LayoutProvider>
           <Toaster />
-          {showBottomNav && <BottomNav />}
         </ThemeProvider>
       </body>
     </html>
