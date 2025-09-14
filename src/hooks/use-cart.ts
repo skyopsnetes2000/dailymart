@@ -192,16 +192,18 @@ onAuthStateChanged(auth, (user) => {
 const useCart = () => {
   // Get the Zustand store's state
   const store = useCartStore();
+  const isInitialized = useCartStore((s) => s.isInitialized);
+  const initializeCart = useCartStore((s) => s.initializeCart);
   // State to track client-side mounting
   const [hasMounted, setHasMounted] = useState(false);
 
   useEffect(() => {
     setHasMounted(true);
     // Initialize cart on mount if not already done.
-    if (!store.isInitialized) {
-      store.initializeCart(auth.currentUser);
+    if (!isInitialized) {
+      initializeCart(auth.currentUser);
     }
-  }, [store]);
+  }, [isInitialized, initializeCart]);
 
   // On the server, and on the initial client render, return a safe, empty, uninitialized state.
   // This ensures the server-rendered output and the first client render are identical.
