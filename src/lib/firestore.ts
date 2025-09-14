@@ -1,3 +1,4 @@
+
 import { initializeApp, getApp, getApps } from 'firebase/app';
 import { getFirestore, collection, getDocs, doc, addDoc, updateDoc, deleteDoc, query, where, writeBatch, orderBy, getDoc, setDoc, onSnapshot, runTransaction, arrayUnion, arrayRemove } from 'firebase/firestore';
 import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
@@ -132,7 +133,7 @@ export async function getOrders(userId?: string): Promise<Order[]> {
     return allOrders;
 }
 
-export async function updateOrderStatus(orderId: string, status: Order['status'], trackingHistory: Order['trackingHistory']): Promise<void> {
+export async function updateOrderStatus(orderId: string, status: OrderStatus, trackingHistory: Order['trackingHistory']): Promise<void> {
     const orderDoc = doc(db, 'orders', orderId);
     await updateDoc(orderDoc, { status, trackingHistory });
 }
@@ -457,3 +458,5 @@ export async function updateRecipe(id: string, recipe: Partial<Recipe>): Promise
 export async function deleteRecipe(id: string): Promise<void> {
     await deleteDoc(doc(db, 'recipes', id));
 }
+
+    
