@@ -1,39 +1,72 @@
 
 rules_version = '2';
+
 service cloud.firestore {
   match /databases/{database}/documents {
-
-    function isAdmin() {
-      // Hardcoded admin email OR a user with the 'admin' role in their user document
-      return request.auth.token.email == 'dhandesaurav52@gmail.com' ||
-             (exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
-              get(/databases/$(database)/documents/users/$(request.auth.uid)).data.roles.hasAny(['admin']));
+    
+    function isAuthed() {
+      return request.auth != null;
     }
 
-    // PUBLIC COLLECTIONS: Readable by anyone, writable only by admin
-    match /{collectionName}/{docId} where collectionName in ['products', 'categories', 'recipes', 'appearance', 'settings'] {
+    function isAdmin() {
+      // Hardcoded admin email for failsafe access
+      let isSuperAdmin = request.auth.token.email == 'dhandesaurav52@gmail.com';
+      // Check for 'admin' role in the user's document
+      let hasAdminRole = exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+                         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.roles.hasAny(['admin']);
+      return isSuperAdmin || hasAdminRole;
+    }
+
+    // PUBLIC COLLECTIONS: Readable by anyone, writable only by admins.
+    match /products/{productId} {
       allow read;
       allow write: if isAdmin();
     }
+    match /categories/{categoryId} {
+      allow read;
+      allow write: if isAdmin();
+    }
+    match /recipes/{recipeId} {
+        allow read;
+        allow write: if isAdmin();
+    }
+    match /appearance/{docId} {
+      allow read;
+      allow write: if isAdmin();
+    }
+    match /settings/{docId} {
+        allow read: if isAuthed();
+        allow write: if isAdmin();
+    }
+    match /teams/{teamId} {
+        allow read, write: if isAdmin();
+    }
+    match /employees/{employeeId} {
+        allow read, write: if isAdmin();
+    }
 
-    // CARTS: Users can only manage their own cart
+
+    // USER-SPECIFIC COLLECTIONS
+    match /users/{userId} {
+      // Users can read their own document. Admins can read any.
+      allow read: if request.auth.uid == userId || isAdmin();
+      // Users can create their own user document
+      allow create: if request.auth.uid == userId;
+      // Users can update their own document, but not change their roles. Admins can update any.
+      allow update: if (request.auth.uid == userId && !("roles" in request.resource.data)) || isAdmin();
+    }
+    
     match /carts/{userId} {
       allow read, write: if request.auth.uid == userId;
     }
-
-    // ORDERS: Users can read their own orders. Admins can read/write all orders.
+    
     match /orders/{orderId} {
-      allow read: if request.auth.uid == resource.data.userId || isAdmin();
-      allow create: if request.auth.uid == request.resource.data.userId;
-      allow update: if isAdmin();
-    }
-
-    // USERS: Users manage their own profile, but cannot change roles. Admins can manage any.
-    match /users/{userId} {
-      allow read: if request.auth.uid == userId || isAdmin();
-      allow create: if request.auth.uid == userId;
-      allow update: if (request.auth.uid == userId && !('roles' in request.resource.data)) || isAdmin();
-      allow delete: if isAdmin();
+      // Users can read their own orders. Admins can read all orders.
+      allow read: if get(/databases/$(database)/documents/orders/$(orderId)).data.userId == request.auth.uid || isAdmin();
+      // Users can create their own orders.
+      allow create: if request.resource.data.userId == request.auth.uid;
+      // Users can update their own order if it's for a return request. Admins can update any.
+      allow update: if (get(/databases/$(database)/documents/orders/$(orderId)).data.userId == request.auth.uid && "returnRequest" in request.resource.data) || isAdmin();
     }
   }
 }

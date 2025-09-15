@@ -50,24 +50,6 @@ export type ReturnRequestItem = {
   quantity: number;
 }
 
-export type ShopRequest = {
-    id: string;
-    userId: string;
-    shopName: string;
-    contactNumber: string;
-    contactEmail: string;
-    gstinNumber?: string;
-    status: 'pending' | 'approved' | 'rejected';
-    submittedAt: string;
-    documents: {
-        aadharFrontUrl: string;
-        aadharBackUrl: string;
-        electricityBillUrl: string;
-        passportPhotoUrl: string;
-        businessPanUrl: string;
-    }
-}
-
 export type Order = {
   id: string;
   userId: string;
