@@ -1,78 +1,95 @@
-
 rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
-  
-    // Helper functions for roles
+
     function isMainAdmin() {
       return request.auth.token.email == 'dhandesaurav52@gmail.com';
     }
 
     function isAdmin() {
-      return isMainAdmin() || get(/databases/$(database)/documents/users/$(request.auth.uid)).data.roles.hasAny(['admin']);
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.roles.hasAny(['admin']);
     }
     
     function isSeller() {
-       return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.roles.hasAny(['seller']);
+        return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.roles.hasAny(['seller']);
+    }
+
+    function isAuthorizedAdmin() {
+        return isMainAdmin() || isAdmin();
+    }
+    
+    function isOwner(userId) {
+      return request.auth.uid == userId;
+    }
+    
+    function isSignedIn() {
+      return request.auth != null;
     }
 
     // Publicly readable collections
-    match /products/{productId} {
-      allow read: if true;
-      allow write: if isAdmin() || isSeller();
-    }
     match /categories/{categoryId} {
       allow read: if true;
-      allow write: if isAdmin() || isSeller();
+      allow write: if isAuthorizedAdmin() || isSeller();
     }
-    match /recipes/{recipeId} {
-        allow read: if true;
-        allow write: if isAdmin() || isSeller();
-    }
-     match /appearance/{docId} {
+
+    match /products/{productId} {
       allow read: if true;
-      allow write: if isAdmin();
-    }
-
-    // User-specific data
-    match /users/{userId} {
-      allow read: if request.auth.uid == userId || isAdmin();
-      allow write: if request.auth.uid == userId || isAdmin();
-    }
-    match /carts/{userId} {
-      allow read, write: if request.auth.uid == userId;
-    }
-     match /users/{userId}/addresses/{addressId} {
-      allow read, write: if request.auth.uid == userId;
-    }
-
-    // Orders
-    match /orders/{orderId} {
-        allow read: if get(/databases/$(database)/documents/users/$(request.auth.uid)).data.roles.hasAny(['admin', 'seller']) || resource.data.userId == request.auth.uid;
-        allow write: if request.auth.uid != null; // Allow any authenticated user to create
-        allow update: if isAdmin() || isSeller(); // Only admins/sellers can update status
-    }
-
-    // Admin-only or Seller-specific writeable collections
-    match /shopRequests/{requestId} {
-      allow read: if isAdmin() || request.auth.uid == resource.data.userId; // Admins or the user who made the request
-      allow create: if request.auth.uid != null; // Any authenticated user can create
-      allow update: if isAdmin(); // Only admins can approve/reject
-    }
-
-    match /employees/{employeeId} {
-        allow read, write: if isAdmin();
-    }
-    match /teams/{teamId} {
-        allow read, write: if isAdmin();
-    }
-    match /settings/{settingId} { // For holidays
-        allow read: if true;
-        allow write: if isAdmin();
+      allow write: if isAuthorizedAdmin() || isSeller();
     }
     
-    // Deny all other reads/writes by default
+    match /recipes/{recipeId} {
+        allow read: if true;
+        allow write: if isAuthorizedAdmin() || isSeller();
+    }
+
+    match /appearance/{docId} {
+      allow read: if true;
+      allow write: if isAuthorizedAdmin();
+    }
+    
+     match /settings/{docId} {
+      allow read: if isAuthorizedAdmin();
+      allow write: if isAuthorizedAdmin();
+    }
+
+    // User-specific collections
+    match /users/{userId} {
+      allow read: if isOwner(userId) || isAuthorizedAdmin();
+      allow update: if isOwner(userId) && !('roles' in request.resource.data); // User can update their own info but not roles
+      allow write: if isAuthorizedAdmin(); // Admin can write/update user roles
+    }
+
+    match /carts/{userId} {
+      allow read, write: if isOwner(userId);
+    }
+    
+    match /orders/{orderId} {
+      allow read: if isOwner(get(/databases/$(database)/documents/orders/$(orderId)).data.userId) || isAuthorizedAdmin() || isSeller();
+      allow create: if isSignedIn();
+      allow update: if isAuthorizedAdmin() || isSeller();
+    }
+
+    match /users/{userId}/addresses/{addressId} {
+      allow read, write: if isOwner(userId);
+    }
+    
+    // Admin & Seller restricted collections
+    match /shopRequests/{requestId} {
+        allow read: if isAuthorizedAdmin() || (isSignedIn() && resource.data.userId == request.auth.uid);
+        allow create: if isSignedIn();
+        allow update: if isAuthorizedAdmin();
+    }
+    
+    match /employees/{employeeId} {
+        allow read, write: if isAuthorizedAdmin();
+    }
+    
+    match /teams/{teamId} {
+        allow read, write: if isAuthorizedAdmin();
+    }
+
+    // Deny all other access by default
     match /{document=**} {
       allow read, write: if false;
     }
