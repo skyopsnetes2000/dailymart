@@ -47,18 +47,7 @@ import { useToast } from '@/hooks/use-toast';
 import { addProduct, deleteProduct, getCategories, getProducts, updateProduct, uploadImage } from '@/lib/firestore';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { DietarySymbol } from '@/components/dietary-symbol';
-
-const productSchema = z.object({
-  name: z.string().min(1, 'Name is required'),
-  brand: z.string().optional(),
-  description: z.string().min(1, 'Description is required'),
-  price: z.coerce.number().min(0.01, 'Price must be greater than 0'),
-  weight: z.string().min(1, 'Weight is required'),
-  categorySlug: z.string().min(1, 'Category is required'),
-  subCategory: z.string().optional(),
-  dietaryType: z.enum(['veg', 'non-veg', 'egg']).optional(),
-  images: z.any(),
-});
+import { productSchema } from '@/lib/schemas';
 
 
 export default function AdminProductsPage() {

@@ -13,16 +13,7 @@ import { useEffect, useState } from 'react';
 import { Loader2, LocateFixed } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { ScrollArea } from '@/components/ui/scroll-area';
-
-export const AddressSchema = z.object({
-  line1: z.string().min(1, 'Address is required.'),
-  landmark: z.string().optional(),
-  city: z.string().min(1, 'City is required.'),
-  state: z.string().min(1, 'State is required.'),
-  zip: z.string().min(1, 'ZIP code is required.'),
-  mobile: z.string().min(10, 'A valid mobile number is required.'),
-  isDefault: z.boolean().default(false),
-});
+import { AddressSchema } from '@/lib/schemas';
 
 type AddressFormProps = {
   isOpen: boolean;
