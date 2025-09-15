@@ -1,74 +1,72 @@
-
 rules_version = '2';
+
+function isMainAdmin() {
+  return request.auth.token.email == 'dhandesaurav52@gmail.com';
+}
+
+function isAdmin() {
+  return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.roles.hasAny(['admin']);
+}
+
+function isSeller() {
+    return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.roles.hasAny(['seller']);
+}
+
+function isAuthorizedAdmin() {
+    return isMainAdmin() || isAdmin();
+}
+
+function isOwner(userId) {
+  return request.auth.uid == userId;
+}
 
 service cloud.firestore {
   match /databases/{database}/documents {
-
-    // --- Helper Functions ---
-    function isMainAdmin() {
-      return request.auth.token.email == 'dhandesaurav52@gmail.com';
-    }
-
-    function isAdmin() {
-      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.roles.hasAny(['admin']);
-    }
-    
-    function isSeller() {
-       return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.roles.hasAny(['seller']);
-    }
-    
-    function isAuthorizedAdmin() {
-        return isMainAdmin() || isAdmin();
-    }
-
-    // --- Collections ---
-    match /categories/{categoryId} {
-      allow read: if true;
-      allow write: if isAuthorizedAdmin() || isSeller();
-    }
-
+  
+    // Publicly readable collections
     match /products/{productId} {
       allow read: if true;
       allow write: if isAuthorizedAdmin() || isSeller();
     }
-    
-    match /recipes/{recipeId} {
+    match /categories/{categoryId} {
       allow read: if true;
-      allow write: if isAuthorizedAdmin() || isSeller();
+      allow write: if isAuthorizedAdmin();
     }
-
+    match /recipes/{recipeId} {
+        allow read: if true;
+        allow write: if isAuthorizedAdmin() || isSeller();
+    }
     match /appearance/{docId} {
       allow read: if true;
       allow write: if isAuthorizedAdmin();
     }
-    
-    match /settings/{docId} {
-        allow read, write: if isAuthorizedAdmin();
-    }
 
-    match /carts/{userId} {
-      allow read, write: if request.auth.uid == userId;
-    }
-
-    match /orders/{orderId} {
-      allow read: if request.auth.uid == resource.data.userId || isAuthorizedAdmin() || isSeller();
-      allow create: if request.auth.uid != null;
-      allow update: if isAuthorizedAdmin() || isSeller() || request.auth.uid == resource.data.userId;
-    }
-    
-    match /shopRequests/{requestId} {
-        allow read: if isAuthorizedAdmin() || request.auth.uid == resource.data.userId;
-        allow create: if request.auth.uid != null;
-        allow update: if isAuthorizedAdmin();
-    }
-
+    // User-specific collections
     match /users/{userId} {
-      allow read: if request.auth.uid == userId || isAuthorizedAdmin();
-      allow write: if isAuthorizedAdmin();
+      allow read: if isOwner(userId) || isAuthorizedAdmin() || isSeller();
+      allow write: if (isOwner(userId) && request.resource.data.keys().hasOnly(['name'])) || isAuthorizedAdmin();
       
       match /addresses/{addressId} {
-        allow read, write: if request.auth.uid == userId;
+        allow read, write: if isOwner(userId);
       }
+    }
+    
+    match /carts/{userId} {
+      allow read, write: if isOwner(userId);
+    }
+    
+    match /orders/{orderId} {
+      allow read: if isOwner(resource.data.userId) || isAuthorizedAdmin() || isSeller();
+      allow create: if request.auth != null;
+      allow update: if isAuthorizedAdmin() || isSeller() || (isOwner(resource.data.userId) && request.resource.data.status == 'Return Requested');
+    }
+
+    // Admin/Seller collections
+    match /shopRequests/{requestId} {
+      allow read: if isOwner(resource.data.userId) || isAuthorizedAdmin();
+      allow create: if request.auth != null;
+      allow update: if isAuthorizedAdmin();
+      allow delete: if isAuthorizedAdmin();
     }
     
     match /employees/{employeeId} {
@@ -76,6 +74,10 @@ service cloud.firestore {
     }
     
     match /teams/{teamId} {
+        allow read, write: if isAuthorizedAdmin();
+    }
+
+    match /settings/{settingId} {
         allow read, write: if isAuthorizedAdmin();
     }
   }
