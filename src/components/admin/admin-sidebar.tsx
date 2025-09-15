@@ -7,31 +7,27 @@ import { usePathname } from 'next/navigation';
 import { Home, Package, ShoppingCart, LayoutGrid, Settings, UtensilsCrossed, ArrowUpRightFromSquare, Tag, Users, Building, CheckSquare } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Separator } from '@/components/ui/separator';
-import { User } from 'firebase/auth';
 
-const ADMIN_EMAIL = 'dhandesaurav52@gmail.com';
-
-const allNavItems = [
-  { href: '/admin/dashboard', label: 'Dashboard', icon: Home, adminOnly: false },
-  { href: '/admin/products', label: 'Products', icon: Package, adminOnly: false },
-  { href: '/admin/recipes', label: 'Recipes', icon: UtensilsCrossed, adminOnly: false },
-  { href: '/admin/orders', label: 'Orders', icon: ShoppingCart, adminOnly: false },
-  { href: '/admin/categories', label: 'Categories', icon: LayoutGrid, adminOnly: false },
-  { href: '/admin/offers', label: 'Offers', icon: Tag, adminOnly: false },
-  { href: '/admin/appearance', label: 'Appearance', icon: Settings, adminOnly: true },
-  { href: '/admin/employee', label: 'Employee', icon: Users, adminOnly: true },
-  { href: '/admin/shops', label: 'Shops', icon: Building, adminOnly: true },
-  { href: '/admin/approval-requests', label: 'Approval Requests', icon: CheckSquare, adminOnly: true },
-  { href: '/', label: 'Home', icon: Home, adminOnly: false },
+const navItems = [
+  { href: '/admin/dashboard', label: 'Dashboard', icon: Home, roles: ['admin', 'seller'] },
+  { href: '/admin/products', label: 'Products', icon: Package, roles: ['admin', 'seller'] },
+  { href: '/admin/recipes', label: 'Recipes', icon: UtensilsCrossed, roles: ['admin', 'seller'] },
+  { href: '/admin/orders', label: 'Orders', icon: ShoppingCart, roles: ['admin', 'seller'] },
+  { href: '/admin/categories', label: 'Categories', icon: LayoutGrid, roles: ['admin', 'seller'] },
+  { href: '/admin/offers', label: 'Offers', icon: Tag, roles: ['admin', 'seller'] },
+  { href: '/admin/appearance', label: 'Appearance', icon: Settings, roles: ['admin'] },
+  { href: '/admin/employee', label: 'Employee', icon: Users, roles: ['admin'] },
+  { href: '/admin/shops', label: 'Shops', icon: Building, roles: ['admin'] },
+  { href: '/admin/approval-requests', label: 'Approval Requests', icon: CheckSquare, roles: ['admin'] },
 ];
 
 type AdminSidebarProps = {
   isMobile?: boolean;
   onLinkClick?: () => void;
-  user: User | null;
+  userRoles: string[];
 };
 
-export default function AdminSidebar({ isMobile = false, onLinkClick, user }: AdminSidebarProps) {
+export default function AdminSidebar({ isMobile = false, onLinkClick, userRoles }: AdminSidebarProps) {
   const pathname = usePathname();
   
   const handleLinkClick = () => {
@@ -40,9 +36,11 @@ export default function AdminSidebar({ isMobile = false, onLinkClick, user }: Ad
     }
   }
   
-  const isMainAdmin = user?.email === ADMIN_EMAIL;
-  
-  const navItems = allNavItems.filter(item => !item.adminOnly || isMainAdmin);
+  const hasRole = (roles: string[]) => {
+    return roles.some(role => userRoles.includes(role));
+  }
+
+  const visibleNavItems = navItems.filter(item => hasRole(item.roles));
 
 
   return (
@@ -57,7 +55,7 @@ export default function AdminSidebar({ isMobile = false, onLinkClick, user }: Ad
         </Link>
       </div>
       <nav className="flex-1 space-y-1 p-2">
-        {navItems.map((item) => (
+        {visibleNavItems.map((item) => (
           <Link
             key={item.href}
             href={item.href}

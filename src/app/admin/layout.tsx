@@ -21,14 +21,15 @@ export default function AdminLayout({
   const [user, loading] = useAuthState(auth);
   const router = useRouter();
   const [isMobileSheetOpen, setIsMobileSheetOpen] = useState(false);
-  const [isAuthorized, setIsAuthorized] = useState<boolean | null>(null);
+  const [userRoles, setUserRoles] = useState<string[] | null>(null);
+  const isAuthorized = userRoles && (userRoles.includes('admin') || userRoles.includes('seller'));
 
   useEffect(() => {
     const checkAuthorization = async () => {
       if (loading) return;
 
       if (!user) {
-        setIsAuthorized(false);
+        setUserRoles([]);
         router.replace('/');
         return;
       }
@@ -40,24 +41,21 @@ export default function AdminLayout({
         if (userDoc.exists()) {
             const userData = userDoc.data();
             const roles = userData.roles || [];
-            if (roles.includes('admin') || roles.includes('seller')) {
-                setIsAuthorized(true);
-            } else {
-                setIsAuthorized(false);
+            setUserRoles(roles);
+            if (!roles.includes('admin') && !roles.includes('seller')) {
                 router.replace('/');
             }
         } else {
-            // This case handles the main admin who might not have a doc initially
              if (user.email === 'dhandesaurav52@gmail.com') {
-                setIsAuthorized(true);
+                setUserRoles(['admin']);
              } else {
-                setIsAuthorized(false);
+                setUserRoles([]);
                 router.replace('/');
              }
         }
       } catch (error) {
           console.error("Authorization check failed:", error);
-          setIsAuthorized(false);
+          setUserRoles([]);
           router.replace('/');
       }
     };
@@ -65,7 +63,7 @@ export default function AdminLayout({
     checkAuthorization();
   }, [user, loading, router]);
 
-  if (loading || isAuthorized === null) {
+  if (loading || userRoles === null) {
     return (
       <div className="flex h-screen w-full items-center justify-center bg-background">
         <div className="flex flex-col items-center gap-4">
@@ -83,7 +81,7 @@ export default function AdminLayout({
 
   return (
     <div className="flex min-h-screen">
-      <AdminSidebar user={user} />
+      <AdminSidebar userRoles={userRoles} />
       <main className="flex-1 p-4 sm:p-6">
         <header className="md:hidden border-b pb-4 mb-4 flex justify-between items-center">
              <Sheet open={isMobileSheetOpen} onOpenChange={setIsMobileSheetOpen}>
@@ -97,7 +95,7 @@ export default function AdminLayout({
                   <SheetHeader className='p-4'>
                     <SheetTitle className="sr-only">Menu</SheetTitle>
                   </SheetHeader>
-                  <AdminSidebar isMobile={true} onLinkClick={() => setIsMobileSheetOpen(false)} user={user} />
+                  <AdminSidebar isMobile={true} onLinkClick={() => setIsMobileSheetOpen(false)} userRoles={userRoles} />
                 </SheetContent>
               </Sheet>
         </header>
