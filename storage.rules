@@ -3,24 +3,30 @@ rules_version = '2';
 service firebase.storage {
   match /b/{bucket}/o {
     
+    // --- Helper Functions ---
+    function isAuth() {
+      return request.auth != null;
+    }
+
     function isMainAdmin() {
       return request.auth.token.email == 'dhandesaurav52@gmail.com';
     }
-    
+
     function isAdmin() {
-      // You must connect this to your Firestore database for it to work
-      return exists(/databases/(default)/documents/users/$(request.auth.uid)) && 
-             get(/databases/(default)/documents/users/$(request.auth.uid)).data.roles.hasAny(['admin']);
+      // This requires a read from Firestore, ensure rules there allow it.
+      return isAuth() && firestore.get(/databases/(default)/documents/users/$(request.auth.uid)).data.roles.hasAny(['admin']);
+    }
+    
+    function isAuthorizedAdmin() {
+      return isMainAdmin() || isAdmin();
     }
 
-    // PUBLIC READ: Allow anyone to read images for products, categories, recipes, and appearance.
-    match /{folder:regex(products|categories|recipes|appearance)}/{allPaths=**} {
-      allow read: if true;
-    }
-    
-    // Default deny all other access
-    match /{allPaths=**} {
-      allow read, write: if false;
+    // Public read for images used in the app
+    match /{folder}/{allPaths=**} {
+      where folder in ['products', 'categories', 'recipes', 'appearance'] {
+        allow read: if true;
+        allow write: if isAuthorizedAdmin();
+      }
     }
   }
 }

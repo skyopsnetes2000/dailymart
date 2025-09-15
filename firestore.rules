@@ -2,82 +2,81 @@ rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
-  
-    // Helper Functions
+
+    // --- Helper Functions ---
+    function isAuth() {
+      return request.auth != null;
+    }
+
     function isMainAdmin() {
       return request.auth.token.email == 'dhandesaurav52@gmail.com';
     }
-    
+
     function isAdmin() {
-      return exists(/databases/$(database)/documents/users/$(request.auth.uid)) && 
-             get(/databases/$(database)/documents/users/$(request.auth.uid)).data.roles.hasAny(['admin']);
-    }
-    
-    function isSeller() {
-       return exists(/databases/$(database)/documents/users/$(request.auth.uid)) && 
-             get(/databases/$(database)/documents/users/$(request.auth.uid)).data.roles.hasAny(['seller']);
+      return isAuth() && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.roles.hasAny(['admin']);
     }
     
     function isAuthorizedAdmin() {
-        return isMainAdmin() || isAdmin();
+      return isMainAdmin() || isAdmin();
     }
     
-    // --- Collection Rules ---
+    function isOwner(userId) {
+      return isAuth() && request.auth.uid == userId;
+    }
 
-    // PUBLIC: Products, Categories, Recipes, Appearance can be read by anyone.
+    // --- Public Collections ---
     match /products/{productId} {
       allow read: if true;
-      allow write: if isAuthorizedAdmin() || isSeller();
+      allow write: if isAuthorizedAdmin();
     }
+
     match /categories/{categoryId} {
       allow read: if true;
       allow write: if isAuthorizedAdmin();
     }
+    
     match /recipes/{recipeId} {
       allow read: if true;
-      allow write: if isAuthorizedAdmin() || isSeller();
-    }
-    match /appearance/{docId} {
-        allow read: if true;
-        allow write: if isAuthorizedAdmin();
-    }
-    match /settings/{docId} {
-        allow read: if isAuthorizedAdmin();
-        allow write: if isAuthorizedAdmin();
+      allow write: if isAuthorizedAdmin();
     }
 
-    // USER-SPECIFIC: Carts, Orders, and Addresses are private to the user.
+    match /appearance/{docId} {
+      allow read: if true;
+      allow write: if isAuthorizedAdmin();
+    }
+
+    // --- User-Specific Collections ---
     match /users/{userId} {
-      allow read, update: if request.auth.uid == userId;
-      allow read, write: if isAuthorizedAdmin();
+      allow read: if isOwner(userId) || isAuthorizedAdmin();
+      allow update: if isOwner(userId) && !("roles" in request.resource.data); // User can update profile, but not roles
+      allow write: if isAuthorizedAdmin(); // Admin can write/update anything
+    }
+
+    match /carts/{userId} {
+      allow read, write: if isOwner(userId);
     }
     
     match /users/{userId}/addresses/{addressId} {
-        allow read, write: if request.auth.uid == userId;
+        allow read, write: if isOwner(userId);
     }
-    
-    match /carts/{userId} {
-      allow read, write: if request.auth.uid == userId;
-    }
-    
+
+    // --- Admin-Only Collections ---
     match /orders/{orderId} {
-      allow read, create: if request.auth.uid == request.resource.data.userId;
-      allow update: if isAuthorizedAdmin() || isSeller(); // For order status updates by admin
-      allow read, list: if isAuthorizedAdmin() || isSeller();
+      allow read: if isOwner(request.resource.data.userId) || isAuthorizedAdmin();
+      allow create: if isAuth();
+      allow update: if isAuthorizedAdmin();
     }
     
-    // ADMIN/SELLER: Teams and Employees
+    match /settings/{settingId} {
+        allow read, write: if isAuthorizedAdmin();
+    }
+
     match /employees/{employeeId} {
-      allow read, write: if isAuthorizedAdmin();
+        allow read, write: if isAuthorizedAdmin();
     }
-    
+
     match /teams/{teamId} {
-      allow read, write: if isAuthorizedAdmin();
-    }
-    
-    // Default deny all other access
-    match /{document=**} {
-      allow read, write: if false;
+        allow read, write: if isAuthorizedAdmin();
     }
   }
 }
