@@ -2,31 +2,20 @@ rules_version = '2';
 
 service firebase.storage {
   match /b/{bucket}/o {
-    
-    // --- Helper Functions ---
+  
+    // Helper function to check for authentication
     function isAuth() {
       return request.auth != null;
     }
 
-    function isMainAdmin() {
-      return request.auth.token.email == 'dhandesaurav52@gmail.com';
+    // Allow public read access to image folders
+    match /{folder:(products|categories|recipes|appearance)}/{allPaths=**} {
+      allow read;
     }
 
-    function isAdmin() {
-      // This requires a read from Firestore, ensure rules there allow it.
-      return isAuth() && firestore.get(/databases/(default)/documents/users/$(request.auth.uid)).data.roles.hasAny(['admin']);
-    }
-    
-    function isAuthorizedAdmin() {
-      return isMainAdmin() || isAdmin();
-    }
-
-    // Public read for images used in the app
-    match /{folder}/{allPaths=**} {
-      where folder in ['products', 'categories', 'recipes', 'appearance'] {
-        allow read: if true;
-        allow write: if isAuthorizedAdmin();
-      }
+    // Allow authenticated users (admins) to upload/write to the image folders
+    match /{folder:(products|categories|recipes|appearance)}/{allPaths=**} {
+      allow write: if isAuth();
     }
   }
 }
