@@ -1,59 +1,56 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-
+    function isAuthed() {
+      return request.auth != null;
+    }
     function isAdmin() {
-      return request.auth.token.email == 'dhandesaurav52@gmail.com' || get(/databases/$(database)/documents/users/$(request.auth.uid)).data.roles.hasAny(['admin']);
+      let userDocPath = /databases/$(database)/documents/users/$(request.auth.uid);
+      return isAuthed() && (
+        request.auth.token.email == 'dhandesaurav52@gmail.com' ||
+        (exists(userDocPath) && get(userDocPath).data.roles.hasAny(['admin']))
+      );
+    }
+    // Public collections, readable by anyone
+    match /categories/{document=**} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+    match /products/{document=**} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+    match /recipes/{document=**} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+    match /appearance/{document=**} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+    match /settings/{document=**} {
+      allow read: if true;
+      allow write: if isAdmin();
     }
 
-    match /users/{userId} {
-      allow read: if request.auth.uid == userId || isAdmin();
-      allow write: if request.auth.uid == userId && !('roles' in request.resource.data);
-      allow update: if request.auth.uid == userId && !('roles' in request.resource.data);
-      allow create: if request.auth.uid == userId;
-      allow delete: if isAdmin();
-    }
-    
+    // User-specific collections
     match /carts/{userId} {
-        allow read, write: if request.auth.uid == userId;
+      allow read, write: if isAuthed() && request.auth.uid == userId;
     }
-
     match /orders/{orderId} {
-        allow read, create: if request.auth.uid == resource.data.userId;
-        allow list, update: if isAdmin();
+      allow read: if isAuthed() && (resource.data.userId == request.auth.uid || isAdmin());
+      allow update: if isAdmin();
+      allow create: if isAuthed();
     }
-
-    match /products/{productId} {
-      allow read: if true;
-      allow write: if isAdmin();
-    }
-
-    match /categories/{categoryId} {
-      allow read: if true;
-      allow write: if isAdmin();
-    }
-    
-    match /recipes/{recipeId} {
-        allow read: if true;
-        allow write: if isAdmin();
-    }
-
-    match /appearance/{docId} {
-      allow read: if true;
-      allow write: if isAdmin();
-    }
-    
-    match /settings/{docId} {
-        allow read: if true;
-        allow write: if isAdmin();
-    }
-
-    match /employees/{employeeId} {
-        allow read, write: if isAdmin();
-    }
-
-    match /teams/{teamId} {
-        allow read, write: if isAdmin();
+    match /users/{userId} {
+      allow read: if (isAuthed() && request.auth.uid == userId) || isAdmin();
+      // Allow create for any authenticated user (during signup)
+      allow create: if isAuthed();
+      // Allow update only for the user themselves, but NOT roles
+      allow update: if isAuthed() && request.auth.uid == userId && !('roles' in request.resource.data);
+      // Allow admin to update any user, including roles
+      allow update: if isAdmin();
+      allow delete: if isAdmin();
     }
   }
 }
