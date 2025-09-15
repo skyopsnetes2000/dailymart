@@ -33,6 +33,12 @@ export default function AdminLayout({
         router.replace('/');
         return;
       }
+      
+      // Prioritize hardcoded admin email
+      if (user.email === 'dhandesaurav52@gmail.com') {
+          setUserRoles(['admin']);
+          return;
+      }
 
       try {
         const userDocRef = doc(db, 'users', user.uid);
@@ -46,12 +52,10 @@ export default function AdminLayout({
                 router.replace('/');
             }
         } else {
-             if (user.email === 'dhandesaurav52@gmail.com') {
-                setUserRoles(['admin']);
-             } else {
-                setUserRoles([]);
-                router.replace('/');
-             }
+            // If the user document doesn't exist and they are not the hardcoded admin,
+            // they have no roles.
+            setUserRoles([]);
+            router.replace('/');
         }
       } catch (error) {
           console.error("Authorization check failed:", error);
