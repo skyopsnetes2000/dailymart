@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import Link from 'next/link';
@@ -9,7 +8,7 @@ import { cn } from '@/lib/utils';
 import { Separator } from '@/components/ui/separator';
 
 const navItems = [
-  { href: '/admin/dashboard', label: 'Dashboard', icon: Home, roles: ['admin', 'seller'] },
+  { href: '/admin/dashboard', label: 'Home', icon: Home, roles: ['admin', 'seller'] },
   { href: '/admin/products', label: 'Products', icon: Package, roles: ['admin', 'seller'] },
   { href: '/admin/recipes', label: 'Recipes', icon: UtensilsCrossed, roles: ['admin', 'seller'] },
   { href: '/admin/orders', label: 'Orders', icon: ShoppingCart, roles: ['admin', 'seller'] },
