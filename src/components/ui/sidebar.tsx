@@ -182,7 +182,7 @@ const Sidebar = React.forwardRef<
     
     // Render a skeleton on the server and initial client render to avoid hydration errors
     if (isMobile === undefined) {
-        return <div className="hidden w-64 md:flex" />;
+        return null;
     }
 
     if (collapsible === "none") {
