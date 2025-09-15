@@ -1,8 +1,10 @@
+
 rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
 
+    // --- Helper Functions ---
     function isMainAdmin() {
       return request.auth.token.email == 'dhandesaurav52@gmail.com';
     }
@@ -12,22 +14,14 @@ service cloud.firestore {
     }
     
     function isSeller() {
-        return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.roles.hasAny(['seller']);
+       return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.roles.hasAny(['seller']);
     }
-
+    
     function isAuthorizedAdmin() {
         return isMainAdmin() || isAdmin();
     }
-    
-    function isOwner(userId) {
-      return request.auth.uid == userId;
-    }
-    
-    function isSignedIn() {
-      return request.auth != null;
-    }
 
-    // Publicly readable collections
+    // --- Collections ---
     match /categories/{categoryId} {
       allow read: if true;
       allow write: if isAuthorizedAdmin() || isSeller();
@@ -39,8 +33,8 @@ service cloud.firestore {
     }
     
     match /recipes/{recipeId} {
-        allow read: if true;
-        allow write: if isAuthorizedAdmin() || isSeller();
+      allow read: if true;
+      allow write: if isAuthorizedAdmin() || isSeller();
     }
 
     match /appearance/{docId} {
@@ -48,37 +42,33 @@ service cloud.firestore {
       allow write: if isAuthorizedAdmin();
     }
     
-     match /settings/{docId} {
-      allow read: if isAuthorizedAdmin();
-      allow write: if isAuthorizedAdmin();
-    }
-
-    // User-specific collections
-    match /users/{userId} {
-      allow read: if isOwner(userId) || isAuthorizedAdmin();
-      allow update: if isOwner(userId) && !('roles' in request.resource.data); // User can update their own info but not roles
-      allow write: if isAuthorizedAdmin(); // Admin can write/update user roles
+    match /settings/{docId} {
+        allow read, write: if isAuthorizedAdmin();
     }
 
     match /carts/{userId} {
-      allow read, write: if isOwner(userId);
-    }
-    
-    match /orders/{orderId} {
-      allow read: if isOwner(get(/databases/$(database)/documents/orders/$(orderId)).data.userId) || isAuthorizedAdmin() || isSeller();
-      allow create: if isSignedIn();
-      allow update: if isAuthorizedAdmin() || isSeller();
+      allow read, write: if request.auth.uid == userId;
     }
 
-    match /users/{userId}/addresses/{addressId} {
-      allow read, write: if isOwner(userId);
+    match /orders/{orderId} {
+      allow read: if request.auth.uid == resource.data.userId || isAuthorizedAdmin() || isSeller();
+      allow create: if request.auth.uid != null;
+      allow update: if isAuthorizedAdmin() || isSeller() || request.auth.uid == resource.data.userId;
     }
     
-    // Admin & Seller restricted collections
     match /shopRequests/{requestId} {
-        allow read: if isAuthorizedAdmin() || (isSignedIn() && resource.data.userId == request.auth.uid);
-        allow create: if isSignedIn();
+        allow read: if isAuthorizedAdmin() || request.auth.uid == resource.data.userId;
+        allow create: if request.auth.uid != null;
         allow update: if isAuthorizedAdmin();
+    }
+
+    match /users/{userId} {
+      allow read: if request.auth.uid == userId || isAuthorizedAdmin();
+      allow write: if isAuthorizedAdmin();
+      
+      match /addresses/{addressId} {
+        allow read, write: if request.auth.uid == userId;
+      }
     }
     
     match /employees/{employeeId} {
@@ -87,11 +77,6 @@ service cloud.firestore {
     
     match /teams/{teamId} {
         allow read, write: if isAuthorizedAdmin();
-    }
-
-    // Deny all other access by default
-    match /{document=**} {
-      allow read, write: if false;
     }
   }
 }
