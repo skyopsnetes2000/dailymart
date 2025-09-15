@@ -2,76 +2,63 @@ rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
-    
-    // Helper Functions
-    function isAuth() {
+
+    function isAuthed() {
       return request.auth != null;
-    }
-    
-    function isUser(uid) {
-      return isAuth() && request.auth.uid == uid;
     }
 
     function isAdmin() {
-      return isAuth() && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.roles.hasAny(['admin', 'seller']);
+      let uid = request.auth.uid;
+      let roles = get(/databases/$(database)/documents/users/$(uid)).data.roles;
+      return isAuthed() && (roles.hasAny(['admin', 'seller']));
     }
 
-    // Public Collections: Anyone can read, only admins can write.
-    match /products/{productId} {
-      allow read: if true;
-      allow write: if isAdmin();
-    }
     match /categories/{categoryId} {
       allow read: if true;
       allow write: if isAdmin();
     }
+
+    match /products/{productId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
     match /recipes/{recipeId} {
       allow read: if true;
       allow write: if isAdmin();
     }
-     match /appearance/{docId} {
+
+    match /appearance/{docId} {
       allow read: if true;
       allow write: if isAdmin();
-    }
-    match /settings/{docId} {
-      allow read: if true;
-      allow write: if isAdmin();
-    }
-    match /employees/{employeeId} {
-      allow read, write: if isAdmin();
-    }
-     match /teams/{teamId} {
-      allow read, write: if isAdmin();
-    }
-
-    // User-specific data: Users can only access their own documents.
-    match /users/{userId} {
-      // Any authenticated user can read user documents, needed for role checks.
-      allow read: if isAuth();
-
-      // A user can update their own document, but cannot change their roles.
-      // An admin can update any user document.
-      allow update: if (isUser(userId) && !('roles' in request.resource.data)) || isAdmin();
-
-      // Only an admin can create a user document (signup flow handles this).
-      allow create: if isAdmin();
-
-      // An admin can delete a user.
-      allow delete: if isAdmin();
-
-      // Users can manage their own addresses subcollection.
-      match /addresses/{addressId} {
-        allow read, write: if isUser(userId);
-      }
     }
 
     match /carts/{userId} {
-      allow read, write: if isUser(userId);
+      allow read, write: if request.auth.uid == userId;
+    }
+
+    match /orders/{orderId} {
+      allow read: if request.auth.uid == resource.data.userId || isAdmin();
+      allow create: if request.auth.uid == request.resource.data.userId;
+      allow update: if isAdmin();
+    }
+
+    match /users/{userId} {
+      allow read: if isAuthed();
+      allow create: if request.auth.uid == userId;
+      allow update: if (request.auth.uid == userId && !('roles' in request.resource.data)) || isAdmin();
     }
     
-    match /orders/{orderId} {
-        allow read, update: if resource.data.userId == request.auth.uid || isAdmin();
-        allow create: if isAuth(); // Any authenticated user can create an order
+    match /settings/{settingId} {
+      allow read, write: if isAdmin();
+    }
+
+    match /employees/{employeeId} {
+      allow read, write: if isAdmin();
+    }
+
+    match /teams/{teamId} {
+        allow read, write: if isAdmin();
     }
   }
 }
