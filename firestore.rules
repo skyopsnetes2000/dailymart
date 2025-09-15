@@ -3,63 +3,59 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    function isAuth() {
-      return request.auth != null;
-    }
-
-    function isMainAdmin() {
-      // The main admin's email, who has ultimate power.
-      return request.auth.token.email == 'dhandesaurav52@gmail.com';
-    }
-
-    function getUserData(userId) {
-      return get(/databases/$(database)/documents/users/$(userId)).data;
-    }
-    
-    function isUser(userId) {
-        return isAuth() && request.auth.uid == userId;
+    // Helper functions
+    function isOwner(userId) {
+      return request.auth.uid == userId;
     }
 
     function isAdmin() {
-      // Check if the user has the 'admin' role in their user document.
-      return isAuth() && ('admin' in getUserData(request.auth.uid).roles);
+      // Allow read/write if the user has 'admin' or 'seller' role.
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.roles.hasAny(['admin', 'seller']);
+    }
+
+    function isMainAdmin() {
+      // Allow write to user roles only if user is 'admin'.
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.roles.hasAny(['admin']);
     }
     
-    // --- Collection Rules ---
-
-    // Publicly readable collections for anyone to see. Only admins can write.
-    match /{collection:(products|categories|recipes|appearance)}/{docId} {
+    // Public read collections
+    match /categories/{docId} {
       allow read: if true;
-      allow write: if isAdmin() || isMainAdmin();
+      allow write: if isAdmin();
+    }
+    match /products/{docId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+    match /recipes/{docId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+    match /appearance/{docId} {
+      allow read: if true;
+      allow write: if isAdmin();
     }
 
-    // Users can read/write to their own cart. Admins can access any.
+    // Carts
     match /carts/{userId} {
-      allow read, write: if isUser(userId) || isAdmin() || isMainAdmin();
+      allow read, write: if isOwner(userId);
     }
 
-    // Users can read/write to their own orders. Admins can access any.
+    // Orders
     match /orders/{orderId} {
-        allow read, write: if (isAuth() && resource.data.userId == request.auth.uid) || isAdmin() || isMainAdmin();
-        allow create: if isAuth();
+      allow read, create: if isOwner(resource.data.userId);
+      allow update: if isAdmin();
     }
 
-    // Users Collection: 
-    // This is the key change to fix the permission paradox.
+    // Users
     match /users/{userId} {
-      // An authenticated user can read their OWN document. An admin can read ANY document.
-      allow read: if isUser(userId) || isAdmin() || isMainAdmin();
-      // An authenticated user can update their OWN document (but not roles).
-      allow update: if isUser(userId) && !('roles' in request.resource.data);
-      // An admin can update ANY user document, including their roles.
-      allow update: if isAdmin() || isMainAdmin();
-      // An authenticated user can create their own document.
-      allow create: if isUser(userId);
-    }
-    
-    // By default, deny all other access.
-    match /{path=**}/documents/{allDocuments=**} {
-      allow read, write: if false;
+      // Any authenticated user can read their own document.
+      // An admin can read any user document.
+      allow read: if isOwner(userId) || isAdmin();
+
+      // An owner can update their document, but cannot change roles.
+      // A main admin can update any part of the document, including roles.
+      allow write: if (isOwner(userId) && !('roles' in request.resource.data)) || isMainAdmin();
     }
   }
 }
