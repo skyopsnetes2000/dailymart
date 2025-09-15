@@ -2,20 +2,33 @@ rules_version = '2';
 
 service firebase.storage {
   match /b/{bucket}/o {
-  
+    
     // Helper function to check for authentication
     function isAuth() {
       return request.auth != null;
     }
 
     // Allow public read access to image folders
-    match /{folder:(products|categories|recipes|appearance)}/{allPaths=**} {
+    match /products/{allPaths=**} {
       allow read;
     }
 
-    // Allow authenticated users (admins) to upload/write to the image folders
-    match /{folder:(products|categories|recipes|appearance)}/{allPaths=**} {
-      allow write: if isAuth();
+    match /categories/{allPaths=**} {
+      allow read;
+    }
+
+    match /recipes/{allPaths=**} {
+      allow read;
+    }
+
+    match /appearance/{allPaths=**} {
+      allow read;
+    }
+
+    // Allow authenticated users (admins) to write to image folders
+    match /{folder}/{allPaths=**}
+      where folder IN ['products', 'categories', 'recipes', 'appearance'] {
+        allow write: if isAuth();
     }
   }
 }
