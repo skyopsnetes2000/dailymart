@@ -20,12 +20,9 @@ import { auth } from '@/lib/firebase';
 import { EmailAuthProvider, reauthenticateWithCredential, updatePassword } from 'firebase/auth';
 import { useToast } from '@/hooks/use-toast';
 import { useEffect, useState } from 'react';
-import { Loader2, Monitor, Moon, Sun, Download, Store, CheckCircle, XCircle } from 'lucide-react';
+import { Loader2, Monitor, Moon, Sun } from 'lucide-react';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
-import Link from 'next/link';
-import { getShopRequestForUser } from '@/lib/firestore';
-import { ShopRequest } from '@/lib/data';
 
 const passwordSchema = z.object({
   currentPassword: z.string().min(1, 'Current password is required.'),
@@ -90,75 +87,11 @@ function ThemeSelector() {
     )
 }
 
-function PwaInstall() {
-  const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
-  const { toast } = useToast();
-
-  useEffect(() => {
-    const handleBeforeInstallPrompt = (e: Event) => {
-      e.preventDefault();
-      setDeferredPrompt(e);
-    };
-
-    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
-    return () => window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
-  }, []);
-
-  const handleInstallClick = async () => {
-    if (deferredPrompt) {
-        deferredPrompt.prompt();
-        const { outcome } = await deferredPrompt.userChoice;
-
-        if (outcome === 'accepted') {
-          toast({ title: 'Success', description: 'DailyMart has been installed!' });
-        } else {
-          toast({ title: 'Install Cancelled', description: 'You can install the app later from settings.' });
-        }
-        setDeferredPrompt(null);
-    } else {
-         toast({
-            title: 'App Not Ready for Installation',
-            description: 'The app may already be installed, or the install prompt was recently dismissed. Please try again later.',
-            variant: 'destructive',
-        });
-    }
-  };
-  
-  return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Get the App</CardTitle>
-        <CardDescription>Install the DailyMart app on your device for a better experience.</CardDescription>
-      </CardHeader>
-      <CardContent>
-        <Button onClick={handleInstallClick} className="w-full">
-          <Download className="mr-2 h-4 w-4" />
-          Install App
-        </Button>
-      </CardContent>
-    </Card>
-  );
-}
-
 
 export default function AccountSettings() {
   const { toast } = useToast();
   const [isPasswordLoading, setIsPasswordLoading] = useState(false);
   const [isNotificationsLoading, setIsNotificationsLoading] = useState(false);
-  const [shopRequest, setShopRequest] = useState<ShopRequest | null | undefined>(undefined);
-
-  useEffect(() => {
-    const fetchRequestStatus = async () => {
-        const user = auth.currentUser;
-        if (user) {
-            const request = await getShopRequestForUser(user.uid);
-            setShopRequest(request);
-        } else {
-            setShopRequest(null);
-        }
-    };
-    fetchRequestStatus();
-  }, []);
   
   const form = useForm<PasswordFormValues>({
     resolver: zodResolver(passwordSchema),
@@ -207,114 +140,10 @@ export default function AccountSettings() {
       description: `Email notifications have been turned ${checked ? 'on' : 'off'}.`
     });
   }
-  
-  const renderBecomeSellerCard = () => {
-    if (shopRequest === undefined) {
-      // Loading state
-      return (
-        <Card>
-          <CardHeader>
-            <CardTitle>Become a Seller</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <Button disabled className="w-full">
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              Checking Status...
-            </Button>
-          </CardContent>
-        </Card>
-      );
-    }
-
-    if (shopRequest) {
-      switch (shopRequest.status) {
-        case 'pending':
-          return (
-            <Card>
-              <CardHeader>
-                <CardTitle>Application Submitted</CardTitle>
-                <CardDescription>
-                  Your application to become a seller is currently under review.
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <Button disabled className="w-full">
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Pending Approval
-                </Button>
-              </CardContent>
-            </Card>
-          );
-        case 'approved':
-          return (
-            <Card>
-              <CardHeader>
-                <CardTitle>Application Approved!</CardTitle>
-                <CardDescription>
-                  Congratulations! You are now a registered seller on DailyMart.
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <Button disabled className="w-full bg-green-600 hover:bg-green-700">
-                  <CheckCircle className="mr-2 h-4 w-4" />
-                  Seller Account Activated
-                </Button>
-              </CardContent>
-            </Card>
-          );
-        case 'rejected':
-          return (
-            <Card>
-              <CardHeader>
-                <CardTitle>Application Status</CardTitle>
-                <CardDescription className="text-destructive">
-                  Unfortunately, your recent application was not approved. You may re-apply if you have corrected the issues.
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <Button asChild className="w-full">
-                  <Link href="/profile/become-seller">
-                    <XCircle className="mr-2 h-4 w-4" />
-                    Re-apply to be a Seller
-                  </Link>
-                </Button>
-              </CardContent>
-            </Card>
-          );
-        default:
-          break;
-      }
-    }
-    
-    // Default case: no request
-    return (
-       <Card>
-        <CardHeader>
-          <CardTitle>Become a Seller</CardTitle>
-          <CardDescription>
-            Want to grow your business? Register your shop on DailyMart and reach more customers.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <Button asChild className="w-full">
-            <Link href="/profile/become-seller">
-              <Store className="mr-2 h-4 w-4" />
-              Register Your Business
-            </Link>
-          </Button>
-        </CardContent>
-      </Card>
-    );
-  };
-
 
   return (
     <div className="space-y-6">
       <ThemeSelector />
-      
-      <PwaInstall />
-      
-      {renderBecomeSellerCard()}
       
        <Card>
         <CardHeader>

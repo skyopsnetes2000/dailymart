@@ -19,8 +19,6 @@ const navItems = [
 const mainAdminNavItems = [
     { href: '/admin/appearance', label: 'Appearance', icon: Settings, roles: ['admin'] },
     { href: '/admin/employee', label: 'Employee', icon: Users, roles: ['admin'] },
-    { href: '/admin/shops', label: 'Shops', icon: Building, roles: ['admin'] },
-    { href: '/admin/approval-requests', label: 'Approval Requests', icon: CheckSquare, roles: ['admin'] },
 ]
 
 type AdminSidebarProps = {

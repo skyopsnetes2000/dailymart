@@ -2,7 +2,7 @@
 import { initializeApp, getApp, getApps } from 'firebase/app';
 import { getFirestore, collection, getDocs, doc, addDoc, updateDoc, deleteDoc, query, where, writeBatch, orderBy, getDoc, setDoc, onSnapshot, runTransaction, arrayUnion, arrayRemove } from 'firebase/firestore';
 import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
-import type { Product, Category, Offer, Order, OrderStatus, Address, CartItem, ReturnRequestItem, Employee, Team, Holiday, ShopRequest, Recipe } from './data';
+import type { Product, Category, Offer, Order, OrderStatus, Address, CartItem, ReturnRequestItem, Employee, Team, Holiday, Recipe, ShopRequest } from './data';
 import { firebaseConfig } from './firebase';
 
 const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
@@ -380,51 +380,6 @@ export async function saveHolidays(holidays: Holiday[]): Promise<void> {
   const docRef = doc(db, 'settings', HOLIDAY_DOC_ID);
   await setDoc(docRef, { holidays });
 }
-
-// --- Shop Request Functions ---
-
-export async function submitShopRequest(request: Omit<ShopRequest, 'id' | 'status' | 'submittedAt'>): Promise<void> {
-    const requestCol = collection(db, 'shopRequests');
-    await addDoc(requestCol, {
-        ...request,
-        status: 'pending',
-        submittedAt: new Date().toISOString(),
-    });
-}
-
-export async function getShopRequestForUser(userId: string): Promise<ShopRequest | null> {
-    const q = query(collection(db, 'shopRequests'), where('userId', '==', userId));
-    const querySnapshot = await getDocs(q);
-    if (!querySnapshot.empty) {
-        const doc = querySnapshot.docs[0];
-        return { ...doc.data(), id: doc.id } as ShopRequest;
-    }
-    return null;
-}
-
-export async function getShopRequests(): Promise<ShopRequest[]> {
-    const requestsQuery = query(collection(db, 'shopRequests'), orderBy('submittedAt', 'desc'));
-    const snapshot = await getDocs(requestsQuery);
-    return snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id } as ShopRequest));
-}
-
-export async function updateShopRequestStatus(requestId: string, userId: string, status: 'approved' | 'rejected'): Promise<void> {
-    const requestDoc = doc(db, 'shopRequests', requestId);
-    const userDoc = doc(db, 'users', userId);
-
-    const batch = writeBatch(db);
-
-    batch.update(requestDoc, { status: status });
-
-    if (status === 'approved') {
-        batch.set(userDoc, { roles: arrayUnion('seller') }, { merge: true });
-    } else { // 'rejected'
-        batch.set(userDoc, { roles: arrayRemove('seller') }, { merge: true });
-    }
-
-    await batch.commit();
-}
-
 
 // --- Recipe Functions ---
 export async function getRecipes(): Promise<Recipe[]> {
