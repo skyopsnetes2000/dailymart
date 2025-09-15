@@ -34,7 +34,7 @@ export default function AdminLayout({
         return;
       }
       
-      // Prioritize hardcoded admin email
+      // Prioritize hardcoded admin email to prevent read-permission race conditions
       if (user.email === 'dhandesaurav52@gmail.com') {
           setUserRoles(['admin']);
           return;
@@ -53,7 +53,7 @@ export default function AdminLayout({
             }
         } else {
             // If the user document doesn't exist and they are not the hardcoded admin,
-            // they have no roles.
+            // they have no roles. This prevents permission errors for new users.
             setUserRoles([]);
             router.replace('/');
         }
