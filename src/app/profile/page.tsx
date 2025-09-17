@@ -8,7 +8,7 @@ import ProfileForm from "@/components/profile/profile-form";
 import AddressManager from "@/components/profile/address-manager";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import { LogIn, Loader2, ChevronRight, UserCog, LogOut } from "lucide-react";
+import { LogIn, Loader2, ChevronRight, UserCog, LogOut, ArrowRight } from "lucide-react";
 import { useAuthState } from "react-firebase-hooks/auth";
 import { auth, db } from "@/lib/firebase";
 import { useEffect, useState } from "react";
@@ -137,18 +137,17 @@ export default function ProfilePage() {
         <div className="mx-auto max-w-3xl">
           {isAdmin && (
             <Card className="mb-6">
-              <CardHeader>
-                <CardTitle>Admin Access</CardTitle>
-                <CardDescription>You have administrative privileges.</CardDescription>
-              </CardHeader>
-              <CardFooter>
-                <Button asChild>
+              <CardContent className="p-6 flex justify-between items-center">
+                <div>
+                  <CardTitle>Admin Access</CardTitle>
+                  <CardDescription>You have administrative privileges.</CardDescription>
+                </div>
+                <Button asChild size="icon" className="rounded-full">
                   <Link href="/admin/dashboard">
-                    <UserCog className="mr-2 h-4 w-4" />
-                    Go to Admin Panel
+                    <ArrowRight className="h-4 w-4" />
                   </Link>
                 </Button>
-              </CardFooter>
+              </CardContent>
             </Card>
           )}
           <Tabs defaultValue="profile" className="w-full" onValueChange={setActiveTab}>
