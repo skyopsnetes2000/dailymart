@@ -3,8 +3,7 @@ import './globals.css';
 import { Toaster } from '@/components/ui/toaster';
 import { cn } from '@/lib/utils';
 import { Poppins } from 'next/font/google';
-import ThemeProvider from '@/components/theme-provider';
-import LayoutProvider from '@/components/layout-provider';
+import Providers from '@/components/providers';
 
 const poppins = Poppins({
   subsets: ['latin'],
@@ -26,12 +25,10 @@ export default function RootLayout({
         <meta name="theme-color" content="#FF8C00" />
       </head>
       <body className={cn(poppins.variable, "font-body antialiased")}>
-        <ThemeProvider>
-          <LayoutProvider>
+        <Providers>
             {children}
-          </LayoutProvider>
-          <Toaster />
-        </ThemeProvider>
+            <Toaster />
+        </Providers>
       </body>
     </html>
   );
