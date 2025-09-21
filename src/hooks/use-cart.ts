@@ -13,7 +13,9 @@ interface CartStore {
   items: CartItem[];
   isInitialized: boolean;
   userId: string | null;
-  initializeCart: (user: User | null) => Promise<void>;
+  setUserId: (userId: string | null) => void;
+  setItems: (items: CartItem[]) => void;
+  setInitialized: (isInitialized: boolean) => void;
   addItem: (product: Product) => void;
   removeItem: (productId: string) => void;
   updateQuantity: (productId: string, quantity: number) => void;
@@ -36,48 +38,13 @@ const setLocalCart = (items: CartItem[]) => {
     localStorage.setItem('local-cart', JSON.stringify(items));
 }
 
-let firestoreUnsubscribe: (() => void) | null = null;
-
 const useCartStore = create<CartStore>((set, get) => ({
   items: [],
   isInitialized: false,
   userId: null,
-
-  initializeCart: async (user) => {
-    const { userId: currentUserId } = get();
-
-    if (get().isInitialized && currentUserId === user?.uid) {
-        // Already initialized for the same user state, do nothing.
-        return;
-    }
-    
-    // Disconnect any existing listener
-    if (firestoreUnsubscribe) {
-        firestoreUnsubscribe();
-        firestoreUnsubscribe = null;
-    }
-    
-    if (user) {
-        // --- User is logged in ---
-        set({ userId: user.uid });
-        
-        // Merge local cart into Firestore cart
-        const localCart = getLocalCart();
-        if (localCart.length > 0) {
-            await mergeLocalCart(user.uid, localCart);
-            setLocalCart([]); // Clear local cart after merging
-        }
-        
-        // Listen for real-time cart updates from Firestore
-        firestoreUnsubscribe = getCart(user.uid, (items) => {
-            set({ items, isInitialized: true });
-        });
-
-    } else {
-        // --- User is a guest ---
-        set({ userId: null, items: getLocalCart(), isInitialized: true });
-    }
-  },
+  setUserId: (userId) => set({ userId }),
+  setItems: (items) => set({ items }),
+  setInitialized: (isInitialized) => set({ isInitialized }),
 
   addItem: (product) => {
     const { userId } = get();
@@ -180,42 +147,51 @@ const useCartStore = create<CartStore>((set, get) => ({
   },
 }));
 
-// This listener will handle auth changes and initialize the cart accordingly.
-onAuthStateChanged(auth, (user) => {
-    useCartStore.getState().initializeCart(user);
-});
-
 // This is the hook that components will use.
-// It handles the server-client hydration mismatch.
 const useCart = () => {
-  // Get the Zustand store's state
-  const { items, addItem, removeItem, updateQuantity, clearCart, isInitialized } = useCartStore();
-  const initializeCart = useCartStore((s) => s.initializeCart);
-  // State to track client-side mounting
-  const [hasMounted, setHasMounted] = useState(false);
+  const store = useCartStore();
+  const [isClient, setIsClient] = useState(false);
 
   useEffect(() => {
-    setHasMounted(true);
-    if (!isInitialized) {
-      initializeCart(auth.currentUser);
-    }
-  }, [isInitialized, initializeCart]);
+    setIsClient(true);
+    
+    const unsubscribe = onAuthStateChanged(auth, async (user) => {
+      if (user) {
+        // User logged in
+        store.setUserId(user.uid);
+        const localCart = getLocalCart();
+        if (localCart.length > 0) {
+          await mergeLocalCart(user.uid, localCart);
+          setLocalCart([]);
+        }
+        const unsubFirestore = getCart(user.uid, (items) => {
+          store.setItems(items);
+          store.setInitialized(true);
+        });
+        return () => unsubFirestore();
+      } else {
+        // User logged out
+        store.setUserId(null);
+        store.setItems(getLocalCart());
+        store.setInitialized(true);
+      }
+    });
 
-  // On the server, and on the initial client render, return a safe, empty, uninitialized state.
-  // This ensures the server-rendered output and the first client render are identical.
-  if (!hasMounted || !isInitialized) {
+    return () => unsubscribe();
+  }, []);
+
+  if (!isClient || !store.isInitialized) {
     return {
       items: [],
       isInitialized: false,
-      addItem,
-      removeItem,
-      updateQuantity,
-      clearCart,
+      addItem: store.addItem,
+      removeItem: store.removeItem,
+      updateQuantity: store.updateQuantity,
+      clearCart: store.clearCart,
     };
   }
 
-  // Once mounted and initialized on the client, return the actual store state.
-  return { items, isInitialized, addItem, removeItem, updateQuantity, clearCart };
+  return store;
 };
 
 export default useCart;
