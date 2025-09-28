@@ -15,11 +15,7 @@ async function getCategoryProducts(slug: string): Promise<Product[]> {
     return getProducts(slug);
 }
 
-type Props = {
-    params: { slug: string };
-};
-
-export default async function CategoryProductsPage({ params }: Props) {
+export default async function CategoryProductsPage({ params }: { params: { slug: string } }) {
   const slug = decodeURIComponent(params.slug);
   const category = await getCategory(slug);
 
