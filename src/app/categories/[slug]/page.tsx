@@ -15,11 +15,11 @@ async function getCategoryProducts(slug: string): Promise<Product[]> {
     return getProducts(slug);
 }
 
-export default async function CategoryProductsPage({
-    params,
-}: {
+type Props = {
     params: { slug: string };
-}) {
+};
+
+export default async function CategoryProductsPage({ params }: Props) {
   const slug = decodeURIComponent(params.slug);
   const category = await getCategory(slug);
 

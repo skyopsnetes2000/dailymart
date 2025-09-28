@@ -6,7 +6,7 @@ import PageHeader from '@/components/shared/page-header';
 import FilterableProductList from './filterable-product-list';
 
 export default async function AllProductsPage() {
-  const [allProducts, categories] = await Promise.all([
+  const [allProducts, categories]: [Product[], Category[]] = await Promise.all([
       getProducts(),
       getCategories()
   ]);
