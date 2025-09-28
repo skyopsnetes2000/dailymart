@@ -17,6 +17,7 @@ async function getCategoryProducts(slug: string): Promise<Product[]> {
 
 type Props = {
     params: { slug: string };
+    searchParams: { [key: string]: string | string[] | undefined };
 };
 
 export default async function CategoryProductsPage({ params }: Props) {

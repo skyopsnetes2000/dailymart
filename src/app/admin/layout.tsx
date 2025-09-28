@@ -22,26 +22,16 @@ export default function AdminLayout({
   const router = useRouter();
   const [isMobileSheetOpen, setIsMobileSheetOpen] = useState(false);
   const [userRoles, setUserRoles] = useState<string[] | null>(null);
-  const isAuthorized = userRoles && (userRoles.includes('admin') || userRoles.includes('seller'));
 
   useEffect(() => {
-    const checkAuthorization = async () => {
-      if (loading) return;
-
-      if (!user) {
-        setUserRoles([]);
-        router.replace('/');
-        return;
-      }
-      
-      // Prioritize hardcoded admin email to prevent read-permission race conditions
-      if (user.email === 'dhandesaurav52@gmail.com') {
+    const checkAuthorization = async (currentUser: User) => {
+       // Prioritize hardcoded admin email to prevent read-permission race conditions
+      if (currentUser.email === 'dhandesaurav52@gmail.com') {
           setUserRoles(['admin']);
           return;
       }
-
       try {
-        const userDocRef = doc(db, 'users', user.uid);
+        const userDocRef = doc(db, 'users', currentUser.uid);
         const userDoc = await getDoc(userDocRef);
 
         if (userDoc.exists()) {
@@ -52,8 +42,7 @@ export default function AdminLayout({
                 router.replace('/');
             }
         } else {
-            // If the user document doesn't exist and they are not the hardcoded admin,
-            // they have no roles. This prevents permission errors for new users.
+             // If the user document doesn't exist, they have no roles.
             setUserRoles([]);
             router.replace('/');
         }
@@ -64,8 +53,19 @@ export default function AdminLayout({
       }
     };
     
-    checkAuthorization();
+    if (loading) {
+      return;
+    }
+
+    if (user) {
+      checkAuthorization(user);
+    } else {
+      router.replace('/');
+    }
   }, [user, loading, router]);
+  
+  const isAuthorized = userRoles && (userRoles.includes('admin') || userRoles.includes('seller'));
+
 
   if (loading || userRoles === null) {
     return (
@@ -77,11 +77,13 @@ export default function AdminLayout({
       </div>
     );
   }
-
+  
   if (!isAuthorized) {
-    // This part should ideally not be reached due to the redirect, but it's a good fallback.
-    return null; 
+    // This state will be brief as the redirect should have already happened.
+    // Returning null prevents flashing of unauthorized content.
+    return null;
   }
+
 
   return (
     <div className="flex min-h-screen">
