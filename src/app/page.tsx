@@ -1,7 +1,4 @@
 
-'use client';
-
-import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import {
@@ -19,7 +16,6 @@ import SearchBar from '@/components/shared/search-bar';
 import { Button } from '@/components/ui/button';
 import HeroCarousel from '@/components/hero-carousel';
 import { Card, CardContent } from '@/components/ui/card';
-import { Skeleton } from '@/components/ui/skeleton';
 
 function RecipeCard({ recipe }: { recipe: Recipe }) {
     return (
@@ -42,97 +38,25 @@ function RecipeCard({ recipe }: { recipe: Recipe }) {
     )
 }
 
-function PageSkeleton() {
-    return (
-        <>
-            <HomeHeader />
-            <div className="space-y-8 p-4 pt-0 sm:p-6 sm:pt-0">
-                <Skeleton className="h-64 w-full rounded-b-2xl" />
-                <div className='-mt-16'><Skeleton className="h-12 w-full max-w-lg mx-auto" /></div>
-                
-                <div className="space-y-4">
-                    <Skeleton className="h-48 w-full" />
-                </div>
-
-                <div className="space-y-4">
-                    <div className="flex justify-between items-center">
-                        <Skeleton className="h-8 w-48" />
-                        <Skeleton className="h-6 w-16" />
-                    </div>
-                    <div className="grid grid-cols-4 gap-3 sm:grid-cols-5 md:grid-cols-6 lg:grid-cols-8">
-                        {Array.from({ length: 8 }).map((_, i) => (
-                            <div key={i} className="space-y-2">
-                                <Skeleton className="aspect-square w-full" />
-                                <Skeleton className="h-4 w-3/4 mx-auto" />
-                            </div>
-                        ))}
-                    </div>
-                </div>
-
-                 <div className="space-y-4">
-                    <Skeleton className="h-8 w-40" />
-                     <div className="flex gap-4 overflow-hidden">
-                        {Array.from({ length: 5 }).map((_, i) => (
-                           <div key={i} className="w-1/3 sm:w-1/4 md:w-1/5 lg:w-1/6 shrink-0 space-y-2">
-                             <Skeleton className="aspect-[4/5] w-full" />
-                             <Skeleton className="h-4 w-full" />
-                             <Skeleton className="h-4 w-1/2" />
-                           </div>
-                        ))}
-                    </div>
-                </div>
-            </div>
-        </>
-    );
-}
-
-
-export default function Home() {
-  const [products, setProducts] = useState<Product[]>([]);
-  const [categories, setCategories] = useState<Category[]>([]);
-  const [specialOffers, setSpecialOffers] = useState<Product[]>([]);
-  const [appearance, setAppearance] = useState<AppearanceSettings | null>(null);
-  const [recipes, setRecipes] = useState<Recipe[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-
-  useEffect(() => {
-    async function fetchData() {
-      try {
-        const [
-          productsData,
-          categoriesData,
-          specialOffersData,
-          appearanceData,
-          recipesData,
-        ] = await Promise.all([
-          getProducts(),
-          getCategories(),
-          getSpecialOfferProducts(),
-          getAppearanceSettings(),
-          getRecipes(),
-        ]);
-        setProducts(productsData);
-        setCategories(categoriesData);
-        setSpecialOffers(specialOffersData);
-        setAppearance(appearanceData);
-        setRecipes(recipesData);
-      } catch (error) {
-        console.error("Failed to fetch homepage data:", error);
-      } finally {
-        setIsLoading(false);
-      }
-    }
-    fetchData();
-  }, []);
+export default async function Home() {
+  const [
+    products,
+    categories,
+    specialOffers,
+    appearance,
+    recipes,
+  ] = await Promise.all([
+    getProducts(),
+    getCategories(),
+    getSpecialOfferProducts(),
+    getAppearanceSettings(),
+    getRecipes(),
+  ]);
 
   const topCategories = categories.slice(0, 4);
   const heroTitle = appearance?.heroTitle || "Freshness at Your Fingertips";
   const heroSubtitle = appearance?.heroSubtitle || "The best groceries, delivered fresh to your door daily.";
   const heroImageUrls = appearance?.heroImageUrls?.length ? appearance.heroImageUrls : ["https://picsum.photos/seed/101/1200/800"];
-
-  if (isLoading) {
-    return <PageSkeleton />;
-  }
 
   return (
     <>
