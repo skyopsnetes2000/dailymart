@@ -1,4 +1,7 @@
 
+'use client';
+
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import {
@@ -16,6 +19,7 @@ import SearchBar from '@/components/shared/search-bar';
 import { Button } from '@/components/ui/button';
 import HeroCarousel from '@/components/hero-carousel';
 import { Card, CardContent } from '@/components/ui/card';
+import { Skeleton } from '@/components/ui/skeleton';
 
 function RecipeCard({ recipe }: { recipe: Recipe }) {
     return (
@@ -38,25 +42,69 @@ function RecipeCard({ recipe }: { recipe: Recipe }) {
     )
 }
 
-export default async function Home() {
-  const [
-    products,
-    categories,
-    specialOffers,
-    appearance,
-    recipes,
-  ] = await Promise.all([
-    getProducts(),
-    getCategories(),
-    getSpecialOfferProducts(),
-    getAppearanceSettings(),
-    getRecipes(),
-  ]);
+export default function Home() {
+  const [products, setProducts] = useState<Product[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [specialOffers, setSpecialOffers] = useState<Product[]>([]);
+  const [appearance, setAppearance] = useState<AppearanceSettings | null>(null);
+  const [recipes, setRecipes] = useState<Recipe[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    async function fetchData() {
+      try {
+        const [
+          productsData,
+          categoriesData,
+          specialOffersData,
+          appearanceData,
+          recipesData,
+        ] = await Promise.all([
+          getProducts(),
+          getCategories(),
+          getSpecialOfferProducts(),
+          getAppearanceSettings(),
+          getRecipes(),
+        ]);
+        setProducts(productsData);
+        setCategories(categoriesData);
+        setSpecialOffers(specialOffersData);
+        setAppearance(appearanceData);
+        setRecipes(recipesData);
+      } catch (error) {
+        console.error("Failed to fetch homepage data:", error);
+      } finally {
+        setLoading(false);
+      }
+    }
+    fetchData();
+  }, []);
 
   const topCategories = categories.slice(0, 4);
   const heroTitle = appearance?.heroTitle || "Freshness at Your Fingertips";
   const heroSubtitle = appearance?.heroSubtitle || "The best groceries, delivered fresh to your door daily.";
   const heroImageUrls = appearance?.heroImageUrls?.length ? appearance.heroImageUrls : ["https://picsum.photos/seed/101/1200/800"];
+
+  if (loading) {
+    return (
+      <>
+        <HomeHeader />
+        <div className="space-y-8 p-4 pt-0 sm:p-6 sm:pt-0">
+          <Skeleton className="h-64 w-full rounded-b-2xl" />
+          <Skeleton className="h-12 w-full" />
+          <Skeleton className="h-48 w-full" />
+          <div className="space-y-4">
+            <Skeleton className="h-8 w-1/4" />
+            <div className="flex gap-4">
+              <Skeleton className="h-48 w-1/3" />
+              <Skeleton className="h-48 w-1/3" />
+              <Skeleton className="h-48 w-1/3" />
+            </div>
+          </div>
+        </div>
+      </>
+    );
+  }
 
   return (
     <>
